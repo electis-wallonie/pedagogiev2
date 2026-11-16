@@ -1,6 +1,6 @@
 // Service worker : l'app reste utilisable hors connexion.
 // Stratégie « réseau d'abord » : la dernière version est toujours servie quand on est en ligne.
-const CACHE = 'suivi-v2';
+const CACHE = 'suivi-v3';
 const SHELL = ['./', './index.html', './css/app.css', './js/app.js', './js/data.js', './js/ui.js', './js/seed.js', './js/fiche.js', './js/public.js', './js/admin.js', './js/prof.js', './js/i18n.js', './js/annonces.js', './js/import.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {

@@ -21,9 +21,9 @@ export async function seed() {
   const db = D();
 
   const C = [
-    { id: uid(), profId: prof.id, name: 'Classe 1', day: 6, time: '09:00', color: 'mint', level: 1 },
-    { id: uid(), profId: prof.id, name: 'Classe 2', day: 6, time: '14:00', color: 'blue', level: 1 },
-    { id: uid(), profId: prof.id, name: 'Classe 3', day: 0, time: '10:00', color: 'pink', level: 2 },
+    { id: uid(), profId: prof.id, name: 'Classe 1', color: 'mint', level: 1 },
+    { id: uid(), profId: prof.id, name: 'Classe 2', color: 'blue', level: 1 },
+    { id: uid(), profId: prof.id, name: 'Classe 3', color: 'pink', level: 2 },
   ];
   db.classes = C;
 
@@ -60,16 +60,20 @@ export async function seed() {
 
   // assiduité des 8 derniers cours
   const pattern = (k, i) => ((k * 7 + i * 3) % 13 === 0 ? 'A' : (k * 5 + i) % 17 === 0 ? 'E' : 'P');
-  for (const c of C) {
-    const dates = lastDays(c.day, 8).slice(1); // le dernier cours reste « à faire »
-    dates.forEach((date, i) => {
+  // Classe 1 : samedi 9h · Classe 2 : mercredi 17h30 et samedi 14h (2 cours par semaine) · Classe 3 : dimanche 10h
+  const slots = [[[6, '09:00']], [[3, '17:30'], [6, '14:00']], [[0, '10:00']]];
+  C.forEach((c, ci) => {
+    const sessions = [];
+    for (const [dow, time] of slots[ci]) for (const date of lastDays(dow, 6).slice(1)) sessions.push({ date, time });
+    sessions.sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
+    sessions.forEach(({ date, time }, i) => {
       const records = {};
       db.students.filter((s) => s.classId === c.id).forEach((s, k) => { records[s.id] = pattern(k, i); });
-      db.attendance.push({ id: uid(), classId: c.id, date, records });
+      db.attendance.push({ id: uid(), classId: c.id, date, time, at: date + 'T' + time + ':00', records });
     });
-  }
+  });
   // quelques absences marquantes pour Yasmine et Lina
-  const a2 = db.attendance.filter((a) => a.classId === C[1].id);
+  const a2 = db.attendance.filter((a) => a.classId === C[1].id).sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
   if (a2[0]) { a2[0].records[yas.id] = 'A'; a2[0].records[lina.id] = 'A'; }
   if (a2[2]) { a2[2].records[yas.id] = 'E'; }
   if (a2[1]) { a2[1].records[lina.id] = 'A'; }

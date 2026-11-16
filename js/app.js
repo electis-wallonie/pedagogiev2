@@ -27,8 +27,8 @@ const R = [
   [/^\/prof$/, () => { const u = guard('prof'); return u && prof.dashboard(u); }],
   [/^\/prof\/classes$/, (m, q) => { const u = guard('prof'); return u && prof.classes(u, q); }],
   [/^\/prof\/classe\/(\w+)$/, (m) => { const u = guard('prof'); return u && prof.classe(u, m[1]); }],
-  [/^\/prof\/classe\/(\w+)\/appel(?:\/([\d-]{10}))?$/, (m) => { const u = guard('prof'); return u && prof.appel(u, m[1], m[2]); }],
-  [/^\/prof\/classe\/(\w+)\/appel\/([\d-]{10})\/ok$/, (m) => { const u = guard('prof'); return u && prof.appelOk(u, m[1], m[2]); }],
+  [/^\/prof\/classe\/(\w+)\/appel(?:\/(\w+))?$/, (m) => { const u = guard('prof'); return u && prof.appel(u, m[1], m[2]); }],
+  [/^\/prof\/classe\/(\w+)\/appel\/(\w+)\/ok$/, (m) => { const u = guard('prof'); return u && prof.appelOk(u, m[1], m[2]); }],
   [/^\/prof\/classe\/(\w+)\/historique$/, (m) => { const u = guard('prof'); return u && prof.historique(u, m[1]); }],
   [/^\/prof\/eleves$/, () => { const u = guard('prof'); return u && prof.eleves(u); }],
   [/^\/prof\/eleve\/new$/, (m, q) => { const u = guard('prof'); return u && prof.eleveNew(u, q); }],
@@ -44,7 +44,7 @@ function demoBar() {
   return d.D().demo ? `<div class="demo" role="note">${ic('alert', 14)}<span>Démo · les données restent sur cet appareil</span><a href="#/login">Comptes de test</a></div>` : '';
 }
 let lastPath = null;
-function render() {
+function render(keep) {
   const raw = (location.hash || '#/').slice(1);
   const [path, qs] = raw.split('?');
   const q = new URLSearchParams(qs || '');
@@ -55,7 +55,7 @@ function render() {
   }
   if (html === null && !R.some(([re]) => re.test(path))) html = pub.home();
   if (html === null) return; // redirection en cours
-  const samePage = path === lastPath;
+  const samePage = keep === true || path === lastPath;
   const y = window.scrollY;
   app.innerHTML = demoBar() + html;
   if (samePage) window.scrollTo(0, y); else window.scrollTo(0, 0);
@@ -64,7 +64,7 @@ function render() {
   setTimeout(() => { const h = app.querySelector('h1'); document.title = (h ? h.textContent.trim() + ' · ' : '') + (isAr ? 'المتابعة' : 'Suivi'); }, 0);
 }
 window.addEventListener('hashchange', () => { closeModal(); render(); });
-window.addEventListener('soft-render', render);
+window.addEventListener('soft-render', () => render(true));
 
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-act]');

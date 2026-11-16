@@ -144,9 +144,10 @@ export function byCode(code) {
   return k ? db.students.find((s) => normCode(s.code) === k) : null;
 }
 export const normCode = (c) => (c || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-export function attendanceOfClass(classId) { return db.attendance.filter((a) => a.classId === classId).sort((a, b) => b.date.localeCompare(a.date)); }
+const when = (a) => a.date + ' ' + (a.time || '');
+export function attendanceOfClass(classId) { return db.attendance.filter((a) => a.classId === classId).sort((a, b) => when(b).localeCompare(when(a))); }
 export function attendanceOfStudent(st) {
-  return db.attendance.filter((a) => a.classId === st.classId && a.records[st.id]).sort((a, b) => b.date.localeCompare(a.date)).map((a) => ({ date: a.date, s: a.records[st.id] }));
+  return db.attendance.filter((a) => a.classId === st.classId && a.records[st.id]).sort((a, b) => when(b).localeCompare(when(a))).map((a) => ({ date: a.date, time: a.time, s: a.records[st.id] }));
 }
 export function presence(st) {
   const h = attendanceOfStudent(st);

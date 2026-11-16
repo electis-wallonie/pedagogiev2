@@ -85,7 +85,7 @@ export function presence(st, limit = 50) {
   const rows = p.h.slice(0, limit).map((x) => {
     const S = STATUS[x.s];
     const lab = x.s === 'A' ? 'Absent à ce cours' : x.s === 'E' ? 'Absent · prévenu' : 'Présent';
-    return `<div class="li"><span class="grow b small" style="font-weight:600;text-transform:capitalize">${fdate(x.date, { weekday: 'long', day: 'numeric', month: 'long' })}</span>${pill(lab, S.bg, S.fg)}</div>`;
+    return `<div class="li"><span class="grow b small" style="font-weight:600">${fdate(x.date, { weekday: 'long', day: 'numeric', month: 'long' })}${x.time ? ` · <span class="mut">cours de ${x.time}</span>` : ''}</span>${pill(lab, S.bg, S.fg)}</div>`;
   }).join('');
   return `<div class="row between"><h2>Présence</h2><span class="b">${p.rate === null ? '—' : p.rate + ' %'}</span></div>
   <div class="grid3"><div class="ck stat" style="background:var(--present);color:var(--onpresent)"><div class="v">${p.P}</div><div class="l">présent</div></div>

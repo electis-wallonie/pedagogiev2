@@ -18,7 +18,7 @@ Application web installable (PWA) qui remplace les feuilles de suivi papier : **
 - **Français / arabe** : bouton de langue partout. En arabe, la mise en page passe de droite à gauche et les noms des sourates s’affichent en arabe. Les notes saisies par les utilisateurs ne sont pas traduites.
 - **Âge** à la place de la date de naissance : il se met à jour tout seul chaque année. Une date de naissance précise reste possible (facultatif).
 - **Élèves** : rattachés à une classe via une liste déroulante. Le **code de suivi** est généré automatiquement : `CLASSE-INITIALES-PARENT-ÂGE-XXXX` (ex. `CL2-YIB-KARIM-10ANS-AB12`). Les 4 derniers caractères sont aléatoires pour qu’on ne puisse pas deviner le code. Le code peut être copié, partagé (lien direct vers la fiche) ou régénéré.
-- **Appel** : date enregistrée automatiquement, 3 états (Présent / Absent / Absent prévenu), bouton « tous les autres présents », historique modifiable.
+- **Appel** : pas d’horaire fixe par classe. En appuyant sur « Faire l’appel », le prof indique le cours concerné (date + heure du cours, pré-remplies avec le créneau habituel). Plusieurs appels possibles le même jour. Pas d’appel = pas de cours : rien n’apparaît. 3 états (Présent / Absent / Absent prévenu), historique modifiable.
 - **Coran (moushaf)** : les 114 sourates en cases numérotées, dans l’ordre. Chaque sourate a 3 états : non connue / en cours / validée.
   - Passer une sourate « en cours » enregistre sa **date de début d’apprentissage**. Elle reste modifiable, pour savoir avec certitude depuis quand l’élève a commencé.
   - Sur une sourate en cours, l’imam laisse des **notes datées** (ce qu’il faut réviser, jusqu’où…), en **texte** et/ou en **message vocal**. C’est le cahier de l’élève.

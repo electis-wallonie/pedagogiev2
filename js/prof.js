@@ -11,7 +11,8 @@ const rerender = () => window.dispatchEvent(new Event('hashchange'));
 let ctx = {};
 const colorOf = (c) => COLORS[c.color] || COLORS.blue;
 const hhmm = (t) => (t || '').replace(':', 'h');
-const clsLabel = (c) => `${esc(c.name)} · ${DAYS[c.day]} ${hhmm(c.time)}`;
+const clsLabel = (c) => esc(c.name);
+function lastAppel(c) { const a = d.attendanceOfClass(c.id)[0]; return a ? `Dernier appel : ${fdate(a.date)}${a.time ? ' · ' + a.time : ''}` : 'Aucun appel pour l’instant'; }
 
 // active : 0 Accueil · 1 Classes · 2 Élèves · 3 Réglages · 4 Direction (admin)
 export function shell(u, active, body) {
@@ -31,13 +32,11 @@ export function shell(u, active, body) {
 }
 const top = (title, sub, back, right = '') => `<div class="top">${back ? `<a href="${back}" class="ib" aria-label="Retour">${ic('back', 20)}</a>` : ''}<div class="grow">${sub ? `<div class="small mut b">${sub}</div>` : ''}<h1>${title}</h1></div>${right}</div>`;
 
-function nextOf(c) { const t = new Date().getDay(); return (c.day - t + 7) % 7; }
 
 // ---------- tableau de bord ----------
 export function dashboard(u) {
   const cl = d.myClasses(u);
   const sts = d.myStudents(u);
-  const next = cl.slice().sort((a, b) => nextOf(a) - nextOf(b) || a.time.localeCompare(b.time))[0];
   const watch = [];
   for (const s of sts) {
     const h = d.attendanceOfStudent(s).slice(0, 4);
@@ -53,28 +52,26 @@ export function dashboard(u) {
     for (const k in s.acquired) if (s.acquired[k] >= ago7) oa++;
   }
   const ap = d.D().attendance.filter((a) => cl.some((c) => c.id === a.classId) && a.date >= ago7 && a.date <= week).length;
-  const when = next ? (nextOf(next) === 0 ? 'AUJOURD’HUI' : nextOf(next) === 1 ? 'DEMAIN' : DAYS[next.day].toUpperCase()) : '';
   const body = `<div class="page">
   ${top(d.isAdmin(u) ? 'Vue d’ensemble' : `Bonjour ${esc(u.name)}`, fdate(todayISO(), { weekday: 'long', day: 'numeric', month: 'long' }), null)}
   ${annoncesHtml()}
   ${d.isAdmin(u) ? `<div class="grid3"><div class="ck stat" style="background:var(--pink)"><div class="v">${d.profs().length}</div><div class="l">professeurs</div></div><div class="ck stat" style="background:var(--blue2)"><div class="v">${cl.length}</div><div class="l">classes</div></div><div class="ck stat" style="background:var(--mint)"><div class="v">${sts.length}</div><div class="l">élèves</div></div></div>` : ''}
-  ${next ? `<div class="ck pad row between wrap" style="background:var(--ink);color:#fff"><div><div class="tiny b" style="color:var(--yellow)">PROCHAIN COURS · ${when} ${hhmm(next.time)}</div><div class="b" style="font-size:24px;margin-top:4px">${esc(next.name)} · ${d.studentsOf(next.id).length} élèves</div></div>
-  <a class="btn y" href="#/prof/classe/${next.id}/appel">${ic('check', 20)}Faire l’appel</a></div>` : `<div class="ck pad col" style="background:var(--hi)"><h2>Bienvenue !</h2><p class="b" style="font-weight:600">Commencez par créer votre première classe, puis ajoutez vos élèves.</p><a class="btn" href="#/prof/classes?new=1">${ic('plus', 20)}Créer une classe</a></div>`}
+  ${cl.length ? '' : `<div class="ck pad col" style="background:var(--hi)"><h2>Bienvenue !</h2><p class="b" style="font-weight:600">Commencez par créer votre première classe, puis ajoutez vos élèves.</p><a class="btn" href="#/prof/classes?new=1">${ic('plus', 20)}Créer une classe</a></div>`}
+  ${cl.length ? `<div class="row between"><h2>${d.isAdmin(u) ? 'Toutes les classes' : 'Mes classes'}</h2><a href="#/prof/classes" class="small">Tout voir</a></div>
+  <div class="gridauto">${cl.map((c) => classTile(c)).join('')}</div>` : ''}
   <div class="grid3"><div class="ck stat" style="background:var(--yellow)"><div class="v">${sv}</div><div class="l">sourates validées (7 j)</div></div>
   <div class="ck stat" style="background:var(--blue2)"><div class="v">${oa}</div><div class="l">objectifs acquis (7 j)</div></div>
   <div class="ck stat" style="background:var(--mint)"><div class="v">${ap}</div><div class="l">appels faits (7 j)</div></div></div>
   <div class="grid2 stack" style="align-items:start">
   <div class="ck pad col"><h2>À surveiller</h2><div class="list">${watch.slice(0, 6).map(([s, t, c]) => `<a class="li" href="#/prof/eleve/${s.id}">${av(initials(s), 40, c, 13)}<span class="grow"><span class="b" style="display:block">${esc(fullName(s))}</span><span class="small mut b" style="font-weight:600">${esc(t)}</span></span>${ic('chev', 18)}</a>`).join('') || '<p class="small mut">Rien à signaler.</p>'}</div></div>
-  <div class="col"><div class="row between"><h2>${d.isAdmin(u) ? 'Toutes les classes' : 'Mes classes'}</h2><a href="#/prof/classes" class="small">Tout voir</a></div>
-  <div class="grid2">${cl.map((c) => classTile(c)).join('')}</div>
-  <div class="grid2"><a class="btn2" href="#/prof/eleve/new">${ic('plus', 20)}Élève</a><a class="btn2" href="#/prof/classes?new=1">${ic('plus', 20)}Classe</a></div></div>
+  <div class="col"><a class="btn2" href="#/prof/eleve/new">${ic('plus', 20)}Nouvel élève</a><a class="btn2" href="#/prof/classes?new=1">${ic('plus', 20)}Nouvelle classe</a><a class="btn2" href="#/prof/import">${ic('sheet', 20)}Importer des élèves (Excel)</a></div>
   </div></div>`;
   return shell(u, 0, body);
 }
 function classTile(c) {
-  const today = d.attendanceOfClass(c.id).find((a) => a.date === todayISO());
-  return `<a href="#/prof/classe/${c.id}" class="ck tile" style="background:${colorOf(c)}"><span class="big">${esc(c.name.replace(/^classe\s*/i, '') || c.name[0])}</span>
-  <span><span class="b" style="display:block;font-size:17px">${esc(c.name)}</span><span class="small b" style="font-weight:600">${DAYS[c.day]} ${hhmm(c.time)} · ${d.studentsOf(c.id).length} élèves</span>${d.isAdmin(d.me()) ? `<span class="tiny b" style="display:block">${esc((d.user(c.profId) || {}).name || '')}</span>` : ''}${today ? '<span class="tiny b" style="display:block">Appel fait aujourd’hui</span>' : ''}</span></a>`;
+  return `<div class="ck tile" style="background:${colorOf(c)};position:relative"><a href="#/prof/classe/${c.id}" style="position:absolute;inset:0;border-radius:inherit" aria-label="${esc(c.name)}"></a><span class="big">${esc(c.name.replace(/^classe\s*/i, '') || c.name[0])}</span>
+  <span><span class="b" style="display:block;font-size:17px">${esc(c.name)}</span><span class="small b" style="font-weight:600;display:block">${d.studentsOf(c.id).length} élèves</span>${d.isAdmin(d.me()) ? `<span class="tiny b" style="display:block">${esc((d.user(c.profId) || {}).name || '')}</span>` : ''}<span class="tiny b" style="display:block">${lastAppel(c)}</span></span>
+  <a href="#/prof/classe/${c.id}/appel" class="btn2 sm" style="position:relative">${ic('check', 18)}Faire l’appel</a></div>`;
 }
 
 // ---------- classes ----------
@@ -93,8 +90,6 @@ function classForm(u, c = null) {
   <form class="col" data-form="class" data-id="${c ? c.id : ''}">
   <div class="field"><label class="lbl" for="cn">Nom de la classe</label><input id="cn" name="name" class="inp" required value="${esc(c ? c.name : `Classe ${d.myClasses(u).length + 1}`)}"></div>
   ${profSel}
-  <div class="grid2"><div class="field"><label class="lbl" for="cd">Jour</label><select id="cd" name="day" class="inp">${[6, 0, 1, 2, 3, 4, 5].map((k) => `<option value="${k}" ${(c ? c.day : 6) === k ? 'selected' : ''}>${DAYS[k]}</option>`).join('')}</select></div>
-  <div class="field"><label class="lbl" for="ct">Heure</label><input id="ct" name="time" type="time" class="inp" value="${c ? c.time : '10:00'}" required></div></div>
   <fieldset style="border:0;padding:0;margin:0"><legend class="lbl">Couleur</legend><div class="row">${Object.keys(COLORS).map((k) => `<label style="cursor:pointer"><input type="radio" name="color" value="${k}" class="sr" ${(c ? c.color : 'blue') === k ? 'checked' : ''}><span class="av swatch" style="width:48px;height:48px;background:${COLORS[k]}" title="${COLOR_NAMES[k]}"></span><span class="sr">${COLOR_NAMES[k]}</span></label>`).join('')}</div></fieldset>
   <div class="field"><label class="lbl" for="cl">Niveau Langue &amp; Religion par défaut</label><select id="cl" name="level" class="inp">${levels.map((l) => `<option value="${l}" ${(c ? c.level : 1) === l ? 'selected' : ''}>Niveau ${l}</option>`).join('')}</select></div>
   <button class="btn full">${c ? 'Enregistrer' : 'Créer la classe'}</button>
@@ -106,7 +101,7 @@ ACT['class-edit'] = (el) => classForm(d.me(), d.cls(el.dataset.id));
 FORMS.class = (f, fd) => {
   const u = d.me();
   const id = f.dataset.id;
-  const v = { name: (fd.get('name') || '').trim() || 'Classe', day: +fd.get('day'), time: fd.get('time') || '10:00', color: fd.get('color') || 'blue', level: +fd.get('level') || 1 };
+  const v = { name: (fd.get('name') || '').trim() || 'Classe', color: fd.get('color') || 'blue', level: +fd.get('level') || 1 };
   if (d.isAdmin(u)) { if (!fd.get('profId')) { toast('Créez d’abord un professeur'); return; } v.profId = fd.get('profId'); }
   if (id) Object.assign(d.cls(id), v);
   else { const c = { id: d.uid(), profId: u.id, ...v }; d.D().classes.push(c); d.save(); closeModal(); go(`#/prof/classe/${c.id}`); toast('Classe créée'); return; }
@@ -126,7 +121,7 @@ export function classe(u, id) {
   const sts = d.studentsOf(id);
   const notes = d.D().notes.filter((n) => n.scope === 'class' && n.classId === id).sort((a, b) => b.at.localeCompare(a.at));
   const acts = [[`#/prof/classe/${id}/appel`, 'check', 'Faire l’appel', 'var(--primary)', '#fff'], [`#/prof/eleve/new?c=${id}`, 'plus', 'Élève', 'var(--surface)', 'var(--ink)'], [`#/prof/classe/${id}/historique`, 'clock', 'Historique', 'var(--surface)', 'var(--ink)'], ['#notes-classe', 'note', 'Note classe', 'var(--surface)', 'var(--ink)']];
-  const body = `<div class="page">${top(esc(c.name), `${DAYS[c.day]} ${hhmm(c.time)} · ${sts.length} élève(s)`, '#/prof/classes', `<button class="ib" data-act="class-edit" data-id="${id}" aria-label="Modifier la classe">${ic('edit', 18)}</button>`)}
+  const body = `<div class="page">${top(esc(c.name), `${sts.length} élève(s) · ${lastAppel(c)}`, '#/prof/classes', `<button class="ib" data-act="class-edit" data-id="${id}" aria-label="Modifier la classe">${ic('edit', 18)}</button>`)}
   <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px">${acts.map(([h, i, l, bg, fg]) => `<a href="${h}" class="ck col" style="gap:6px;align-items:center;padding:12px 4px;text-decoration:none;background:${bg};color:${fg};font-weight:800;font-size:13px;text-align:center">${ic(i, 24)}${l}</a>`).join('')}</div>
   <div class="ck pad" style="padding-top:4px;padding-bottom:4px"><div class="list">${sts.map((s, k) => {
     const p = d.presence(s); const kk = d.coranStats(s);
@@ -147,58 +142,110 @@ FORMS['note-class'] = async (f, fd) => {
 };
 
 // ---------- appel ----------
-function getRec(classId, date) { return d.D().attendance.find((a) => a.classId === classId && a.date === date); }
-export function appel(u, id, date) {
+// Chaque appel est enregistré avec sa date ET son heure : une classe peut avoir
+// un, deux cours par semaine, ou deux cours le même jour. Pas d'appel = pas de cours.
+const nowHM = () => { const t = new Date(); return `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`; };
+const recById = (id) => d.D().attendance.find((a) => a.id === id);
+export const whenLabel = (a) => `${fdate(a.date, { weekday: 'long', day: 'numeric', month: 'long' })}${a.time ? ' · ' + a.time : ''}`;
+// Heure proposée : l'heure habituelle de cette classe ce jour de la semaine, sinon l'heure pile en cours.
+function suggestTime(classId, date) {
+  const dow = new Date(date + 'T12:00:00').getDay();
+  const same = d.attendanceOfClass(classId).find((a) => a.time && new Date(a.date + 'T12:00:00').getDay() === dow);
+  if (same) return same.time;
+  return `${String(new Date().getHours()).padStart(2, '0')}:00`;
+}
+function usualSlots(classId) {
+  const seen = new Map();
+  for (const a of d.attendanceOfClass(classId)) {
+    if (!a.time) continue;
+    const dow = new Date(a.date + 'T12:00:00').getDay();
+    const k = dow + '|' + a.time;
+    if (!seen.has(k)) seen.set(k, { dow, time: a.time });
+  }
+  return [...seen.values()].slice(0, 6);
+}
+export function appel(u, id, recId) {
   const c = d.cls(id);
   if (!d.canSeeClass(u, c)) return shell(u, 1, '');
-  date = date || todayISO();
-  ctx = { cls: c, date };
-  const rec = getRec(id, date);
-  const r = rec ? rec.records : {};
+  if (!recId) return appelStart(u, c);
+  const rec = recById(recId);
+  if (!rec || rec.classId !== id) return shell(u, 1, `<div class="page">${top('Appel introuvable', esc(c.name), `#/prof/classe/${id}`)}</div>`);
+  ctx = { cls: c, rec };
+  const r = rec.records;
   const sts = d.studentsOf(id);
   const cnt = (k) => sts.filter((s) => r[s.id] === k).length;
   const rest = sts.filter((s) => !r[s.id]).length;
   const rows = sts.map((s) => `<div class="ck flat appel-row"><span class="grow b">${esc(s.prenoms.split(' ')[0])} ${esc(s.nom)}</span>
   ${['P', 'A', 'E'].map((k) => `<button type="button" class="st-btn ${r[s.id] === k ? 'on-' + k : ''}" data-act="ap" data-sid="${s.id}" data-s="${k}" aria-pressed="${r[s.id] === k}" aria-label="${STATUS[k].l} : ${esc(s.prenoms.split(' ')[0])}">${ic(STATUS[k].icon, 20, 2.8)}<span class="lab">${k === 'E' ? 'Prévenu' : STATUS[k].l}</span></button>`).join('')}</div>`).join('');
   const body = `<div class="page">${top('L’appel', esc(c.name), `#/prof/classe/${id}`)}
-  <div class="ck pad row between wrap"><div class="field"><label class="lbl" for="ad">Date du cours (enregistrée automatiquement)</label><input id="ad" type="date" class="inp" value="${date}" data-change="ap-date" style="max-width:220px"></div>
-  <span class="b" style="text-transform:capitalize">${flong(date)}</span></div>
+  <div class="ck pad col" style="gap:10px;background:var(--hi)"><span class="lbl" style="margin:0">Cours du</span>
+  <div class="row wrap"><label class="sr" for="ad">Date du cours</label><input id="ad" type="date" class="inp" value="${rec.date}" data-change="ap-when" data-k="date" style="max-width:200px"><label class="sr" for="ah">Heure du cours</label><input id="ah" type="time" class="inp" value="${rec.time || ''}" data-change="ap-when" data-k="time" style="max-width:140px"></div></div>
   <div class="row wrap" style="gap:8px">${pill(cnt('P') + ' présent(s)', 'var(--present)', 'var(--onpresent)')}${pill(cnt('A') + ' absent(s)', 'var(--absent)', 'var(--onabsent)')}${pill(cnt('E') + ' prévenu(s)', 'var(--prev)')}${rest ? pill(rest + ' à marquer', 'var(--neutral)') : ''}</div>
   ${rest ? `<button class="btn2 sm" data-act="ap-all" style="align-self:flex-start">${ic('check', 18)}Marquer les ${rest} restant(s) présents</button>` : ''}
   <div class="col" style="gap:8px">${rows || '<p class="mut">Aucun élève dans cette classe.</p>'}</div>
   <div class="row tiny mut b" style="justify-content:flex-end;gap:20px;padding-right:6px"><span>${ic('check', 14)} Présent</span><span>${ic('x', 14)} Absent</span><span>${ic('mail', 14)} Absent prévenu</span></div>
-  <a href="#/prof/classe/${id}/appel/${date}/ok" class="btn full">Terminer l’appel</a></div>`;
+  <a href="#/prof/classe/${id}/appel/${rec.id}/ok" class="btn full">Terminer l’appel</a>
+  <button class="btnd full" data-act="ap-del">${ic('trash', 18)}Supprimer cet appel</button></div>`;
   return shell(u, 1, body);
 }
-ACT.ap = (el) => {
-  let rec = getRec(ctx.cls.id, ctx.date);
-  if (!rec) { rec = { id: d.uid(), classId: ctx.cls.id, date: ctx.date, records: {} }; d.D().attendance.push(rec); }
-  rec.records[el.dataset.sid] = el.dataset.s;
-  d.save(); rerender();
+// Étape 1 : de quel cours s'agit-il ?
+function appelStart(u, c) {
+  ctx = { cls: c };
+  const date = todayISO();
+  const time = suggestTime(c.id, date);
+  const slots = usualSlots(c.id);
+  const today = d.attendanceOfClass(c.id).filter((a) => a.date === date);
+  const body = `<div class="page narrow">${top('L’appel', esc(c.name), `#/prof/classe/${c.id}`)}
+  <form class="ck pad col" data-form="ap-start">
+    <h2>De quel cours s’agit-il ?</h2>
+    <p class="small mut b" style="font-weight:600">Indiquez la date et l’heure du cours (pas l’heure à laquelle vous faites l’appel). C’est ce qui apparaîtra dans l’historique.</p>
+    <div class="grid2"><div class="field"><label class="lbl" for="sd">Date du cours</label><input id="sd" name="date" type="date" class="inp" value="${date}" required data-change="ap-sugg"></div>
+    <div class="field"><label class="lbl" for="st">Heure du cours</label><input id="st" name="time" type="time" class="inp" value="${time}" required></div></div>
+    ${slots.length ? `<div class="col" style="gap:6px"><span class="small b">Créneaux habituels de cette classe :</span><div class="row wrap" style="gap:8px">${slots.map((x) => `<button type="button" class="btn2 sm" data-act="ap-slot" data-t="${x.time}">${DAYS[x.dow]} ${x.time}</button>`).join('')}</div></div>` : ''}
+    ${today.length ? `<div class="ck flat pad col" style="background:var(--hi);gap:8px"><span class="b">Déjà fait aujourd’hui : cours de ${today.map((a) => a.time || '—').join(', ')}</span>${today.map((a) => `<a class="btn2 sm" style="align-self:flex-start" href="#/prof/classe/${c.id}/appel/${a.id}">${ic('edit', 16)}Ouvrir l’appel du cours de ${a.time || '—'}</a>`).join('')}</div>` : ''}
+    <button class="btn full">${ic('check', 20)}Commencer l’appel</button>
+  </form></div>`;
+  return shell(u, 1, body);
+}
+ACT['ap-slot'] = (el) => { document.getElementById('st').value = el.dataset.t; };
+CHANGE['ap-sugg'] = (el) => { if (el.value) document.getElementById('st').value = suggestTime(ctx.cls.id, el.value); };
+FORMS['ap-start'] = (f, fd) => {
+  const date = fd.get('date'), time = fd.get('time');
+  const ex = d.D().attendance.find((a) => a.classId === ctx.cls.id && a.date === date && a.time === time);
+  if (ex) { toast('Ce cours a déjà un appel : vous pouvez le modifier'); go(`#/prof/classe/${ctx.cls.id}/appel/${ex.id}`); return; }
+  const rec = { id: d.uid(), classId: ctx.cls.id, date, time, at: new Date().toISOString(), records: {} };
+  d.D().attendance.push(rec); d.save();
+  go(`#/prof/classe/${ctx.cls.id}/appel/${rec.id}`);
 };
+const softRender = () => window.dispatchEvent(new CustomEvent('soft-render'));
+ACT.ap = (el) => { ctx.rec.records[el.dataset.sid] = el.dataset.s; d.save(); softRender(); };
 ACT['ap-all'] = () => {
-  let rec = getRec(ctx.cls.id, ctx.date);
-  if (!rec) { rec = { id: d.uid(), classId: ctx.cls.id, date: ctx.date, records: {} }; d.D().attendance.push(rec); }
-  d.studentsOf(ctx.cls.id).forEach((s) => { if (!rec.records[s.id]) rec.records[s.id] = 'P'; });
-  d.save(); rerender();
+  d.studentsOf(ctx.cls.id).forEach((s) => { if (!ctx.rec.records[s.id]) ctx.rec.records[s.id] = 'P'; });
+  d.save(); softRender();
 };
-CHANGE['ap-date'] = (el) => { if (el.value) go(`#/prof/classe/${ctx.cls.id}/appel/${el.value}`); };
+CHANGE['ap-when'] = (el) => { if (!el.value) return; ctx.rec[el.dataset.k] = el.value; d.save(); toast('Date enregistrée'); softRender(); };
+ACT['ap-del'] = () => {
+  if (!ask('Supprimer cet appel ? Il disparaîtra de l’historique des élèves.')) return;
+  d.D().attendance = d.D().attendance.filter((a) => a.id !== ctx.rec.id);
+  d.save(); toast('Appel supprimé'); go(`#/prof/classe/${ctx.cls.id}/historique`);
+};
 
-export function appelOk(u, id, date) {
+export function appelOk(u, id, recId) {
   const c = d.cls(id);
-  const rec = getRec(id, date);
-  const r = rec ? rec.records : {};
+  const rec = recById(recId);
+  if (!d.canSeeClass(u, c) || !rec) return shell(u, 1, '');
+  const r = rec.records;
   const sts = d.studentsOf(id);
   const cnt = (k) => sts.filter((s) => r[s.id] === k).length;
   const abs = sts.filter((s) => r[s.id] === 'A' || r[s.id] === 'E');
   const rest = sts.filter((s) => !r[s.id]);
   const body = `<div class="page narrow"><div class="col center" style="align-items:center;padding-top:20px">
   <span class="av" style="width:76px;height:76px;background:var(--mint)">${ic('check', 38, 3.4)}</span><h1>Appel enregistré</h1>
-  <p class="mut b" style="text-transform:capitalize">${esc(c.name)} · ${flong(date)}</p></div>
+  <p class="mut b">${esc(c.name)} · ${whenLabel(rec)}</p></div>
   <div class="grid3"><div class="ck stat" style="background:var(--present);color:var(--onpresent)"><div class="v">${cnt('P')}</div><div class="l">présents</div></div><div class="ck stat" style="background:var(--absent);color:var(--onabsent)"><div class="v">${cnt('A')}</div><div class="l">absents</div></div><div class="ck stat" style="background:var(--prev)"><div class="v">${cnt('E')}</div><div class="l">prévenus</div></div></div>
   ${rest.length ? `<div class="err">${rest.length} élève(s) pas encore marqué(s) : ${rest.map((s) => esc(s.prenoms.split(' ')[0])).join(', ')}</div>` : ''}
   ${abs.length ? `<div class="ck pad col"><h2>Absents ce jour</h2>${abs.map((s) => `<div class="row between"><span class="b">${esc(fullName(s))}</span>${pill(r[s.id] === 'A' ? 'Absent' : 'Prévenu', STATUS[r[s.id]].bg, STATUS[r[s.id]].fg)}</div>`).join('')}<p class="small mut b" style="font-weight:600">C’est déjà visible sur leur fiche.</p></div>` : ''}
-  <a class="btn full" href="#/prof/classe/${id}">Retour à la classe</a><a class="btn2 full" href="#/prof/classe/${id}/appel/${date}">Modifier l’appel</a></div>`;
+  <a class="btn full" href="#/prof/classe/${id}">Retour à la classe</a><a class="btn2 full" href="#/prof/classe/${id}/appel/${rec.id}">Modifier l’appel</a></div>`;
   return shell(u, 1, body);
 }
 export function historique(u, id) {
@@ -208,7 +255,7 @@ export function historique(u, id) {
   <div class="ck pad" style="padding-top:4px;padding-bottom:4px"><div class="list">${list.map((a) => {
     const v = Object.values(a.records);
     const k = (s) => v.filter((x) => x === s).length;
-    return `<a class="li" href="#/prof/classe/${id}/appel/${a.date}"><span class="grow b" style="text-transform:capitalize">${fdate(a.date, { weekday: 'long', day: 'numeric', month: 'long' })}</span>${pill(k('P'), 'var(--present)', 'var(--onpresent)')}${pill(k('A'), 'var(--absent)', 'var(--onabsent)')}${pill(k('E'), 'var(--prev)')}${ic('chev', 18)}</a>`;
+    return `<a class="li" href="#/prof/classe/${id}/appel/${a.id}"><span class="grow b">${whenLabel(a)}</span>${pill(k('P'), 'var(--present)', 'var(--onpresent)')}${pill(k('A'), 'var(--absent)', 'var(--onabsent)')}${pill(k('E'), 'var(--prev)')}${ic('chev', 18)}</a>`;
   }).join('') || '<p class="mut small" style="padding:12px 0">Aucun appel pour le moment.</p>'}</div></div>
   <p class="tiny mut b">Vert : présents · Rouge : absents · Jaune : absents prévenus. Touchez une date pour corriger l’appel.</p></div>`;
   return shell(u, 1, body);

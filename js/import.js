@@ -159,7 +159,7 @@ export function importView(u) {
     body = `<div class="ck pad col"><div class="row between wrap"><h2>${esc(imp.name)}</h2>${pill(imp.rows.length + ' ligne(s)', 'var(--neutral)')}</div>
     ${imp.missing.length ? `<div class="err">Colonnes introuvables : ${imp.missing.map((k) => ({ nom: 'Nom', prenoms: 'Prénom', parent: 'Parent', age: 'Âge (ou Date de naissance)' }[k])).join(', ')}</div>` : ''}
     <div class="row wrap" style="gap:8px">${pill(ok.length + ' prêt(s) à importer', 'var(--mint)')}${pill(imp.rows.filter((r) => r.err).length + ' incomplet(s)', 'var(--absent)', 'var(--onabsent)')}${pill(imp.rows.filter((r) => r.dup).length + ' déjà présent(s)', 'var(--prev)')}</div>
-    ${noCls ? `<div class="field"><label class="lbl" for="impc">Classe pour les ${noCls} élève(s) sans classe</label><select id="impc" name="defaultClass" form="impf" class="inp">${cls.map((c) => `<option value="${c.id}">${esc(c.name)} · ${DAYS[c.day]}</option>`).join('')}${cls.length ? '' : '<option value="">(créez d’abord une classe)</option>'}</select></div>` : ''}
+    ${noCls ? `<div class="field"><label class="lbl" for="impc">Classe pour les ${noCls} élève(s) sans classe</label><select id="impc" name="defaultClass" form="impf" class="inp">${cls.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}${cls.length ? '' : '<option value="">(créez d’abord une classe)</option>'}</select></div>` : ''}
     ${newCls.length ? `<div class="ck flat pad col" style="background:var(--hi)"><span class="b">Classes qui seront créées : ${newCls.map(esc).join(', ')}</span>${admin ? `<div class="field"><label class="lbl" for="impp">Professeur de ces nouvelles classes</label><select id="impp" name="prof" form="impf" class="inp">${d.profs().map((p) => `<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></div>` : ''}</div>` : ''}
     </div>
     <div class="ck" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="background:var(--neutral);text-align:start">${['Classe', 'Nom', 'Prénom(s)', 'Âge', 'Parent', 'État'].map((h) => `<th style="padding:10px;text-align:start">${h}</th>`).join('')}</tr></thead><tbody>
@@ -206,7 +206,7 @@ FORMS['imp-go'] = (f, fd) => {
     let cid = r.classId || (r.classe ? created[d.normCode(r.classe)] : def);
     if (!cid && r.classe) {
       if (!profId) { toast('Créez d’abord un professeur'); return; }
-      const c = { id: d.uid(), profId, name: r.classe, day: 6, time: '10:00', color: ['blue', 'mint', 'yellow', 'pink'][Object.keys(created).length % 4], level: 1 };
+      const c = { id: d.uid(), profId, name: r.classe, color: ['blue', 'mint', 'yellow', 'pink'][Object.keys(created).length % 4], level: 1 };
       d.D().classes.push(c); created[d.normCode(r.classe)] = c.id; cid = c.id;
     }
     const c = d.cls(cid);
