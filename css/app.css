@@ -178,3 +178,4 @@ input:focus-visible + .swatch{outline:3px solid var(--primary);outline-offset:3p
 [dir="rtl"] h1,[dir="rtl"] h2,[dir="rtl"] h3{letter-spacing:0}
 .code,input.code,#code{direction:ltr;unicode-bidi:isolate}
 [dir="rtl"] input.code,[dir="rtl"] #code{text-align:right}
+.btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;transform:none}

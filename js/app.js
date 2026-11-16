@@ -86,6 +86,8 @@ document.addEventListener('change', (e) => {
   if (el && CHANGE[el.dataset.change]) CHANGE[el.dataset.change](el, e);
 });
 document.addEventListener('input', (e) => {
+  const inp = e.target.closest('[data-input]');
+  if (inp && CHANGE[inp.dataset.input]) CHANGE[inp.dataset.input](inp, e);
   const el = e.target.closest('[data-filter]');
   if (!el) return;
   const q = el.value.trim().toLowerCase();

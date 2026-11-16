@@ -133,6 +133,9 @@ const AR = {
   'Supprimer cet appel ? Il disparaîtra de l’historique des élèves.': 'حذف تسجيل الحضور هذا؟ سيختفي من سجل التلاميذ.', 'Appel supprimé': 'تم حذف تسجيل الحضور',
   'Ce cours a déjà un appel : vous pouvez le modifier': 'لهذه الحصة تسجيل حضور مسبق : يمكنك تعديله', 'Appel introuvable': 'تسجيل الحضور غير موجود',
   'Aucun appel pour l’instant': 'لا يوجد تسجيل حضور بعد', 'Nouvel élève': 'تلميذ جديد',
+  'Appel de quel cours ?': 'تسجيل حضور أيّ حصة؟', '1. Date du cours': '1. تاريخ الحصة', '2. Heure du cours': '2. ساعة الحصة', 'Heures habituelles :': 'الساعات المعتادة :',
+  'Choisissez la date et l’heure du cours': 'اختر تاريخ الحصة وساعتها', 'Choisir le cours': 'اختيار الحصة', 'Choisissez d’abord le cours (date et heure).': 'اختر الحصة أولاً (التاريخ والساعة).',
+  'Corriger la date ou l’heure': 'تصحيح التاريخ أو الساعة', 'Indiquez le': 'أدخل', 'jour': 'يوم', 'et l’': 'و', 'heure du cours': 'ساعة الحصة', '(pas l’heure à laquelle vous faites l’appel).': '(وليس ساعة تسجيل الحضور).',
   // import
   'Importer des élèves': 'استيراد التلاميذ', 'Vos classes': 'أقسامك', '1. Préparez le fichier Excel': '1. حضّر ملف Excel',
   'Une ligne par élève, avec ces colonnes (dans n’importe quel ordre) :': 'سطر لكل تلميذ، بهذه الأعمدة (بأي ترتيب) :',
@@ -190,6 +193,7 @@ const RULES = [
   [/^Dernier appel : (.+)$/, (m) => `آخر تسجيل حضور : ${m[1].split(' · ').map(tc).join(' · ')}`],
   [/^cours de (\d{2}:\d{2})$/, (m) => `حصة ${m[1]}`],
   [/^(\S+) (\d{2}:\d{2})$/, (m) => (AR[m[1]] ? `${AR[m[1]]} ${m[2]}` : null)],
+  [/^(?:Appel du )?[Cc]ours du (.+) à (\d{2})h(\d{2})$/, (m) => `حصة ${m[1]} على الساعة ${m[2]}:${m[3]}`],
   [/^Sourate n° (\d+)$/, (m) => `السورة رقم ${m[1]}`],
   [/^Bonjour (.+)$/, (m) => `مرحباً ${m[1]}`],
   [/^Supprimer (.+) \?$/, (m) => `حذف ${tc(m[1])}؟`],
