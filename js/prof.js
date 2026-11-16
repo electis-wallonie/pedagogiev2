@@ -120,9 +120,9 @@ export function classe(u, id) {
   ctx = { cls: c };
   const sts = d.studentsOf(id);
   const notes = d.D().notes.filter((n) => n.scope === 'class' && n.classId === id).sort((a, b) => b.at.localeCompare(a.at));
-  const acts = [[`#/prof/classe/${id}/appel`, 'check', 'Faire l’appel', 'var(--primary)', '#fff'], [`#/prof/eleve/new?c=${id}`, 'plus', 'Élève', 'var(--surface)', 'var(--ink)'], [`#/prof/classe/${id}/historique`, 'clock', 'Historique', 'var(--surface)', 'var(--ink)'], ['#notes-classe', 'note', 'Note classe', 'var(--surface)', 'var(--ink)']];
+  const acts = [[`#/prof/classe/${id}/appel`, 'check', 'Faire l’appel', 'var(--primary)', '#fff'], [`#/prof/eleve/new?c=${id}`, 'plus', 'Élève', 'var(--surface)', 'var(--ink)'], [`#/prof/classe/${id}/historique`, 'clock', 'Historique', 'var(--surface)', 'var(--ink)'], ['#notes-classe', 'note', 'Note classe', 'var(--surface)', 'var(--ink)'], [`#/prof/classe/${id}/objectifs`, 'star', 'Objectifs classe', 'var(--yellow)', 'var(--ink)']];
   const body = `<div class="page">${top(esc(c.name), `${sts.length} élève(s) · ${lastAppel(c)}`, '#/prof/classes', `<button class="ib" data-act="class-edit" data-id="${id}" aria-label="Modifier la classe">${ic('edit', 18)}</button>`)}
-  <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px">${acts.map(([h, i, l, bg, fg]) => `<a href="${h}" class="ck col" style="gap:6px;align-items:center;padding:12px 4px;text-decoration:none;background:${bg};color:${fg};font-weight:800;font-size:13px;text-align:center">${ic(i, 24)}${l}</a>`).join('')}</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:10px">${acts.map(([h, i, l, bg, fg]) => `<a href="${h}" class="ck col" style="gap:6px;align-items:center;padding:12px 4px;text-decoration:none;background:${bg};color:${fg};font-weight:800;font-size:13px;text-align:center">${ic(i, 24)}${l}</a>`).join('')}</div>
   <div class="ck pad" style="padding-top:4px;padding-bottom:4px"><div class="list">${sts.map((s, k) => {
     const p = d.presence(s); const kk = d.coranStats(s);
     return `<a class="li" href="#/prof/eleve/${s.id}">${av(initials(s), 42, ACC[k % 4], 14)}<span class="grow"><span class="b" style="display:block">${esc(s.prenoms)} ${esc(s.nom)}</span><span class="small mut b" style="font-weight:600">${kk.v} sourates · ${p.rate === null ? '—' : p.rate + ' %'} présence</span></span>${ic('chev', 18)}</a>`;
@@ -277,6 +277,61 @@ export function historique(u, id) {
   <p class="tiny mut b">Vert : présents · Rouge : absents · Jaune : absents prévenus. Touchez une date pour corriger l’appel.</p></div>`;
   return shell(u, 1, body);
 }
+
+// ---------- objectifs pour toute la classe ----------
+// Valider un objectif (ou tout un niveau) en une fois pour tous les élèves de la classe.
+export function classeObjectifs(u, id, q) {
+  const c = d.cls(id);
+  if (!d.canSeeClass(u, c)) return shell(u, 1, '');
+  const levels = d.levelsOf(c.profId);
+  const lv = +(q.get('n') || c.level || levels[0]);
+  const objs = d.objectivesOf(c.profId, lv);
+  const sts = d.studentsOf(id);
+  const openObj = ctx.cls && ctx.cls.id === id && ctx.openObj ? ctx.openObj : new Set();
+  ctx = { cls: c, level: lv, openObj };
+  const groups = [...new Set(objs.map((o) => o.group))];
+  const allOk = (o) => sts.length && sts.every((s) => s.acquired[o.id]);
+  const n = (o) => sts.filter((s) => s.acquired[o.id]).length;
+  const list = groups.map((g) => `<div class="ck pad col"><h2>${esc(g)}</h2>${objs.filter((o) => o.group === g).map((o) => {
+    const k = n(o), full = allOk(o);
+    return `<div class="col" style="gap:8px;padding:10px 0;border-bottom:2px solid var(--neutral)">
+    <div class="row wrap"><span class="grow b">${esc(o.text)}</span>${pill(`${k} / ${sts.length} élèves`, full ? 'var(--mint)' : k ? 'var(--hi)' : 'var(--neutral)')}</div>
+    <div class="row wrap" style="gap:8px">${full ? `<button class="btn2 sm" data-act="cobj-none" data-id="${o.id}">${ic('x', 16)}Retirer pour toute la classe</button>` : `<button class="btn sm" data-act="cobj-all" data-id="${o.id}">${ic('check', 18)}Valider pour toute la classe</button>`}</div>
+    <details ${openObj.has(o.id) ? 'open' : ''}><summary class="small b" style="cursor:pointer">Détail par élève</summary><div class="row wrap" style="gap:8px;margin-top:8px">${sts.map((s) => {
+      const ok = !!s.acquired[o.id];
+      return `<button class="pill" data-act="cobj-one" data-id="${o.id}" data-sid="${s.id}" aria-pressed="${ok}" style="cursor:pointer;font-size:13px;padding:8px 12px;background:${ok ? 'var(--v)' : 'var(--surface)'};color:${ok ? 'var(--onv)' : 'var(--ink)'}">${ok ? ic('check', 14, 3) : ''}${esc(s.prenoms.split(' ')[0])} ${esc(s.nom[0] || '')}.</button>`;
+    }).join('')}</div></details></div>`;
+  }).join('')}</div>`).join('');
+  return shell(u, 1, `<div class="page narrow">${top('Objectifs de la classe', `${esc(c.name)} · ${sts.length} élève(s)`, `#/prof/classe/${id}`)}
+  <p class="small mut b" style="font-weight:600">Validez un objectif pour toute la classe en une fois (par exemple après une interrogation commune). Vous pouvez ensuite retirer un élève dans « Détail par élève ».</p>
+  <div class="seg" role="navigation" aria-label="Niveaux">${levels.map((l) => `<a href="#/prof/classe/${id}/objectifs?n=${l}" class="${l === lv ? 'on' : ''}">Niveau ${l}</a>`).join('')}</div>
+  ${objs.length && sts.length ? `<button class="btn y full" data-act="cobj-level">${ic('star', 20)}Valider tout le niveau ${lv} pour toute la classe</button>` : ''}
+  ${sts.length ? list || '<p class="mut">Aucun objectif pour ce niveau.</p>' : '<p class="mut">Pas encore d’élève dans cette classe.</p>'}</div>`);
+}
+const softR = () => window.dispatchEvent(new CustomEvent('soft-render'));
+ACT['cobj-all'] = (el) => {
+  const t = todayISO();
+  d.studentsOf(ctx.cls.id).forEach((s) => { if (!s.acquired[el.dataset.id]) s.acquired[el.dataset.id] = t; });
+  d.save(); toast('Objectif validé pour toute la classe'); softR();
+};
+ACT['cobj-none'] = (el) => {
+  if (!ask('Retirer cet objectif pour tous les élèves de la classe ?')) return;
+  d.studentsOf(ctx.cls.id).forEach((s) => { delete s.acquired[el.dataset.id]; });
+  d.save(); softR();
+};
+ACT['cobj-one'] = (el) => {
+  ctx.openObj.add(el.dataset.id);
+  const s = d.student(el.dataset.sid);
+  if (s.acquired[el.dataset.id]) delete s.acquired[el.dataset.id]; else s.acquired[el.dataset.id] = todayISO();
+  d.save(); softR();
+};
+ACT['cobj-level'] = () => {
+  const objs = d.objectivesOf(ctx.cls.profId, ctx.level);
+  if (!ask(`Valider les ${objs.length} objectifs du niveau ${ctx.level} pour tous les élèves de la classe ?`)) return;
+  const t = todayISO();
+  d.studentsOf(ctx.cls.id).forEach((s) => objs.forEach((o) => { if (!s.acquired[o.id]) s.acquired[o.id] = t; }));
+  d.save(); toast('Niveau validé pour toute la classe'); softR();
+};
 
 // ---------- élèves ----------
 export function eleves(u) {
