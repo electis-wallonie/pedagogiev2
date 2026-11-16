@@ -12,7 +12,7 @@ let ctx = {};
 const colorOf = (c) => COLORS[c.color] || COLORS.blue;
 const hhmm = (t) => (t || '').replace(':', 'h');
 const clsLabel = (c) => esc(c.name);
-function lastAppel(c) { const a = d.attendanceOfClass(c.id)[0]; return a ? `Dernier appel : ${fdate(a.date)}${a.time ? ' · ' + a.time : ''}` : 'Aucun appel pour l’instant'; }
+function lastAppel(c) { const a = d.attendanceOfClass(c.id)[0]; return a ? `Dernier appel : ${fdate(a.date)}` : 'Aucun appel pour l’instant'; }
 
 // active : 0 Accueil · 1 Classes · 2 Élèves · 3 Réglages · 4 Direction (admin)
 export function shell(u, active, body) {
@@ -146,28 +146,11 @@ FORMS['note-class'] = async (f, fd) => {
 // un, deux cours par semaine, ou deux cours le même jour. Pas d'appel = pas de cours.
 const nowHM = () => { const t = new Date(); return `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`; };
 const recById = (id) => d.D().attendance.find((a) => a.id === id);
-export const whenLabel = (a) => `${fdate(a.date, { weekday: 'long', day: 'numeric', month: 'long' })}${a.time ? ' · ' + a.time : ''}`;
-// Heure proposée : l'heure habituelle de cette classe ce jour de la semaine, sinon l'heure pile en cours.
-function suggestTime(classId, date) { // (plus utilisé pour pré-remplir, gardé pour plus tard)
-  const dow = new Date(date + 'T12:00:00').getDay();
-  const same = d.attendanceOfClass(classId).find((a) => a.time && new Date(a.date + 'T12:00:00').getDay() === dow);
-  if (same) return same.time;
-  return `${String(new Date().getHours()).padStart(2, '0')}:00`;
-}
-function usualSlots(classId) {
-  const seen = new Map();
-  for (const a of d.attendanceOfClass(classId)) {
-    if (!a.time) continue;
-    const dow = new Date(a.date + 'T12:00:00').getDay();
-    const k = dow + '|' + a.time;
-    if (!seen.has(k)) seen.set(k, { dow, time: a.time });
-  }
-  return [...seen.values()].slice(0, 6);
-}
-export function appel(u, id, recId) {
+export const whenLabel = (a) => { const n = d.courseNo(a); return `${fdate(a.date, { weekday: 'long', day: 'numeric', month: 'long' })}${n ? ' · ' + (n === 1 ? '1er cours' : n + 'e cours') : ''}`; };
+export function appel(u, id, recId, q) {
   const c = d.cls(id);
   if (!d.canSeeClass(u, c)) return shell(u, 1, '');
-  if (!recId) return appelStart(u, c);
+  if (!recId) return appelStart(u, c, q);
   const rec = recById(recId);
   if (!rec || rec.classId !== id) return shell(u, 1, `<div class="page">${top('Appel introuvable', esc(c.name), `#/prof/classe/${id}`)}</div>`);
   ctx = { cls: c, rec };
@@ -178,8 +161,8 @@ export function appel(u, id, recId) {
   const rows = sts.map((s) => `<div class="ck flat appel-row"><span class="grow b">${esc(s.prenoms.split(' ')[0])} ${esc(s.nom)}</span>
   ${['P', 'A', 'E'].map((k) => `<button type="button" class="st-btn ${r[s.id] === k ? 'on-' + k : ''}" data-act="ap" data-sid="${s.id}" data-s="${k}" aria-pressed="${r[s.id] === k}" aria-label="${STATUS[k].l} : ${esc(s.prenoms.split(' ')[0])}">${ic(STATUS[k].icon, 20, 2.8)}<span class="lab">${k === 'E' ? 'Prévenu' : STATUS[k].l}</span></button>`).join('')}</div>`).join('');
   const body = `<div class="page">${top('L’appel', esc(c.name), `#/prof/classe/${id}`)}
-  <div class="ck pad col" style="gap:10px;background:var(--yellow)"><span class="b" style="font-size:20px">Cours du ${flong(rec.date)} à ${(rec.time || '').replace(':', 'h')}</span>
-  <details><summary class="small b" style="cursor:pointer">Corriger la date ou l’heure</summary><div class="row wrap" style="margin-top:8px"><label class="sr" for="ad">Date du cours</label><input id="ad" type="date" class="inp" value="${rec.date}" data-change="ap-when" data-k="date" style="max-width:200px"><label class="sr" for="ah">Heure du cours</label><input id="ah" type="time" class="inp" value="${rec.time || ''}" data-change="ap-when" data-k="time" style="max-width:140px"></div></details></div>
+  <div class="ck pad col" style="gap:8px;background:var(--yellow)"><span class="b" style="font-size:20px">Cours du ${whenLabel(rec)}</span>
+  <details><summary class="small b" style="cursor:pointer">Corriger la date</summary><div class="row wrap" style="margin-top:8px"><label class="sr" for="ad">Date du cours</label><input id="ad" type="date" class="inp" value="${rec.date}" max="${todayISO()}" data-change="ap-when" data-k="date" style="max-width:200px"></div></details></div>
   <div class="row wrap" style="gap:8px">${pill(cnt('P') + ' présent(s)', 'var(--present)', 'var(--onpresent)')}${pill(cnt('A') + ' absent(s)', 'var(--absent)', 'var(--onabsent)')}${pill(cnt('E') + ' prévenu(s)', 'var(--prev)')}${rest ? pill(rest + ' à marquer', 'var(--neutral)') : ''}</div>
   ${rest ? `<button class="btn2 sm" data-act="ap-all" style="align-self:flex-start">${ic('check', 18)}Marquer les ${rest} restant(s) présents</button>` : ''}
   <div class="col" style="gap:8px">${rows || '<p class="mut">Aucun élève dans cette classe.</p>'}</div>
@@ -188,52 +171,21 @@ export function appel(u, id, recId) {
   <button class="btnd full" data-act="ap-del">${ic('trash', 18)}Supprimer cet appel</button></div>`;
   return shell(u, 1, body);
 }
-// Étape 1 : une fenêtre obligatoire « Quel cours ? ». Rien n'est pré-rempli :
-// le prof choisit lui-même la date et l'heure du cours, et voit un résumé en gros avant de valider.
-function appelStart(u, c) {
-  ctx = { cls: c };
-  setTimeout(() => openCourseModal(c), 0);
-  return shell(u, 1, `<div class="page narrow">${top('L’appel', esc(c.name), `#/prof/classe/${c.id}`)}
-  <div class="ck pad col center" style="align-items:center"><p class="b">Choisissez d’abord le cours (date et heure).</p>
-  <button class="btn" data-act="ap-open">${ic('cal', 20)}Choisir le cours</button></div></div>`);
-}
-const BIG = 'min-height:66px;font-size:22px;font-weight:800';
-function openCourseModal(c) {
-  const slots = usualSlots(c.id);
-  const today = d.attendanceOfClass(c.id).filter((a) => a.date === todayISO());
-  openModal(() => `<div class="row between"><div><div class="small mut b">${esc(c.name)}</div><h1 style="font-size:28px">Appel de quel cours ?</h1></div><button class="ib" data-act="ap-cancel" aria-label="Fermer">${ic('x', 20)}</button></div>
-  <p class="b" style="font-weight:600">Indiquez le <u>jour</u> et l’<u>heure du cours</u> (pas l’heure à laquelle vous faites l’appel).</p>
-  <form class="col" data-form="ap-start" style="gap:16px">
-    <div class="field"><label class="lbl" for="sd" style="font-size:17px">1. Date du cours</label><input id="sd" name="date" type="date" class="inp" style="${BIG}" required max="${todayISO()}" data-change="ap-field" data-input="ap-field"></div>
-    <div class="field"><label class="lbl" for="st" style="font-size:17px">2. Heure du cours</label><input id="st" name="time" type="time" class="inp" style="${BIG}" required data-change="ap-field" data-input="ap-field">
-    ${slots.length ? `<div class="row wrap" style="gap:8px;margin-top:10px"><span class="small b">Heures habituelles :</span>${[...new Set(slots.map((x) => x.time))].map((t) => `<button type="button" class="btn2 sm" data-act="ap-slot" data-t="${t}">${t}</button>`).join('')}</div>` : ''}</div>
-    ${today.length ? `<div class="ck flat pad col" style="background:var(--hi);gap:8px"><span class="b">Déjà fait aujourd’hui : cours de ${today.map((a) => a.time || '—').join(', ')}</span>${today.map((a) => `<a class="btn2 sm" style="align-self:flex-start" href="#/prof/classe/${c.id}/appel/${a.id}">${ic('edit', 16)}Ouvrir l’appel du cours de ${a.time || '—'}</a>`).join('')}</div>` : ''}
-    <div id="ap-sum" class="ck flat pad center" style="background:var(--neutral);font-size:18px;font-weight:800" aria-live="polite">Choisissez la date et l’heure du cours</div>
-    <button id="ap-go" class="btn full" style="min-height:62px;font-size:18px" disabled>${ic('check', 22)}Commencer l’appel</button>
-  </form>`);
-}
-function paintSummary() {
-  const dv = document.getElementById('sd')?.value, tv = document.getElementById('st')?.value;
-  const box = document.getElementById('ap-sum'), go_ = document.getElementById('ap-go');
-  if (!box) return;
-  const ok = !!(dv && tv);
-  box.style.background = ok ? 'var(--yellow)' : 'var(--neutral)';
-  box.textContent = ok ? `Appel du cours du ${flong(dv)} à ${tv.replace(':', 'h')}` : 'Choisissez la date et l’heure du cours';
-  go_.disabled = !ok;
-}
-CHANGE['ap-field'] = paintSummary;
-ACT['ap-open'] = () => openCourseModal(ctx.cls);
-ACT['ap-cancel'] = () => { closeModal(); go(`#/prof/classe/${ctx.cls.id}`); };
-ACT['ap-slot'] = (el) => { document.getElementById('st').value = el.dataset.t; paintSummary(); };
-FORMS['ap-start'] = (f, fd) => {
-  const date = fd.get('date'), time = fd.get('time');
-  if (!date || !time) { toast('Choisissez la date et l’heure du cours'); return; }
-  const ex = d.D().attendance.find((a) => a.classId === ctx.cls.id && a.date === date && a.time === time);
-  if (ex) { toast('Ce cours a déjà un appel : vous pouvez le modifier'); go(`#/prof/classe/${ctx.cls.id}/appel/${ex.id}`); return; }
-  const rec = { id: d.uid(), classId: ctx.cls.id, date, time, at: new Date().toISOString(), records: {} };
+// « Faire l'appel » : l'appel est créé tout de suite avec la date du jour (pas d'heure).
+// Si un appel existe déjà aujourd'hui, on demande : le modifier, ou faire un 2e appel (2e cours).
+function newRec(c) {
+  const rec = { id: d.uid(), classId: c.id, date: todayISO(), at: new Date().toISOString(), records: {} };
   d.D().attendance.push(rec); d.save();
-  go(`#/prof/classe/${ctx.cls.id}/appel/${rec.id}`);
-};
+  return rec;
+}
+function appelStart(u, c, q) {
+  const today = d.attendanceOfClass(c.id).filter((a) => a.date === todayISO());
+  if (!today.length || (q && q.get('nouveau'))) { location.replace(`#/prof/classe/${c.id}/appel/${newRec(c).id}`); return null; }
+  return shell(u, 1, `<div class="page narrow">${top('L’appel', esc(c.name), `#/prof/classe/${c.id}`)}
+  <div class="ck pad col" style="background:var(--hi)"><h2>L’appel a déjà été fait aujourd’hui</h2>
+  ${today.map((a) => `<a class="btn full" href="#/prof/classe/${c.id}/appel/${a.id}">${ic('edit', 20)}Modifier l’appel d’aujourd’hui${today.length > 1 ? ` (${whenLabel(a).split(' · ')[1]})` : ''}</a>`).join('')}
+  <a class="btn2 full" href="#/prof/classe/${c.id}/appel?nouveau=1">${ic('plus', 20)}Faire un 2e appel aujourd’hui</a></div></div>`);
+}
 const softRender = () => window.dispatchEvent(new CustomEvent('soft-render'));
 ACT.ap = (el) => { ctx.rec.records[el.dataset.sid] = el.dataset.s; d.save(); softRender(); };
 ACT['ap-all'] = () => {

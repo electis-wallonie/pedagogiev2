@@ -144,10 +144,12 @@ export function byCode(code) {
   return k ? db.students.find((s) => normCode(s.code) === k) : null;
 }
 export const normCode = (c) => (c || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-const when = (a) => a.date + ' ' + (a.time || '');
+const when = (a) => a.date + ' ' + (a.time || '') + (a.at || '');
+// Numéro du cours quand une classe a plusieurs appels le même jour (sinon 0)
+export function courseNo(a) { const same = db.attendance.filter((x) => x.classId === a.classId && x.date === a.date).sort((x, y) => when(x).localeCompare(when(y))); return same.length > 1 ? same.indexOf(a) + 1 : 0; }
 export function attendanceOfClass(classId) { return db.attendance.filter((a) => a.classId === classId).sort((a, b) => when(b).localeCompare(when(a))); }
 export function attendanceOfStudent(st) {
-  return db.attendance.filter((a) => a.classId === st.classId && a.records[st.id]).sort((a, b) => when(b).localeCompare(when(a))).map((a) => ({ date: a.date, time: a.time, s: a.records[st.id] }));
+  return db.attendance.filter((a) => a.classId === st.classId && a.records[st.id]).sort((a, b) => when(b).localeCompare(when(a))).map((a) => ({ date: a.date, n: courseNo(a), s: a.records[st.id] }));
 }
 export function presence(st) {
   const h = attendanceOfStudent(st);

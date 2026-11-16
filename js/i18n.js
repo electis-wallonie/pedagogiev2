@@ -140,6 +140,8 @@ const AR = {
   'Détail par élève': 'التفاصيل حسب التلميذ', 'Objectif validé pour toute la classe': 'تم اعتماد الهدف لكل القسم', 'Niveau validé pour toute la classe': 'تم اعتماد المستوى لكل القسم',
   'Retirer cet objectif pour tous les élèves de la classe ?': 'إلغاء هذا الهدف لكل تلاميذ القسم؟',
   'Validez un objectif pour toute la classe en une fois (par exemple après une interrogation commune). Vous pouvez ensuite retirer un élève dans « Détail par élève ».': 'اعتمد هدفاً لكل القسم دفعة واحدة (مثلاً بعد اختبار جماعي). يمكنك بعد ذلك إلغاؤه لتلميذ معيّن في « التفاصيل حسب التلميذ ».',
+  'L’appel a déjà été fait aujourd’hui': 'تم تسجيل الحضور اليوم مسبقاً', 'Modifier l’appel d’aujourd’hui': 'تعديل حضور اليوم',
+  'Faire un 2e appel aujourd’hui': 'تسجيل حضور ثانٍ اليوم', 'Corriger la date': 'تصحيح التاريخ',
   // import
   'Importer des élèves': 'استيراد التلاميذ', 'Vos classes': 'أقسامك', '1. Préparez le fichier Excel': '1. حضّر ملف Excel',
   'Une ligne par élève, avec ces colonnes (dans n’importe quel ordre) :': 'سطر لكل تلميذ، بهذه الأعمدة (بأي ترتيب) :',
@@ -201,6 +203,9 @@ const RULES = [
   [/^Valider tout le niveau (\d+) pour toute la classe$/, (m) => `اعتماد كل المستوى ${m[1]} لكل القسم`],
   [/^Valider les (\d+) objectifs du niveau (\d+) pour tous les élèves de la classe \?$/, (m) => `اعتماد الأهداف الـ${m[1]} للمستوى ${m[2]} لكل تلاميذ القسم؟`],
   [/^(\d+) \/ (\d+) élèves$/, (m) => `${m[1]} / ${m[2]} تلاميذ`],
+  [/^Cours du (.+)$/, (m) => `حصة ${m[1]}`],
+  [/^(\d+)(?:er|e) cours$/, (m) => `الحصة ${m[1]}`],
+  [/^Modifier l’appel d’aujourd’hui \((.+)\)$/, (m) => `تعديل حضور اليوم (${tc(m[1])})`],
   [/^Sourate n° (\d+)$/, (m) => `السورة رقم ${m[1]}`],
   [/^Bonjour (.+)$/, (m) => `مرحباً ${m[1]}`],
   [/^Supprimer (.+) \?$/, (m) => `حذف ${tc(m[1])}؟`],

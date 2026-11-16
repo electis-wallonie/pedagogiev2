@@ -69,11 +69,11 @@ export async function seed() {
     sessions.forEach(({ date, time }, i) => {
       const records = {};
       db.students.filter((s) => s.classId === c.id).forEach((s, k) => { records[s.id] = pattern(k, i); });
-      db.attendance.push({ id: uid(), classId: c.id, date, time, at: date + 'T' + time + ':00', records });
+      db.attendance.push({ id: uid(), classId: c.id, date, at: date + 'T' + time + ':00', records });
     });
   });
   // quelques absences marquantes pour Yasmine et Lina
-  const a2 = db.attendance.filter((a) => a.classId === C[1].id).sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
+  const a2 = db.attendance.filter((a) => a.classId === C[1].id).sort((a, b) => (b.date + b.at).localeCompare(a.date + a.at));
   if (a2[0]) { a2[0].records[yas.id] = 'A'; a2[0].records[lina.id] = 'A'; }
   if (a2[2]) { a2[2].records[yas.id] = 'E'; }
   if (a2[1]) { a2[1].records[lina.id] = 'A'; }

@@ -27,7 +27,7 @@ const R = [
   [/^\/prof$/, () => { const u = guard('prof'); return u && prof.dashboard(u); }],
   [/^\/prof\/classes$/, (m, q) => { const u = guard('prof'); return u && prof.classes(u, q); }],
   [/^\/prof\/classe\/(\w+)$/, (m) => { const u = guard('prof'); return u && prof.classe(u, m[1]); }],
-  [/^\/prof\/classe\/(\w+)\/appel(?:\/(\w+))?$/, (m) => { const u = guard('prof'); return u && prof.appel(u, m[1], m[2]); }],
+  [/^\/prof\/classe\/(\w+)\/appel(?:\/(\w+))?$/, (m, q) => { const u = guard('prof'); return u && prof.appel(u, m[1], m[2], q); }],
   [/^\/prof\/classe\/(\w+)\/appel\/(\w+)\/ok$/, (m) => { const u = guard('prof'); return u && prof.appelOk(u, m[1], m[2]); }],
   [/^\/prof\/classe\/(\w+)\/objectifs$/, (m, q) => { const u = guard('prof'); return u && prof.classeObjectifs(u, m[1], q); }],
   [/^\/prof\/classe\/(\w+)\/historique$/, (m) => { const u = guard('prof'); return u && prof.historique(u, m[1]); }],
