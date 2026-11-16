@@ -12,6 +12,7 @@ Application web installable (PWA) qui remplace les feuilles de suivi papier : **
 
 ## Fonctionnalités
 
+- **Téléphone du parent** : saisi à la création de l’élève (ou importé). Visible **uniquement** par les profs et l’admin, avec les boutons Appeler / SMS / WhatsApp sur la fiche élève, dans les listes et sur le récapitulatif de l’appel (absents). Jamais affiché aux parents.
 - **Classes** : nom, jour, heure, couleur, niveau de départ.
 - **Import Excel** (.xlsx ou .csv) : colonnes Classe, Nom, Prénom(s), Âge (ou Date de naissance), Parent. Les classes manquantes sont créées, les doublons ignorés, et la liste des codes est téléchargeable à la fin.
 - **Messages de la direction** (admin) : texte et/ou vocal, visibles entre deux dates en haut des fiches et des tableaux de bord.

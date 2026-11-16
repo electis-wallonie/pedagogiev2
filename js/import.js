@@ -82,6 +82,7 @@ function readCsv(text) {
 const norm = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '');
 const key = (s) => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
 const HEAD = [
+  ['tel', /^(tel|telephone|portable|gsm|mobile|phone|numero|contact)/],
   ['classe', /^(classe|class|groupe)/],
   ['naissance', /(naissance|nele|birth|datede)/],
   ['parent', /(parent|pere|mere|responsable|tuteur)/],
@@ -109,6 +110,7 @@ function parseDate(v) {
   return null;
 }
 const parseAge = (v) => { const n = parseInt(String(v ?? '').replace(/[^\d]/g, ''), 10); return n > 1 && n < 100 ? n : null; };
+const parseTel = (v) => { if (v === '' || v == null) return ''; let t = String(v).trim(); if (typeof v === 'number' && /^\d{9}$/.test(t)) t = '0' + t; return t; };
 const cap = (s) => String(s ?? '').trim().replace(/\s+/g, ' ');
 
 let imp = null; // { name, rows:[{...}], missingCols }
@@ -127,6 +129,7 @@ function analyse(rows, u) {
       nom: cap(r[m.nom]), prenoms: cap(r[m.prenoms]), parent: cap(r[m.parent]),
       naissance: m.naissance != null ? parseDate(r[m.naissance]) : null,
       age: m.age != null ? parseAge(r[m.age]) : null,
+      tel: m.tel != null ? parseTel(r[m.tel]) : '',
     };
     const errs = [];
     if (!x.nom) errs.push('nom');
@@ -162,15 +165,15 @@ export function importView(u) {
     ${noCls ? `<div class="field"><label class="lbl" for="impc">Classe pour les ${noCls} élève(s) sans classe</label><select id="impc" name="defaultClass" form="impf" class="inp">${cls.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}${cls.length ? '' : '<option value="">(créez d’abord une classe)</option>'}</select></div>` : ''}
     ${newCls.length ? `<div class="ck flat pad col" style="background:var(--hi)"><span class="b">Classes qui seront créées : ${newCls.map(esc).join(', ')}</span>${admin ? `<div class="field"><label class="lbl" for="impp">Professeur de ces nouvelles classes</label><select id="impp" name="prof" form="impf" class="inp">${d.profs().map((p) => `<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></div>` : ''}</div>` : ''}
     </div>
-    <div class="ck" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="background:var(--neutral);text-align:start">${['Classe', 'Nom', 'Prénom(s)', 'Âge', 'Parent', 'État'].map((h) => `<th style="padding:10px;text-align:start">${h}</th>`).join('')}</tr></thead><tbody>
-    ${imp.rows.map((r) => `<tr style="border-top:2px solid var(--neutral)"><td style="padding:8px 10px">${esc(r.classe || '—')}${r.classe && !r.classId ? ' ' + pill('nouvelle', 'var(--hi)') : ''}</td><td style="padding:8px 10px" class="b">${esc(r.nom)}</td><td style="padding:8px 10px">${esc(r.prenoms)}</td><td style="padding:8px 10px">${r.naissance ? d.ageOf({ naissance: r.naissance }) : r.age ?? '—'}</td><td style="padding:8px 10px">${esc(r.parent)}</td><td style="padding:8px 10px">${r.err ? pill(esc(r.err), 'var(--absent)', 'var(--onabsent)') : r.dup ? pill('Déjà présent', 'var(--prev)') : pill('OK', 'var(--mint)')}</td></tr>`).join('')}
+    <div class="ck" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="background:var(--neutral);text-align:start">${['Classe', 'Nom', 'Prénom(s)', 'Âge', 'Parent', 'Téléphone', 'État'].map((h) => `<th style="padding:10px;text-align:start">${h}</th>`).join('')}</tr></thead><tbody>
+    ${imp.rows.map((r) => `<tr style="border-top:2px solid var(--neutral)"><td style="padding:8px 10px">${esc(r.classe || '—')}${r.classe && !r.classId ? ' ' + pill('nouvelle', 'var(--hi)') : ''}</td><td style="padding:8px 10px" class="b">${esc(r.nom)}</td><td style="padding:8px 10px">${esc(r.prenoms)}</td><td style="padding:8px 10px">${r.naissance ? d.ageOf({ naissance: r.naissance }) : r.age ?? '—'}</td><td style="padding:8px 10px">${esc(r.parent)}</td><td style="padding:8px 10px" class="code">${esc(r.tel || '—')}</td><td style="padding:8px 10px">${r.err ? pill(esc(r.err), 'var(--absent)', 'var(--onabsent)') : r.dup ? pill('Déjà présent', 'var(--prev)') : pill('OK', 'var(--mint)')}</td></tr>`).join('')}
     </tbody></table></div>
     <form id="impf" data-form="imp-go" class="row wrap"><button type="button" class="btn2" data-act="imp-reset">Annuler</button><span class="grow"></span><button class="btn" ${ok.length ? '' : 'disabled'}>${ic('upload', 20)}Importer ${ok.length} élève(s)</button></form>`;
   } else {
     body = `<div class="ck pad col"><h2>1. Préparez le fichier Excel</h2>
     <p class="b" style="font-weight:600">Une ligne par élève, avec ces colonnes (dans n’importe quel ordre) :</p>
-    <div class="row wrap" style="gap:8px">${['Classe', 'Nom', 'Prénom(s)', 'Âge', 'Parent'].map((h) => pill(h, 'var(--blue2)')).join('')}</div>
-    <p class="small mut b" style="font-weight:600">« Âge » peut être remplacé par « Date de naissance ». Si la colonne Classe est vide ou absente, vous choisirez la classe juste après. Les classes qui n’existent pas encore peuvent être créées automatiquement.</p>
+    <div class="row wrap" style="gap:8px">${['Classe', 'Nom', 'Prénom(s)', 'Âge', 'Parent', 'Téléphone'].map((h) => pill(h, 'var(--blue2)')).join('')}</div>
+    <p class="small mut b" style="font-weight:600">« Téléphone » est facultatif. « Âge » peut être remplacé par « Date de naissance ». Si la colonne Classe est vide ou absente, vous choisirez la classe juste après. Les classes qui n’existent pas encore peuvent être créées automatiquement.</p>
     <button class="btn2 sm" data-act="imp-template" style="align-self:flex-start">${ic('dl', 18)}Télécharger un modèle</button></div>
     <div class="ck pad col"><h2>2. Choisissez le fichier</h2>
     <label class="btn" for="impfile" style="cursor:pointer">${ic('upload', 20)}Choisir un fichier Excel ou CSV</label>
@@ -211,7 +214,7 @@ FORMS['imp-go'] = (f, fd) => {
     }
     const c = d.cls(cid);
     if (!c) continue;
-    const s = { id: d.uid(), classId: cid, nom: r.nom, prenoms: r.prenoms, parent: r.parent, naissance: r.naissance, age: r.naissance ? null : r.age, ageAt: r.naissance ? null : todayISO(), level: c.level || 1, coran: {}, acquired: {}, createdAt: new Date().toISOString() };
+    const s = { id: d.uid(), classId: cid, nom: r.nom, prenoms: r.prenoms, parent: r.parent, tel: r.tel || '', naissance: r.naissance, age: r.naissance ? null : r.age, ageAt: r.naissance ? null : todayISO(), level: c.level || 1, coran: {}, acquired: {}, createdAt: new Date().toISOString() };
     s.code = d.genCode(s, c);
     d.D().students.push(s);
     done.push(s);
@@ -227,5 +230,5 @@ function download(name, text) {
   a.download = name; a.click();
 }
 const csvLine = (arr) => arr.map((x) => `"${String(x ?? '').replace(/"/g, '""')}"`).join(';');
-ACT['imp-template'] = () => download('modele-eleves.csv', [csvLine(['Classe', 'Nom', 'Prénom(s)', 'Âge', 'Parent']), csvLine(['Classe 1', 'Benali', 'Yasmine Inès', '10', 'Karim']), csvLine(['Classe 1', 'Haddad', 'Adam', '11', 'Nadia'])].join('\r\n'));
-ACT['imp-codes'] = () => download(`codes-eleves-${todayISO()}.csv`, [csvLine(['Classe', 'Nom', 'Prénom(s)', 'Parent', 'Code de suivi', 'Lien direct'])].concat(imp.done.map((s) => csvLine([d.cls(s.classId).name, s.nom, s.prenoms, s.parent, s.code, `${location.origin}${location.pathname}#/f/${encodeURIComponent(s.code)}`]))).join('\r\n'));
+ACT['imp-template'] = () => download('modele-eleves.csv', [csvLine(['Classe', 'Nom', 'Prénom(s)', 'Âge', 'Parent', 'Téléphone']), csvLine(['Classe 1', 'Benali', 'Yasmine Inès', '10', 'Karim', '+32 470 00 00 01']), csvLine(['Classe 1', 'Haddad', 'Adam', '11', 'Nadia', '+32 470 00 00 02'])].join('\r\n'));
+ACT['imp-codes'] = () => download(`codes-eleves-${todayISO()}.csv`, [csvLine(['Classe', 'Nom', 'Prénom(s)', 'Parent', 'Téléphone', 'Code de suivi', 'Lien direct'])].concat(imp.done.map((s) => csvLine([d.cls(s.classId).name, s.nom, s.prenoms, s.parent, s.tel || '', s.code, `${location.origin}${location.pathname}#/f/${encodeURIComponent(s.code)}`]))).join('\r\n'));

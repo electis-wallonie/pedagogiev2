@@ -39,6 +39,7 @@ export async function seed() {
     if (done > 0 && cur > 1) st.coran[cur] = { s: 'c', start: daysAgo(14) };
     const objs = db.objectives.filter((o) => o.level === level).slice(0, acquiredCount);
     objs.forEach((o, i) => { st.acquired[o.id] = daysAgo(60 - i * 8); });
+    st.tel = '+32 470 00 ' + String(10 + db.students.length).padStart(2, '0') + ' ' + String(20 + db.students.length).padStart(2, '0');
     st.code = genCode(st, classe);
     db.students.push(st);
     return st;

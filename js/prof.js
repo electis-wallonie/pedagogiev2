@@ -33,6 +33,23 @@ export function shell(u, active, body) {
 const top = (title, sub, back, right = '') => `<div class="top">${back ? `<a href="${back}" class="ib" aria-label="Retour">${ic('back', 20)}</a>` : ''}<div class="grow">${sub ? `<div class="small mut b">${sub}</div>` : ''}<h1>${title}</h1></div>${right}</div>`;
 
 
+// ---------- téléphone du parent (visible seulement par les profs et l'admin) ----------
+const telHref = (t) => 'tel:' + String(t || '').replace(/[^\d+]/g, '');
+const waNum = (t) => { const x = String(t || '').replace(/[^\d+]/g, ''); return x.startsWith('+') ? x.slice(1) : x.startsWith('00') ? x.slice(2) : null; };
+function callBtn(s, small = true) {
+  if (!s.tel) return '';
+  return `<a class="ib ${small ? 'sm' : ''}" href="${telHref(s.tel)}" aria-label="Appeler le parent de ${esc(s.prenoms.split(' ')[0])}" style="background:var(--mint);position:relative">${ic('phone', small ? 16 : 20)}</a>`;
+}
+function contactCard(s) {
+  if (!s.tel) return `<div class="ck flat pad row wrap" style="gap:10px">${ic('phone', 20)}<span class="grow b small">Aucun numéro de téléphone pour ce parent.</span><a class="btn2 sm" href="#/prof/eleve/${s.id}/edit">${ic('plus', 16)}Ajouter un numéro</a></div>`;
+  const wa = waNum(s.tel);
+  return `<div class="ck pad col" style="gap:10px"><div class="row between wrap"><span class="b">${ic('phone', 18)} Contact du parent</span><span class="small mut b" style="font-weight:600">Visible seulement par les profs et l’admin</span></div>
+  <div class="row wrap" style="gap:8px"><span class="code" style="font-size:20px">${esc(s.tel)}</span></div>
+  <div class="row wrap" style="gap:8px"><a class="btn" href="${telHref(s.tel)}" style="background:var(--mint);color:var(--ink)">${ic('phone', 20)}Appeler ${esc(s.parent)}</a>
+  <a class="btn2" href="sms:${String(s.tel).replace(/[^\d+]/g, '')}">${ic('mail', 20)}SMS</a>
+  ${wa ? `<a class="btn2" href="https://wa.me/${wa}" target="_blank" rel="noopener">${ic('chat', 20)}WhatsApp</a>` : ''}</div></div>`;
+}
+
 // ---------- tableau de bord ----------
 export function dashboard(u) {
   const cl = d.myClasses(u);
@@ -125,7 +142,7 @@ export function classe(u, id) {
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:10px">${acts.map(([h, i, l, bg, fg]) => `<a href="${h}" class="ck col" style="gap:6px;align-items:center;padding:12px 4px;text-decoration:none;background:${bg};color:${fg};font-weight:800;font-size:13px;text-align:center">${ic(i, 24)}${l}</a>`).join('')}</div>
   <div class="ck pad" style="padding-top:4px;padding-bottom:4px"><div class="list">${sts.map((s, k) => {
     const p = d.presence(s); const kk = d.coranStats(s);
-    return `<a class="li" href="#/prof/eleve/${s.id}">${av(initials(s), 42, ACC[k % 4], 14)}<span class="grow"><span class="b" style="display:block">${esc(s.prenoms)} ${esc(s.nom)}</span><span class="small mut b" style="font-weight:600">${kk.v} sourates · ${p.rate === null ? '—' : p.rate + ' %'} présence</span></span>${ic('chev', 18)}</a>`;
+    return `<div class="li" style="position:relative">${av(initials(s), 42, ACC[k % 4], 14)}<a href="#/prof/eleve/${s.id}" class="grow" style="text-decoration:none;color:var(--ink)"><span class="b" style="display:block">${esc(s.prenoms)} ${esc(s.nom)}</span><span class="small mut b" style="font-weight:600">${kk.v} sourates · ${p.rate === null ? '—' : p.rate + ' %'} présence</span></a>${callBtn(s)}${ic('chev', 18)}</div>`;
   }).join('') || `<div class="col" style="padding:14px 0"><p class="mut small">Pas encore d’élève dans cette classe.</p><a class="btn" href="#/prof/eleve/new?c=${id}">${ic('plus', 20)}Ajouter un élève</a></div>`}</div></div>
   <div class="ck pad col" id="notes-classe"><h2>Notes pour toute la classe</h2><p class="small mut b" style="font-weight:600">Visibles sur la fiche de chaque élève de ${esc(c.name)}.</p>
   ${composer('note-class', 'zc', '', 'Ex : pas de cours samedi prochain…')}
@@ -213,7 +230,7 @@ export function appelOk(u, id, recId) {
   <p class="mut b">${esc(c.name)} · ${whenLabel(rec)}</p></div>
   <div class="grid3"><div class="ck stat" style="background:var(--present);color:var(--onpresent)"><div class="v">${cnt('P')}</div><div class="l">présents</div></div><div class="ck stat" style="background:var(--absent);color:var(--onabsent)"><div class="v">${cnt('A')}</div><div class="l">absents</div></div><div class="ck stat" style="background:var(--prev)"><div class="v">${cnt('E')}</div><div class="l">prévenus</div></div></div>
   ${rest.length ? `<div class="err">${rest.length} élève(s) pas encore marqué(s) : ${rest.map((s) => esc(s.prenoms.split(' ')[0])).join(', ')}</div>` : ''}
-  ${abs.length ? `<div class="ck pad col"><h2>Absents ce jour</h2>${abs.map((s) => `<div class="row between"><span class="b">${esc(fullName(s))}</span>${pill(r[s.id] === 'A' ? 'Absent' : 'Prévenu', STATUS[r[s.id]].bg, STATUS[r[s.id]].fg)}</div>`).join('')}<p class="small mut b" style="font-weight:600">C’est déjà visible sur leur fiche.</p></div>` : ''}
+  ${abs.length ? `<div class="ck pad col"><h2>Absents ce jour</h2>${abs.map((s) => `<div class="row between"><span class="b grow">${esc(fullName(s))}</span>${pill(r[s.id] === 'A' ? 'Absent' : 'Prévenu', STATUS[r[s.id]].bg, STATUS[r[s.id]].fg)}${callBtn(s)}</div>`).join('')}<p class="small mut b" style="font-weight:600">C’est déjà visible sur leur fiche.</p></div>` : ''}
   <a class="btn full" href="#/prof/classe/${id}">Retour à la classe</a><a class="btn2 full" href="#/prof/classe/${id}/appel/${rec.id}">Modifier l’appel</a></div>`;
   return shell(u, 1, body);
 }
@@ -290,7 +307,7 @@ export function eleves(u) {
   const sts = d.myStudents(u).sort((a, b) => a.nom.localeCompare(b.nom));
   const body = `<div class="page">${top('Élèves', `${sts.length} élève(s)`, null, `<a class="btn sm" href="#/prof/eleve/new">${ic('plus', 18)}Élève</a>`)}
   <div class="field"><label class="sr" for="q">Rechercher</label><input id="q" class="inp" placeholder="Rechercher un élève…" data-filter=".li"></div>
-  <div class="ck pad" style="padding-top:4px;padding-bottom:4px"><div class="list">${sts.map((s, k) => `<a class="li" href="#/prof/eleve/${s.id}" data-q="${esc((s.prenoms + ' ' + s.nom + ' ' + d.cls(s.classId).name).toLowerCase())}">${av(initials(s), 42, ACC[k % 4], 14)}<span class="grow"><span class="b" style="display:block">${esc(s.prenoms)} ${esc(s.nom)}</span><span class="small mut b" style="font-weight:600">${esc(d.cls(s.classId).name)} · ${d.coranStats(s).v} sourates</span></span>${ic('chev', 18)}</a>`).join('') || '<p class="mut small" style="padding:12px 0">Aucun élève.</p>'}</div></div></div>`;
+  <div class="ck pad" style="padding-top:4px;padding-bottom:4px"><div class="list">${sts.map((s, k) => `<div class="li" data-q="${esc((s.prenoms + ' ' + s.nom + ' ' + s.parent + ' ' + d.cls(s.classId).name).toLowerCase())}">${av(initials(s), 42, ACC[k % 4], 14)}<a href="#/prof/eleve/${s.id}" class="grow" style="text-decoration:none;color:var(--ink)"><span class="b" style="display:block">${esc(s.prenoms)} ${esc(s.nom)}</span><span class="small mut b" style="font-weight:600">${esc(d.cls(s.classId).name)} · Parent : ${esc(s.parent)}</span></a>${callBtn(s)}${ic('chev', 18)}</div>`).join('') || '<p class="mut small" style="padding:12px 0">Aucun élève.</p>'}</div></div></div>`;
   return shell(u, 2, body);
 }
 function studentForm(u, s, classId) {
@@ -303,6 +320,7 @@ function studentForm(u, s, classId) {
   <div class="field"><label class="lbl" for="sp">Prénom(s)</label><input id="sp" name="prenoms" class="inp" required value="${esc(s ? s.prenoms : '')}" autocomplete="off"><span class="hint">Tous les prénoms, séparés par un espace</span></div></div>
   <div class="grid2 stack"><div class="field"><label class="lbl" for="sg">Âge</label><input id="sg" name="age" type="number" min="2" max="99" inputmode="numeric" class="inp" required value="${s ? d.ageOf(s) ?? '' : ''}"><span class="hint">L’âge se met à jour tout seul chaque année.</span></div>
   <div class="field"><label class="lbl" for="sa">Prénom d’un parent</label><input id="sa" name="parent" class="inp" required value="${esc(s ? s.parent : '')}" autocomplete="off"></div></div>
+  <div class="field"><label class="lbl" for="stl">Téléphone du parent</label><input id="stl" name="tel" type="tel" inputmode="tel" class="inp code" value="${esc(s ? s.tel || '' : '')}" autocomplete="off" placeholder="ex. +32 470 12 34 56"><span class="hint">Visible seulement par les profs et l’admin (jamais sur la fiche des parents). Avec l’indicatif (+32, +33…), le bouton WhatsApp apparaît aussi.</span></div>
   <details ${s && s.naissance ? 'open' : ''}><summary class="small b" style="cursor:pointer">Date de naissance précise (facultatif)</summary><div class="field" style="margin-top:8px"><label class="lbl" for="sb">Date de naissance</label><input id="sb" name="naissance" type="date" class="inp" value="${s && s.naissance ? s.naissance : ''}"><span class="hint">Si elle est remplie, l’âge est calculé à partir d’elle.</span></div></details>
   ${s ? '' : '<div class="ck flat pad small b" style="background:var(--yellow);font-weight:600">Le code de suivi est créé automatiquement : classe, initiales, prénom du parent, âge, + 4 caractères de sécurité.</div>'}
   <button class="btn full">${s ? 'Enregistrer' : 'Ajouter l’élève'}</button></form>`;
@@ -313,7 +331,7 @@ export function eleveNew(u, q) {
 FORMS.student = (f, fd) => {
   const u = d.me();
   const id = f.dataset.id;
-  const v = { classId: fd.get('classId'), nom: (fd.get('nom') || '').trim(), prenoms: (fd.get('prenoms') || '').trim().replace(/\s+/g, ' '), naissance: fd.get('naissance') || null, parent: (fd.get('parent') || '').trim() };
+  const v = { classId: fd.get('classId'), nom: (fd.get('nom') || '').trim(), prenoms: (fd.get('prenoms') || '').trim().replace(/\s+/g, ' '), naissance: fd.get('naissance') || null, parent: (fd.get('parent') || '').trim(), tel: (fd.get('tel') || '').trim() };
   const age = parseInt(fd.get('age'), 10);
   if (!v.nom || !v.prenoms || !v.parent || (!v.naissance && !(age > 0))) { toast('Merci de remplir tous les champs'); return; }
   if (v.naissance) { v.age = null; v.ageAt = null; } else { v.age = age; v.ageAt = todayISO(); }
@@ -358,9 +376,10 @@ export function eleve(u, id, tab = 'coran') {
   else if (tab === 'presence') body = F.presence(s);
   else body = F.notes(s, true);
   return shell(u, 2, `<div class="page">
-  <div class="top"><a href="#/prof/classe/${c.id}" class="ib" aria-label="Retour">${ic('back', 20)}</a>${av(initials(s), 56, 'var(--yellow)', 19)}<div class="grow"><h1 style="font-size:24px">${esc(s.prenoms)} ${esc(s.nom)}</h1><div class="row wrap" style="gap:8px;margin-top:4px">${pill(esc(c.name), colorOf(c))}<span class="small mut b">${d.ageOf(s) ?? '—'} ans</span></div></div>
+  <div class="top"><a href="#/prof/classe/${c.id}" class="ib" aria-label="Retour">${ic('back', 20)}</a>${av(initials(s), 56, 'var(--yellow)', 19)}<div class="grow"><h1 style="font-size:24px">${esc(s.prenoms)} ${esc(s.nom)}</h1><div class="row wrap" style="gap:8px;margin-top:4px">${pill(esc(c.name), colorOf(c))}</div></div>
   <a class="ib" href="#/prof/eleve/${id}/edit" aria-label="Modifier l’élève">${ic('edit', 18)}</a></div>
   ${F.parentBadge(s)}
+  ${contactCard(s)}
   <div class="ck flat row" style="padding:8px 8px 8px 14px"><span class="grow code small">${esc(s.code)}</span><button class="ib sm" data-act="copy" data-t="${esc(s.code)}" aria-label="Copier le code">${ic('copy', 16)}</button><button class="ib sm" data-act="share" data-id="${s.id}" aria-label="Partager le lien de la fiche">${ic('share', 16)}</button><a class="ib sm" href="#/f/${encodeURIComponent(s.code)}" aria-label="Voir comme un parent">${ic('users', 16)}</a></div>
   <div class="seg" role="navigation" aria-label="Sections" style="overflow-x:auto">${ETABS.map(([k, l]) => `<a href="#/prof/eleve/${id}/${k}" class="${k === tab ? 'on' : ''}">${l}</a>`).join('')}</div>
   <div class="col" style="gap:14px">${body}</div></div>`);
