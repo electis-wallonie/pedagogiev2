@@ -1,6 +1,6 @@
 // Service worker : l'app reste utilisable hors connexion.
 // Stratégie « réseau d'abord » : la dernière version est toujours servie quand on est en ligne.
-const CACHE = 'suivi-v3';
+const CACHE = 'suivi-v4';
 const SHELL = ['./', './index.html', './css/app.css', './js/app.js', './js/data.js', './js/ui.js', './js/seed.js', './js/fiche.js', './js/public.js', './js/admin.js', './js/prof.js', './js/i18n.js', './js/annonces.js', './js/import.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -11,9 +11,12 @@ self.addEventListener('activate', (e) => {
 });
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  const same = new URL(e.request.url).origin === location.origin;
+  // « no-cache » : on redemande toujours au serveur si le fichier a changé,
+  // pour que chaque mise à jour de l'app soit visible immédiatement.
   e.respondWith(
-    fetch(e.request).then((r) => {
-      if (r.ok && new URL(e.request.url).origin === location.origin) {
+    fetch(e.request, same ? { cache: 'no-cache' } : undefined).then((r) => {
+      if (r.ok && same) {
         const copy = r.clone();
         caches.open(CACHE).then((c) => c.put(e.request, copy));
       }
