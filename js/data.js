@@ -11,11 +11,14 @@ let db = null;
 export const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
 export function load() {
   try { db = JSON.parse(localStorage.getItem(KEY)); } catch { db = null; }
+  if (db && db.users) { db.announcements = db.announcements || []; }
   return db;
 }
 export function save() { localStorage.setItem(KEY, JSON.stringify(db)); }
 export function setDb(d) { db = d; save(); }
 export function D() { return db; }
+
+import { isAr, SOURATES_AR } from './i18n.js';
 
 // ---------- audio (IndexedDB) ----------
 let idbp = null;
@@ -88,7 +91,7 @@ export function forgetCodes() { localStorage.removeItem(CODES); }
 
 // ---------- sourates ----------
 export const SOURATES = ['Al-Fatiha', 'Al-Baqara', 'Al-Imran', 'An-Nisa', 'Al-Ma’ida', 'Al-An’am', 'Al-A’raf', 'Al-Anfal', 'At-Tawba', 'Yunus', 'Hud', 'Yusuf', 'Ar-Ra’d', 'Ibrahim', 'Al-Hijr', 'An-Nahl', 'Al-Isra', 'Al-Kahf', 'Maryam', 'Ta-Ha', 'Al-Anbiya', 'Al-Hajj', 'Al-Mu’minun', 'An-Nur', 'Al-Furqan', 'Ash-Shu’ara', 'An-Naml', 'Al-Qasas', 'Al-Ankabut', 'Ar-Rum', 'Luqman', 'As-Sajda', 'Al-Ahzab', 'Saba', 'Fatir', 'Ya-Sin', 'As-Saffat', 'Sad', 'Az-Zumar', 'Ghafir', 'Fussilat', 'Ash-Shura', 'Az-Zukhruf', 'Ad-Dukhan', 'Al-Jathiya', 'Al-Ahqaf', 'Muhammad', 'Al-Fath', 'Al-Hujurat', 'Qaf', 'Adh-Dhariyat', 'At-Tur', 'An-Najm', 'Al-Qamar', 'Ar-Rahman', 'Al-Waqi’a', 'Al-Hadid', 'Al-Mujadila', 'Al-Hashr', 'Al-Mumtahana', 'As-Saff', 'Al-Jumu’a', 'Al-Munafiqun', 'At-Taghabun', 'At-Talaq', 'At-Tahrim', 'Al-Mulk', 'Al-Qalam', 'Al-Haqqa', 'Al-Ma’arij', 'Nuh', 'Al-Jinn', 'Al-Muzzammil', 'Al-Muddaththir', 'Al-Qiyama', 'Al-Insan', 'Al-Mursalat', 'An-Naba', 'An-Nazi’at', 'Abasa', 'At-Takwir', 'Al-Infitar', 'Al-Mutaffifin', 'Al-Inshiqaq', 'Al-Buruj', 'At-Tariq', 'Al-A’la', 'Al-Ghashiya', 'Al-Fajr', 'Al-Balad', 'Ash-Shams', 'Al-Layl', 'Ad-Duha', 'Ash-Sharh', 'At-Tin', 'Al-Alaq', 'Al-Qadr', 'Al-Bayyina', 'Az-Zalzala', 'Al-Adiyat', 'Al-Qari’a', 'At-Takathur', 'Al-Asr', 'Al-Humaza', 'Al-Fil', 'Quraysh', 'Al-Ma’un', 'Al-Kawthar', 'Al-Kafirun', 'An-Nasr', 'Al-Masad', 'Al-Ikhlas', 'Al-Falaq', 'An-Nas'];
-export const sName = (n) => SOURATES[n - 1];
+export const sName = (n) => (isAr ? SOURATES_AR : SOURATES)[n - 1];
 export function sState(st, n) { const x = st.coran && st.coran[n]; return x ? x.s : 'n'; }
 export function coranStats(st) {
   let v = 0, c = 0;
@@ -97,6 +100,38 @@ export function coranStats(st) {
 }
 export function enCours(st) { return Object.keys(st.coran || {}).map(Number).filter((n) => st.coran[n].s === 'c').sort((a, b) => b - a); }
 export function sourateNotes(sid, n) { return db.snotes.filter((x) => x.studentId === sid && x.n === n).sort((a, b) => a.at.localeCompare(b.at)); }
+
+// ---------- âge ----------
+// On enregistre soit la date de naissance (précise), soit l'âge donné à une date (ageAt) :
+// l'âge affiché se met à jour tout seul chaque année.
+export function ageOf(st) {
+  const now = new Date();
+  if (st.naissance) {
+    const b = new Date(st.naissance + 'T12:00:00');
+    let a = now.getFullYear() - b.getFullYear();
+    if (now.getMonth() < b.getMonth() || (now.getMonth() === b.getMonth() && now.getDate() < b.getDate())) a--;
+    return a;
+  }
+  if (st.age != null && st.age !== '') {
+    const at = new Date((st.ageAt || now.toISOString().slice(0, 10)) + 'T12:00:00');
+    return +st.age + Math.floor((now - at) / (365.25 * 864e5));
+  }
+  return null;
+}
+
+// ---------- périmètre : un prof voit ses classes, l'admin voit tout ----------
+export const isAdmin = (u) => u && u.role === 'admin';
+export const profs = () => db.users.filter((u) => u.role === 'prof').sort((a, b) => a.name.localeCompare(b.name));
+export const user = (id) => db.users.find((u) => u.id === id);
+export const myClasses = (u) => (isAdmin(u) ? db.classes.slice() : db.classes.filter((c) => c.profId === u.id)).sort((a, b) => a.name.localeCompare(b.name, 'fr', { numeric: true }));
+export const myStudents = (u) => { const ids = myClasses(u).map((c) => c.id); return db.students.filter((s) => ids.includes(s.classId)); };
+export const canSeeClass = (u, c) => !!c && (isAdmin(u) || c.profId === u.id);
+export const canSeeStudent = (u, s) => !!s && canSeeClass(u, cls(s.classId));
+
+// ---------- messages de la direction ----------
+export function activeAnnouncements(today) {
+  return (db.announcements || []).filter((a) => a.from <= today && today <= a.to).sort((a, b) => b.at.localeCompare(a.at));
+}
 
 // ---------- requêtes ----------
 export const classesOf = (profId) => db.classes.filter((c) => c.profId === profId);
@@ -138,13 +173,14 @@ export function classSlug(name) {
 export function genCode(st, c) {
   const ini = strip(st.prenoms).split(' ').filter(Boolean).map((w) => w[0]).join('') + strip(st.nom).replace(/ /g, '').slice(0, 1);
   const par = strip(st.parent).split(' ')[0] || 'P';
-  const [y, m, d] = (st.naissance || '0000-00-00').split('-');
+  const [y, m, d] = (st.naissance || '').split('-');
+  const datePart = st.naissance ? `${d}${m}${y}` : `${ageOf(st) ?? 0}ANS`;
   const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code;
   do {
     const r = crypto.getRandomValues(new Uint8Array(4));
     const suf = [...r].map((x) => a[x % a.length]).join('');
-    code = `${classSlug(c.name)}-${ini}-${par}-${d}${m}${y}-${suf}`;
+    code = `${classSlug(c.name)}-${ini}-${par}-${datePart}-${suf}`;
   } while (db.students.some((s) => s.id !== st.id && normCode(s.code) === normCode(code)));
   return code;
 }

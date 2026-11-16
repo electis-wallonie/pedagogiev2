@@ -6,14 +6,18 @@ Application web installable (PWA) qui remplace les feuilles de suivi papier : **
 
 | Rôle | Accès | Ce qu’il fait |
 |---|---|---|
-| **Administrateur** | identifiant + mot de passe | Crée les comptes des professeurs (et réinitialise leurs mots de passe). Rien d’autre. |
+| **Administrateur** | identifiant + mot de passe | « Super-prof » : voit et gère **tout** (toutes les classes, tous les élèves, appel, Coran, objectifs, notes). Crée les comptes des professeurs et publie les **messages de la direction**. |
 | **Professeur** | identifiants créés par l’admin | Gère tout : classes, élèves, appel, Coran, objectifs, notes. |
 | **Parent / élève** | un simple **code de suivi** | Consulte la fiche en lecture seule. Aucun compte. |
 
 ## Fonctionnalités
 
 - **Classes** : nom, jour, heure, couleur, niveau de départ.
-- **Élèves** : rattachés à une classe via une liste déroulante. Le **code de suivi** est généré automatiquement : `CLASSE-INITIALES-PARENT-JJMMAAAA-XXXX`. Les 4 derniers caractères sont aléatoires pour qu’on ne puisse pas deviner le code. Le code peut être copié, partagé (lien direct vers la fiche) ou régénéré.
+- **Import Excel** (.xlsx ou .csv) : colonnes Classe, Nom, Prénom(s), Âge (ou Date de naissance), Parent. Les classes manquantes sont créées, les doublons ignorés, et la liste des codes est téléchargeable à la fin.
+- **Messages de la direction** (admin) : texte et/ou vocal, visibles entre deux dates en haut des fiches et des tableaux de bord.
+- **Français / arabe** : bouton de langue partout. En arabe, la mise en page passe de droite à gauche et les noms des sourates s’affichent en arabe. Les notes saisies par les utilisateurs ne sont pas traduites.
+- **Âge** à la place de la date de naissance : il se met à jour tout seul chaque année. Une date de naissance précise reste possible (facultatif).
+- **Élèves** : rattachés à une classe via une liste déroulante. Le **code de suivi** est généré automatiquement : `CLASSE-INITIALES-PARENT-ÂGE-XXXX` (ex. `CL2-YIB-KARIM-10ANS-AB12`). Les 4 derniers caractères sont aléatoires pour qu’on ne puisse pas deviner le code. Le code peut être copié, partagé (lien direct vers la fiche) ou régénéré.
 - **Appel** : date enregistrée automatiquement, 3 états (Présent / Absent / Absent prévenu), bouton « tous les autres présents », historique modifiable.
 - **Coran (moushaf)** : les 114 sourates en cases numérotées, dans l’ordre. Chaque sourate a 3 états : non connue / en cours / validée.
   - Passer une sourate « en cours » enregistre sa **date de début d’apprentissage**. Elle reste modifiable, pour savoir avec certitude depuis quand l’élève a commencé.
@@ -50,7 +54,10 @@ js/ui.js              outils d’interface, enregistrement vocal
 js/fiche.js           blocs de la fiche élève
 js/public.js          accueil et fiche parent
 js/admin.js           connexion et administration
-js/prof.js            espace professeur
+js/prof.js            espace professeur (et admin)
+js/import.js          import Excel / CSV (lecteur .xlsx intégré)
+js/annonces.js        messages de la direction
+js/i18n.js            traduction arabe + noms des sourates
 ```
 
 Aucune étape de compilation : les fichiers sont servis tels quels (GitHub Pages).

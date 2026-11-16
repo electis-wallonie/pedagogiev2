@@ -1,5 +1,6 @@
 // Petits outils d'interface partagés
 import { getAudio, putAudio, uid } from './data.js';
+import { tr, locale } from './i18n.js';
 
 export const ACT = {};    // data-act="nom"    → clic
 export const FORMS = {};  // data-form="nom"   → envoi de formulaire
@@ -29,10 +30,15 @@ const P = {
   clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>', arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
   mic: '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5M8 22h8"/>',
   stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>', send: '<path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/>',
-  shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>', key: '<circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3L21 2M17 6l3 3M14 9l2 2"/>',
+  shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+  globe: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/>',
+  mega: '<path d="M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1zM16 8a5 5 0 0 1 0 8M19 5a9 9 0 0 1 0 14"/>',
+  upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>',
+  sheet: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/>', key: '<circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3L21 2M17 6l3 3M14 9l2 2"/>',
 };
+const FLIP = new Set(['back', 'chev', 'arrow', 'send']);
 export function ic(n, s = 22, w = 2.4) {
-  return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n] || ''}</svg>`;
+  return `<svg${FLIP.has(n) ? ' class="fl"' : ''} width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n] || ''}</svg>`;
 }
 export const COLORS = { blue: '#9DB5FF', mint: '#6EE7B7', yellow: '#FFD400', pink: '#FF8FB1' };
 export const COLOR_NAMES = { blue: 'Bleu', mint: 'Menthe', yellow: 'Jaune', pink: 'Rose' };
@@ -47,11 +53,13 @@ export const todayISO = () => { const d = new Date(); d.setMinutes(d.getMinutes(
 export function fdate(iso, opt = { weekday: 'short', day: 'numeric', month: 'short' }) {
   if (!iso) return '—';
   const d = new Date(iso.length === 10 ? iso + 'T12:00:00' : iso);
-  return d.toLocaleDateString('fr-FR', opt);
+  return d.toLocaleDateString(locale, opt);
 }
 export const flong = (iso) => fdate(iso, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 export const fshort = (iso) => fdate(iso, { day: '2-digit', month: '2-digit', year: 'numeric' });
-export const ftime = (iso) => new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+export const ftime = (iso) => new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+export const ask = (m) => window.confirm(tr(m));
+export const askText = (m, v) => window.prompt(tr(m), v);
 export function daysSince(iso) { return Math.max(0, Math.round((new Date(todayISO() + 'T12:00:00') - new Date(iso + 'T12:00:00')) / 864e5)); }
 
 export const STATUS = {
@@ -64,7 +72,7 @@ export const SST = { v: 'Validée', c: 'En cours', n: 'Non connue' };
 export function toast(msg) {
   document.querySelectorAll('.toast').forEach((t) => t.remove());
   const t = document.createElement('div');
-  t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+  t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = tr(msg);
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 2600);
 }
@@ -90,7 +98,7 @@ ACT['close-modal'] = closeModal;
 
 export async function copyText(t) {
   try { await navigator.clipboard.writeText(t); toast('Copié !'); }
-  catch { window.prompt('Copiez ce texte :', t); }
+  catch { window.prompt(tr('Copiez ce texte :'), t); }
 }
 
 // ---------- messages vocaux ----------
@@ -172,5 +180,5 @@ export function composer(form, zone, attrs = '', placeholder = 'Écrire une note
 export function msgHtml(m, delAct) {
   const audio = m.audioId ? `<audio controls preload="none" data-audio="${m.audioId}"></audio>` : '';
   const del = delAct ? `<button type="button" class="ib sm" data-act="${delAct}" data-id="${m.id}" aria-label="Supprimer la note">${ic('trash', 16)}</button>` : '';
-  return `<div class="msg"><div class="meta"><span>${esc(fdate(m.at, { weekday: 'short', day: 'numeric', month: 'short' }))} · ${ftime(m.at)}</span>${del}</div>${m.text ? `<div class="txt">${esc(m.text)}</div>` : ''}${audio}</div>`;
+  return `<div class="msg"><div class="meta"><span>${esc(fdate(m.at, { weekday: 'short', day: 'numeric', month: 'short' }))} · ${ftime(m.at)}</span>${del}</div>${m.text ? `<div class="txt" data-notr dir="auto">${esc(m.text)}</div>` : ''}${audio}</div>`;
 }

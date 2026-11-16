@@ -167,3 +167,14 @@ a.li:hover{color:var(--primary)}
 @media(min-width:960px){.desk{display:flex!important}}
 input:checked + .swatch{outline:4px solid var(--ink);outline-offset:3px}
 input:focus-visible + .swatch{outline:3px solid var(--primary);outline-offset:3px}
+
+/* ---------- arabe (de droite à gauche) ---------- */
+[dir="rtl"]{--sh:-5px 5px 0 var(--ink);--font:'Lexend','Cairo',system-ui,sans-serif}
+[dir="rtl"] body{font-family:'Cairo','Lexend',system-ui,sans-serif}
+[dir="rtl"] .fl{transform:scaleX(-1)}
+[dir="rtl"] .btn:active{transform:translate(-3px,3px);box-shadow:-2px 2px 0 var(--ink)}
+[dir="rtl"] .msg{border-radius:14px 14px 4px 14px}
+[dir="rtl"] .toast{box-shadow:-4px 4px 0 var(--yellow)}
+[dir="rtl"] h1,[dir="rtl"] h2,[dir="rtl"] h3{letter-spacing:0}
+.code,input.code,#code{direction:ltr;unicode-bidi:isolate}
+[dir="rtl"] input.code,[dir="rtl"] #code{text-align:right}

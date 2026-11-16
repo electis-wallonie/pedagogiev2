@@ -17,7 +17,7 @@ export async function seed() {
   await clearAudio().catch(() => {});
   const admin = await makeUser('admin', 'admin', 'Administrateur', 'admin1234', false);
   const prof = await makeUser('prof', 'rahman', 'M. Rahman', 'prof1234', false);
-  setDb({ v: 1, demo: true, users: [admin, prof], classes: [], students: [], attendance: [], objectives: [], notes: [], snotes: [] });
+  setDb({ v: 1, demo: true, users: [admin, prof], classes: [], students: [], attendance: [], objectives: [], notes: [], snotes: [], announcements: [] });
   const db = D();
 
   const C = [
@@ -30,7 +30,7 @@ export async function seed() {
   db.objectives = defaultObjectives(prof.id);
 
   const mk = (classe, nom, prenoms, naissance, parent, done, level = 1, acquiredCount = 0) => {
-    const st = { id: uid(), classId: classe.id, nom, prenoms, naissance, parent, level, coran: {}, acquired: {}, createdAt: stamp(70) };
+    const st = { id: uid(), classId: classe.id, nom, prenoms, naissance: null, age: new Date().getFullYear() - +naissance.slice(0, 4), ageAt: daysAgo(0), parent, level, coran: {}, acquired: {}, createdAt: stamp(70) };
     // progression classique : Al-Fatiha, puis depuis An-Nas en remontant
     let w = 0;
     if (done > 0) { st.coran[1] = { s: 'v', start: daysAgo(80), end: daysAgo(75) }; w = 1; }
@@ -84,5 +84,6 @@ export async function seed() {
     { id: uid(), profId: prof.id, scope: 'class', classId: C[1].id, studentId: null, at: stamp(9, 15), text: 'Pas de cours le samedi des vacances. Reprise la semaine suivante.', audioId: null },
     { id: uid(), profId: prof.id, scope: 'student', classId: C[1].id, studentId: yas.id, at: stamp(2, 16), text: 'Très appliquée, participe beaucoup. Continuer 10 minutes de révision par jour.', audioId: null },
   );
+  db.announcements.push({ id: uid(), text: 'Bienvenue sur la nouvelle application de suivi ! Vous y retrouverez l’avancement de votre enfant, ses présences et les notes de l’imam.', audioId: null, from: daysAgo(1), to: daysAgo(-14), at: stamp(1, 9), authorId: admin.id });
   save();
 }

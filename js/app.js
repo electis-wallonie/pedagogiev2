@@ -5,6 +5,8 @@ import { seed } from './seed.js';
 import * as pub from './public.js';
 import * as adm from './admin.js';
 import * as prof from './prof.js';
+import { importView } from './import.js';
+import { startAutoTranslate, setLang, isAr } from './i18n.js';
 
 const app = document.getElementById('app');
 
@@ -12,14 +14,14 @@ function guard(role) {
   const u = d.me();
   if (!u) { location.hash = '#/login'; return null; }
   if (u.mustChange) { location.hash = '#/mdp'; return null; }
-  if (u.role !== role) { location.hash = u.role === 'admin' ? '#/admin' : '#/prof'; return null; }
+  if (role === 'admin' ? u.role !== 'admin' : !['prof', 'admin'].includes(u.role)) { location.hash = '#/prof'; return null; }
   return u;
 }
 const R = [
   [/^\/?$/, () => pub.home()],
   [/^\/installer$/, () => pub.install()],
   [/^\/f\/([^/]+)(?:\/(\w+))?$/, (m) => pub.fiche(m[1], m[2])],
-  [/^\/login$/, () => { const u = d.me(); if (u && !u.mustChange) { location.hash = u.role === 'admin' ? '#/admin' : '#/prof'; return null; } return adm.loginView(); }],
+  [/^\/login$/, () => { const u = d.me(); if (u && !u.mustChange) { location.hash = '#/prof'; return null; } return adm.loginView(); }],
   [/^\/mdp$/, () => { const u = d.me(); if (!u) { location.hash = '#/login'; return null; } return adm.pwView(u); }],
   [/^\/admin$/, () => { const u = guard('admin'); return u && adm.adminView(u); }],
   [/^\/prof$/, () => { const u = guard('prof'); return u && prof.dashboard(u); }],
@@ -33,6 +35,7 @@ const R = [
   [/^\/prof\/eleve\/(\w+)\/cree$/, (m) => { const u = guard('prof'); return u && prof.eleveCree(u, m[1]); }],
   [/^\/prof\/eleve\/(\w+)\/edit$/, (m) => { const u = guard('prof'); return u && prof.eleveEdit(u, m[1]); }],
   [/^\/prof\/eleve\/(\w+)(?:\/(coran|langue|presence|notes))?$/, (m) => { const u = guard('prof'); return u && prof.eleve(u, m[1], m[2]); }],
+  [/^\/prof\/import$/, () => { const u = guard('prof'); return u && importView(u); }],
   [/^\/prof\/reglages$/, () => { const u = guard('prof'); return u && prof.reglages(u); }],
   [/^\/prof\/objectifs$/, (m, q) => { const u = guard('prof'); return u && prof.objectifs(u, q); }],
 ];
@@ -58,8 +61,7 @@ function render() {
   if (samePage) window.scrollTo(0, y); else window.scrollTo(0, 0);
   lastPath = path;
   hydrateAudio(app);
-  const h = app.querySelector('h1');
-  document.title = (h ? h.textContent.trim() + ' · ' : '') + 'Suivi';
+  setTimeout(() => { const h = app.querySelector('h1'); document.title = (h ? h.textContent.trim() + ' · ' : '') + (isAr ? 'المتابعة' : 'Suivi'); }, 0);
 }
 window.addEventListener('hashchange', () => { closeModal(); render(); });
 window.addEventListener('soft-render', render);
@@ -89,9 +91,11 @@ document.addEventListener('input', (e) => {
   const q = el.value.trim().toLowerCase();
   document.querySelectorAll(el.dataset.filter).forEach((r) => { r.classList.toggle('hide', !!q && !(r.dataset.q || '').includes(q)); });
 });
+ACT.lang = () => setLang(isAr ? 'fr' : 'ar');
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 
 (async function start() {
+  startAutoTranslate();
   if (!d.load() || !d.D().users) await seed();
   d.load();
   render();

@@ -1,6 +1,8 @@
 // Connexion, changement de mot de passe, espace administrateur (création des comptes professeurs)
 import * as d from './data.js';
-import { ACT, FORMS, esc, ic, av, pill, fdate, toast, openModal, closeModal, copyText } from './ui.js';
+import { ACT, FORMS, esc, ic, av, pill, fdate, toast, openModal, closeModal, copyText, todayISO, takePending , ask, askText } from './ui.js';
+import { shell } from './prof.js';
+import { langBtn } from './public.js';
 
 const go = (h) => { if (location.hash === h) window.dispatchEvent(new Event('hashchange')); else location.hash = h; };
 let loginErr = false;
@@ -8,7 +10,7 @@ let loginErr = false;
 export function loginView() {
   const err = loginErr; loginErr = false;
   return `<div class="page narrow" style="padding-top:30px">
-  <div class="row"><a href="#/" class="ib" aria-label="Retour">${ic('back', 20)}</a><span class="logo">${ic('book', 22, 2.6)}</span><span class="b" style="font-size:18px">Espace enseignant</span></div>
+  <div class="row"><a href="#/" class="ib" aria-label="Retour">${ic('back', 20)}</a><span class="logo">${ic('book', 22, 2.6)}</span><span class="b grow" style="font-size:18px">Espace enseignant</span>${langBtn()}</div>
   <h1>Connexion</h1>
   <form class="ck pad col" data-form="login">
     <div class="field"><label class="lbl" for="lg">Identifiant</label><input id="lg" name="login" class="inp" autocomplete="username" autocapitalize="none" required></div>
@@ -26,7 +28,7 @@ FORMS.login = async (f, fd) => {
   const u = await d.checkLogin(fd.get('login') || '', fd.get('pw') || '');
   if (!u) { loginErr = true; go('#/login'); return; }
   d.login(u);
-  go(u.mustChange ? '#/mdp' : u.role === 'admin' ? '#/admin' : '#/prof');
+  go(u.mustChange ? '#/mdp' : '#/prof');
 };
 ACT['demo-login'] = (el) => { document.getElementById('lg').value = el.dataset.l; document.getElementById('pw').value = el.dataset.p; };
 ACT.logout = () => { d.logout(); go('#/'); };
@@ -40,7 +42,7 @@ export function pwView(u) {
     <div class="field"><label class="lbl" for="p1">Nouveau mot de passe</label><input id="p1" name="p1" type="password" class="inp" autocomplete="new-password" minlength="8" required><span class="hint">8 caractères minimum</span></div>
     <div class="field"><label class="lbl" for="p2">Confirmer</label><input id="p2" name="p2" type="password" class="inp" autocomplete="new-password" minlength="8" required></div>
     <button class="btn full">Enregistrer</button>
-    ${u.mustChange ? '' : `<a href="#/${u.role === 'admin' ? 'admin' : 'prof/reglages'}" class="btn2 full">Annuler</a>`}
+    ${u.mustChange ? '' : `<a href="#/prof/reglages" class="btn2 full">Annuler</a>`}
   </form></div>`;
 }
 FORMS.pw = async (f, fd) => {
@@ -51,7 +53,7 @@ FORMS.pw = async (f, fd) => {
   if (p1 !== fd.get('p2')) { toast('Les deux mots de passe ne correspondent pas'); return; }
   await d.setPassword(u, p1, false);
   toast('Mot de passe enregistré');
-  go(u.role === 'admin' ? '#/admin' : '#/prof');
+  go('#/prof');
 };
 
 // ---------- admin ----------
@@ -64,10 +66,25 @@ export function adminView(u) {
     <button class="ib sm" data-act="prof-reset" data-id="${p.id}" aria-label="Réinitialiser le mot de passe de ${esc(p.name)}">${ic('key', 18)}</button>
     <button class="ib sm" data-act="prof-del" data-id="${p.id}" aria-label="Supprimer ${esc(p.name)}">${ic('trash', 18)}</button></div>`;
   }).join('');
-  return `<div class="page">
-  <div class="row between wrap"><div class="row"><span class="logo">${ic('shield', 22, 2.6)}</span><div><div class="small mut b">Administration</div><h1>Comptes professeurs</h1></div></div>
-  <div class="row"><a href="#/mdp" class="btn2 sm">${ic('key', 18)}Mot de passe</a><button class="btn2 sm" data-act="logout">${ic('out', 18)}Déconnexion</button></div></div>
-  <p class="mut b" style="font-weight:600">L’administrateur crée seulement les comptes des professeurs. Chaque professeur gère ensuite ses classes, ses élèves et leur suivi.</p>
+  const today = todayISO();
+  const ann = (d.D().announcements || []).slice().sort((a, b) => b.from.localeCompare(a.from));
+  const annRows = ann.map((a) => {
+    const st = a.to < today ? ['Terminé', 'var(--neutral)'] : a.from > today ? ['À venir', 'var(--blue2)'] : ['En ligne', 'var(--mint)'];
+    return `<div class="li" style="align-items:flex-start"><div class="grow col" style="gap:6px"><div class="row wrap" style="gap:8px">${pill(st[0], st[1])}<span class="small b">${fdate(a.from)} → ${fdate(a.to)}</span></div>${a.text ? `<div data-notr dir="auto" style="white-space:pre-wrap;font-weight:500">${esc(a.text)}</div>` : ''}${a.audioId ? `<audio controls preload="none" data-audio="${a.audioId}" style="width:100%;height:40px"></audio>` : ''}</div><button class="ib sm" data-act="ann-del" data-id="${a.id}" aria-label="Supprimer le message">${ic('trash', 16)}</button></div>`;
+  }).join('');
+  const in7 = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
+  return shell(u, 4, `<div class="page">
+  <div class="top"><span class="logo">${ic('shield', 22, 2.6)}</span><div class="grow"><div class="small mut b">Administration</div><h1>Direction</h1></div></div>
+  <p class="mut b" style="font-weight:600">En tant qu’administrateur, vous voyez et gérez tout : toutes les classes, tous les élèves, l’appel, le Coran, les objectifs et les notes, comme un professeur. Ici : les comptes des professeurs et les messages de la direction.</p>
+  <div class="ck pad col" id="messages"><h2>${ic('mega', 22)} Message de la direction</h2>
+  <p class="small mut b" style="font-weight:600">Affiché en haut de toutes les fiches élèves (parents) et des tableaux de bord (professeurs), entre les deux dates choisies.</p>
+  <form class="col" data-form="ann">
+    <div class="grid2"><div class="field"><label class="lbl" for="af">Visible du</label><input id="af" name="from" type="date" class="inp" value="${today}" required></div><div class="field"><label class="lbl" for="at">Jusqu’au</label><input id="at" name="to" type="date" class="inp" value="${in7}" required></div></div>
+    <label class="sr" for="za-t">Message</label><textarea id="za-t" name="text" class="inp" placeholder="Ex : l’école sera fermée samedi prochain…"></textarea>
+    <div id="za"></div>
+    <div class="row"><button type="button" class="btn2 sm mic" data-act="rec" data-zone="za">${ic('mic', 20)}Vocal</button><span class="grow"></span><button class="btn sm">${ic('send', 18)}Publier</button></div>
+  </form>
+  <div class="list">${annRows || '<p class="small mut">Aucun message pour le moment.</p>'}</div></div>
   <div class="grid2 stack" style="align-items:start">
   <form class="ck pad col" data-form="new-prof">
     <h2>Nouveau professeur</h2>
@@ -78,8 +95,25 @@ export function adminView(u) {
   </form>
   <div class="ck pad col"><div class="row between"><h2>Professeurs</h2>${pill(profs.length + ' compte(s)', 'var(--neutral)')}</div>
   <div class="list">${rows || '<p class="mut small">Aucun professeur pour le moment.</p>'}</div></div>
-  </div></div>`;
+  </div></div>`);
 }
+FORMS.ann = async (f, fd) => {
+  const from = fd.get('from'), to = fd.get('to');
+  if (to < from) { toast('La date de fin est avant la date de début'); return; }
+  const text = (fd.get('text') || '').trim();
+  const audioId = await takePending('za');
+  if (audioId === false) return;
+  if (!text && !audioId) { toast('Écrivez un message ou enregistrez un vocal'); return; }
+  d.D().announcements.push({ id: d.uid(), text, audioId, from, to, at: new Date().toISOString(), authorId: d.me().id });
+  d.save(); toast('Message publié'); go('#/admin');
+};
+ACT['ann-del'] = async (el) => {
+  if (!ask('Supprimer ce message ?')) return;
+  const a = d.D().announcements.find((x) => x.id === el.dataset.id);
+  if (a && a.audioId) await d.delAudio(a.audioId).catch(() => {});
+  d.D().announcements = d.D().announcements.filter((x) => x.id !== el.dataset.id);
+  d.save(); go('#/admin');
+};
 ACT['gen-pw'] = () => { document.getElementById('np-p').value = d.randomPw(); };
 function credsModal(title, name, login, pw) {
   const txt = `Suivi — accès enseignant\nAdresse : ${location.origin}${location.pathname}#/login\nIdentifiant : ${login}\nMot de passe temporaire : ${pw}`;
@@ -103,7 +137,7 @@ FORMS['new-prof'] = async (f, fd) => {
 };
 ACT['prof-reset'] = async (el) => {
   const u = d.D().users.find((x) => x.id === el.dataset.id);
-  if (!u || !confirm(`Réinitialiser le mot de passe de ${u.name} ?`)) return;
+  if (!u || !ask(`Réinitialiser le mot de passe de ${u.name} ?`)) return;
   const pw = d.randomPw();
   await d.setPassword(u, pw, true);
   go('#/admin');
@@ -111,7 +145,7 @@ ACT['prof-reset'] = async (el) => {
 };
 ACT['prof-del'] = async (el) => {
   const u = d.D().users.find((x) => x.id === el.dataset.id);
-  if (!u || !confirm(`Supprimer le compte de ${u.name} ?\n\nToutes ses classes, ses élèves et leur suivi seront effacés définitivement.`)) return;
+  if (!u || !ask(`Supprimer le compte de ${u.name} ?\n\nToutes ses classes, ses élèves et leur suivi seront effacés définitivement.`)) return;
   await d.deleteProf(u.id);
   toast('Compte supprimé');
   go('#/admin');
