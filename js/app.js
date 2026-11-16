@@ -1,0 +1,99 @@
+// Point d'entrée : chargement des données, routes, délégation des événements
+import * as d from './data.js';
+import { ACT, FORMS, CHANGE, hydrateAudio, closeModal, ic } from './ui.js';
+import { seed } from './seed.js';
+import * as pub from './public.js';
+import * as adm from './admin.js';
+import * as prof from './prof.js';
+
+const app = document.getElementById('app');
+
+function guard(role) {
+  const u = d.me();
+  if (!u) { location.hash = '#/login'; return null; }
+  if (u.mustChange) { location.hash = '#/mdp'; return null; }
+  if (u.role !== role) { location.hash = u.role === 'admin' ? '#/admin' : '#/prof'; return null; }
+  return u;
+}
+const R = [
+  [/^\/?$/, () => pub.home()],
+  [/^\/installer$/, () => pub.install()],
+  [/^\/f\/([^/]+)(?:\/(\w+))?$/, (m) => pub.fiche(m[1], m[2])],
+  [/^\/login$/, () => { const u = d.me(); if (u && !u.mustChange) { location.hash = u.role === 'admin' ? '#/admin' : '#/prof'; return null; } return adm.loginView(); }],
+  [/^\/mdp$/, () => { const u = d.me(); if (!u) { location.hash = '#/login'; return null; } return adm.pwView(u); }],
+  [/^\/admin$/, () => { const u = guard('admin'); return u && adm.adminView(u); }],
+  [/^\/prof$/, () => { const u = guard('prof'); return u && prof.dashboard(u); }],
+  [/^\/prof\/classes$/, (m, q) => { const u = guard('prof'); return u && prof.classes(u, q); }],
+  [/^\/prof\/classe\/(\w+)$/, (m) => { const u = guard('prof'); return u && prof.classe(u, m[1]); }],
+  [/^\/prof\/classe\/(\w+)\/appel(?:\/([\d-]{10}))?$/, (m) => { const u = guard('prof'); return u && prof.appel(u, m[1], m[2]); }],
+  [/^\/prof\/classe\/(\w+)\/appel\/([\d-]{10})\/ok$/, (m) => { const u = guard('prof'); return u && prof.appelOk(u, m[1], m[2]); }],
+  [/^\/prof\/classe\/(\w+)\/historique$/, (m) => { const u = guard('prof'); return u && prof.historique(u, m[1]); }],
+  [/^\/prof\/eleves$/, () => { const u = guard('prof'); return u && prof.eleves(u); }],
+  [/^\/prof\/eleve\/new$/, (m, q) => { const u = guard('prof'); return u && prof.eleveNew(u, q); }],
+  [/^\/prof\/eleve\/(\w+)\/cree$/, (m) => { const u = guard('prof'); return u && prof.eleveCree(u, m[1]); }],
+  [/^\/prof\/eleve\/(\w+)\/edit$/, (m) => { const u = guard('prof'); return u && prof.eleveEdit(u, m[1]); }],
+  [/^\/prof\/eleve\/(\w+)(?:\/(coran|langue|presence|notes))?$/, (m) => { const u = guard('prof'); return u && prof.eleve(u, m[1], m[2]); }],
+  [/^\/prof\/reglages$/, () => { const u = guard('prof'); return u && prof.reglages(u); }],
+  [/^\/prof\/objectifs$/, (m, q) => { const u = guard('prof'); return u && prof.objectifs(u, q); }],
+];
+
+function demoBar() {
+  return d.D().demo ? `<div class="demo" role="note">${ic('alert', 14)}<span>Démo · les données restent sur cet appareil</span><a href="#/login">Comptes de test</a></div>` : '';
+}
+let lastPath = null;
+function render() {
+  const raw = (location.hash || '#/').slice(1);
+  const [path, qs] = raw.split('?');
+  const q = new URLSearchParams(qs || '');
+  let html = null;
+  for (const [re, fn] of R) {
+    const m = path.match(re);
+    if (m) { html = fn(m, q); break; }
+  }
+  if (html === null && !R.some(([re]) => re.test(path))) html = pub.home();
+  if (html === null) return; // redirection en cours
+  const samePage = path === lastPath;
+  const y = window.scrollY;
+  app.innerHTML = demoBar() + html;
+  if (samePage) window.scrollTo(0, y); else window.scrollTo(0, 0);
+  lastPath = path;
+  hydrateAudio(app);
+  const h = app.querySelector('h1');
+  document.title = (h ? h.textContent.trim() + ' · ' : '') + 'Suivi';
+}
+window.addEventListener('hashchange', () => { closeModal(); render(); });
+window.addEventListener('soft-render', render);
+
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-act]');
+  if (el && ACT[el.dataset.act]) { e.preventDefault(); ACT[el.dataset.act](el, e); return; }
+  const m = document.getElementById('modal');
+  if (m && e.target === m) closeModal();
+  const a = e.target.closest('a[href^="#notes-"]');
+  if (a) { e.preventDefault(); document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth' }); }
+});
+document.addEventListener('submit', (e) => {
+  const f = e.target.closest('form[data-form]');
+  if (!f || !FORMS[f.dataset.form]) return;
+  e.preventDefault();
+  if (!f.checkValidity()) { f.reportValidity(); return; }
+  FORMS[f.dataset.form](f, new FormData(f));
+});
+document.addEventListener('change', (e) => {
+  const el = e.target.closest('[data-change]');
+  if (el && CHANGE[el.dataset.change]) CHANGE[el.dataset.change](el, e);
+});
+document.addEventListener('input', (e) => {
+  const el = e.target.closest('[data-filter]');
+  if (!el) return;
+  const q = el.value.trim().toLowerCase();
+  document.querySelectorAll(el.dataset.filter).forEach((r) => { r.classList.toggle('hide', !!q && !(r.dataset.q || '').includes(q)); });
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+(async function start() {
+  if (!d.load() || !d.D().users) await seed();
+  d.load();
+  render();
+  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('./sw.js').catch(() => {});
+})();

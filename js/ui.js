@@ -1,0 +1,176 @@
+// Petits outils d'interface partagés
+import { getAudio, putAudio, uid } from './data.js';
+
+export const ACT = {};    // data-act="nom"    → clic
+export const FORMS = {};  // data-form="nom"   → envoi de formulaire
+export const CHANGE = {}; // data-change="nom" → changement de champ
+
+export function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+const P = {
+  back: '<path d="M15 18l-6-6 6-6"/>', plus: '<path d="M12 5v14M5 12h14"/>', check: '<path d="M20 6L9 17l-5-5"/>',
+  x: '<path d="M18 6L6 18M6 6l12 12"/>', mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+  share: '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/>',
+  copy: '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  home: '<path d="M3 10l9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/>',
+  grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  users: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+  book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/>',
+  cal: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  note: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>',
+  chev: '<path d="M9 18l6-6-6-6"/>', lock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>', trash: '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',
+  star: '<path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8-6.2-3.2-6.2 3.2L7 14.2 2 9.3l6.9-1z"/>',
+  alert: '<circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>', dl: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>',
+  refresh: '<path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.8-3.4L23 10M1 14l4.7 4.4A9 9 0 0 0 20.5 15"/>',
+  out: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>', search: '<circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>', arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  mic: '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5M8 22h8"/>',
+  stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>', send: '<path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/>',
+  shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>', key: '<circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3L21 2M17 6l3 3M14 9l2 2"/>',
+};
+export function ic(n, s = 22, w = 2.4) {
+  return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n] || ''}</svg>`;
+}
+export const COLORS = { blue: '#9DB5FF', mint: '#6EE7B7', yellow: '#FFD400', pink: '#FF8FB1' };
+export const COLOR_NAMES = { blue: 'Bleu', mint: 'Menthe', yellow: 'Jaune', pink: 'Rose' };
+export const ACC = ['#9DB5FF', '#6EE7B7', '#FFD400', '#FF8FB1'];
+export const DAYS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+export const initials = (s) => (s.prenoms.split(' ')[0][0] || '') + (s.nom[0] || '');
+export const fullName = (s) => `${s.prenoms.split(' ')[0]} ${s.nom}`;
+export function av(text, size = 44, bg = '#FFD400', fs = 15) { return `<span class="av" style="width:${size}px;height:${size}px;background:${bg};font-size:${fs}px">${esc(text)}</span>`; }
+export function pill(t, bg, fg = 'var(--ink)') { return `<span class="pill" style="background:${bg};color:${fg}">${t}</span>`; }
+
+export const todayISO = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
+export function fdate(iso, opt = { weekday: 'short', day: 'numeric', month: 'short' }) {
+  if (!iso) return '—';
+  const d = new Date(iso.length === 10 ? iso + 'T12:00:00' : iso);
+  return d.toLocaleDateString('fr-FR', opt);
+}
+export const flong = (iso) => fdate(iso, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+export const fshort = (iso) => fdate(iso, { day: '2-digit', month: '2-digit', year: 'numeric' });
+export const ftime = (iso) => new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+export function daysSince(iso) { return Math.max(0, Math.round((new Date(todayISO() + 'T12:00:00') - new Date(iso + 'T12:00:00')) / 864e5)); }
+
+export const STATUS = {
+  P: { l: 'Présent', bg: 'var(--present)', fg: 'var(--onpresent)', icon: 'check' },
+  A: { l: 'Absent', bg: 'var(--absent)', fg: 'var(--onabsent)', icon: 'x' },
+  E: { l: 'Absent prévenu', bg: 'var(--prev)', fg: 'var(--onprev)', icon: 'mail' },
+};
+export const SST = { v: 'Validée', c: 'En cours', n: 'Non connue' };
+
+export function toast(msg) {
+  document.querySelectorAll('.toast').forEach((t) => t.remove());
+  const t = document.createElement('div');
+  t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2600);
+}
+let modalRender = null;
+export function openModal(fn) {
+  modalRender = fn;
+  let m = document.getElementById('modal');
+  if (!m) { m = document.createElement('div'); m.id = 'modal'; document.body.appendChild(m); }
+  m.className = 'modal';
+  m.innerHTML = `<div class="sheet" role="dialog" aria-modal="true"><div class="handle"></div>${fn()}</div>`;
+  hydrateAudio(m);
+  document.body.style.overflow = 'hidden';
+}
+export function refreshModal() { if (modalRender && document.getElementById('modal')) openModal(modalRender); }
+export function closeModal() {
+  stopRecIfAny();
+  const m = document.getElementById('modal');
+  if (m) m.remove();
+  modalRender = null;
+  document.body.style.overflow = '';
+}
+ACT['close-modal'] = closeModal;
+
+export async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); toast('Copié !'); }
+  catch { window.prompt('Copiez ce texte :', t); }
+}
+
+// ---------- messages vocaux ----------
+const urls = {};
+export async function hydrateAudio(root = document) {
+  for (const el of root.querySelectorAll('audio[data-audio]')) {
+    const id = el.dataset.audio;
+    if (!urls[id]) {
+      const b = await getAudio(id).catch(() => null);
+      if (!b) { el.replaceWith(Object.assign(document.createElement('span'), { className: 'tiny mut', textContent: 'Message vocal indisponible sur cet appareil' })); continue; }
+      urls[id] = URL.createObjectURL(b);
+    }
+    el.src = urls[id];
+  }
+}
+export const pending = {}; // zone → { blob, dur }
+let rec = null;
+function fmtDur(s) { s = Math.round(s); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
+function zoneHtml(zone) {
+  const p = pending[zone];
+  if (rec && rec.zone === zone) return `<div class="rec"><span class="dot"></span>Enregistrement… <span data-timer>${fmtDur((Date.now() - rec.t0) / 1000)}</span></div>`;
+  if (p) return `<div class="row"><audio controls src="${p.url}" style="flex:1;min-width:0;height:40px"></audio><button type="button" class="ib sm" data-act="rec-del" data-zone="${zone}" aria-label="Supprimer le message vocal">${ic('trash', 18)}</button></div>`;
+  return '';
+}
+function paintZone(zone) {
+  const z = document.getElementById(zone);
+  if (z) z.innerHTML = zoneHtml(zone);
+  const b = document.querySelector(`[data-act="rec"][data-zone="${zone}"]`);
+  if (b) {
+    const on = rec && rec.zone === zone;
+    b.classList.toggle('on', !!on);
+    b.innerHTML = on ? `${ic('stop', 20)}Arrêter` : `${ic('mic', 20)}${pending[zone] ? 'Refaire' : 'Vocal'}`;
+  }
+}
+function stopRecIfAny() { if (rec) { try { rec.mr.stop(); } catch {} } }
+ACT['rec'] = async (el) => {
+  const zone = el.dataset.zone;
+  if (rec && rec.zone === zone) { rec.mr.stop(); return; }
+  stopRecIfAny();
+  if (!navigator.mediaDevices || !window.MediaRecorder) { toast('Enregistrement vocal non pris en charge par ce navigateur'); return; }
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch { toast('Micro refusé : autorisez le micro dans le navigateur'); return; }
+  const type = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm', 'audio/ogg'].find((t) => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t));
+  const mr = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
+  const chunks = [];
+  mr.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+  mr.onstop = () => {
+    stream.getTracks().forEach((t) => t.stop());
+    const blob = new Blob(chunks, { type: mr.mimeType || type || 'audio/webm' });
+    const dur = (Date.now() - rec.t0) / 1000;
+    clearInterval(rec.tick);
+    rec = null;
+    if (blob.size) pending[zone] = { blob, dur, url: URL.createObjectURL(blob) };
+    paintZone(zone);
+  };
+  rec = { mr, zone, t0: Date.now(), tick: setInterval(() => { const t = document.querySelector(`#${zone} [data-timer]`); if (t && rec) t.textContent = fmtDur((Date.now() - rec.t0) / 1000); }, 500) };
+  mr.start();
+  paintZone(zone);
+};
+ACT['rec-del'] = (el) => { delete pending[el.dataset.zone]; paintZone(el.dataset.zone); };
+export async function takePending(zone) {
+  if (rec && rec.zone === zone) { toast('Arrêtez d’abord l’enregistrement'); return false; }
+  const p = pending[zone];
+  if (!p) return null;
+  const id = uid();
+  await putAudio(id, p.blob);
+  delete pending[zone];
+  return id;
+}
+export function composer(form, zone, attrs = '', placeholder = 'Écrire une note…') {
+  return `<form class="composer" data-form="${form}" ${attrs}>
+  <label class="sr" for="${zone}-t">Note</label>
+  <textarea id="${zone}-t" name="text" class="inp" placeholder="${esc(placeholder)}"></textarea>
+  <div id="${zone}">${zoneHtml(zone)}</div>
+  <div class="row"><button type="button" class="btn2 sm mic" data-act="rec" data-zone="${zone}">${ic('mic', 20)}Vocal</button><span class="grow"></span><button class="btn sm">${ic('send', 18)}Envoyer</button></div>
+  </form>`;
+}
+export function msgHtml(m, delAct) {
+  const audio = m.audioId ? `<audio controls preload="none" data-audio="${m.audioId}"></audio>` : '';
+  const del = delAct ? `<button type="button" class="ib sm" data-act="${delAct}" data-id="${m.id}" aria-label="Supprimer la note">${ic('trash', 16)}</button>` : '';
+  return `<div class="msg"><div class="meta"><span>${esc(fdate(m.at, { weekday: 'short', day: 'numeric', month: 'short' }))} · ${ftime(m.at)}</span>${del}</div>${m.text ? `<div class="txt">${esc(m.text)}</div>` : ''}${audio}</div>`;
+}

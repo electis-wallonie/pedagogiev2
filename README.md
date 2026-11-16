@@ -1,0 +1,58 @@
+# Suivi : suivi pédagogique (PWA)
+
+Application web installable (PWA) qui remplace les feuilles de suivi papier : **Coran**, **Langue & Religion**, **assiduité** et **notes de l’imam** (texte ou message vocal).
+
+## Les 3 rôles
+
+| Rôle | Accès | Ce qu’il fait |
+|---|---|---|
+| **Administrateur** | identifiant + mot de passe | Crée les comptes des professeurs (et réinitialise leurs mots de passe). Rien d’autre. |
+| **Professeur** | identifiants créés par l’admin | Gère tout : classes, élèves, appel, Coran, objectifs, notes. |
+| **Parent / élève** | un simple **code de suivi** | Consulte la fiche en lecture seule. Aucun compte. |
+
+## Fonctionnalités
+
+- **Classes** : nom, jour, heure, couleur, niveau de départ.
+- **Élèves** : rattachés à une classe via une liste déroulante. Le **code de suivi** est généré automatiquement : `CLASSE-INITIALES-PARENT-JJMMAAAA-XXXX`. Les 4 derniers caractères sont aléatoires pour qu’on ne puisse pas deviner le code. Le code peut être copié, partagé (lien direct vers la fiche) ou régénéré.
+- **Appel** : date enregistrée automatiquement, 3 états (Présent / Absent / Absent prévenu), bouton « tous les autres présents », historique modifiable.
+- **Coran (moushaf)** : les 114 sourates en cases numérotées, dans l’ordre. Chaque sourate a 3 états : non connue / en cours / validée.
+  - Passer une sourate « en cours » enregistre sa **date de début d’apprentissage**. Elle reste modifiable, pour savoir avec certitude depuis quand l’élève a commencé.
+  - Sur une sourate en cours, l’imam laisse des **notes datées** (ce qu’il faut réviser, jusqu’où…), en **texte** et/ou en **message vocal**. C’est le cahier de l’élève.
+  - À la validation : date de fin enregistrée, notes effacées.
+- **Langue & Religion** : objectifs par niveau, définis par le professeur et validés un par un.
+- **Notes** : personnelles (un élève) ou pour toute la classe, en texte ou vocal.
+- **Fiche parent** : aperçu, Coran, Langue & Religion, présence (« absent à ce cours », avec la date), notes.
+- PWA installable et utilisable hors connexion. Mise en page mobile et ordinateur.
+
+## ⚠️ Version actuelle : démonstration
+
+Pour l’instant, **toutes les données sont stockées dans le navigateur de l’appareil** (localStorage + IndexedDB pour les vocaux). Conséquences :
+
+- on peut tout tester sur **un même appareil** (admin → prof → parent) ;
+- un parent sur **un autre téléphone ne verra pas** les données saisies par le prof.
+
+Pour un usage réel, il faut brancher une base de données en ligne, par exemple [Supabase](https://supabase.com) (offre gratuite). Toute la couche de données est isolée dans `js/data.js` : c’est le seul fichier à adapter.
+
+Comptes de démonstration : `admin` / `admin1234` et `rahman` / `prof1234`.
+Le menu Réglages du prof contient « Réinitialiser la démo ».
+
+## Structure
+
+```
+index.html            page unique
+manifest.webmanifest  installation PWA
+sw.js                 cache hors connexion
+css/app.css           thème « Pastille Pop »
+js/app.js             routes et événements
+js/data.js            données, sessions, codes, audio
+js/seed.js            données de démonstration
+js/ui.js              outils d’interface, enregistrement vocal
+js/fiche.js           blocs de la fiche élève
+js/public.js          accueil et fiche parent
+js/admin.js           connexion et administration
+js/prof.js            espace professeur
+```
+
+Aucune étape de compilation : les fichiers sont servis tels quels (GitHub Pages).
+
+Test en local : `python3 -m http.server 8000`, puis ouvrir http://localhost:8000.
