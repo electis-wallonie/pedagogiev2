@@ -101,6 +101,9 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal
   startAutoTranslate();
   if (!d.load() || !d.D().users) await seed();
   d.load();
+  await d.purgeExpired();
   render();
+  // vérifie aussi les pièces jointes expirées quand on revient sur l'app
+  document.addEventListener('visibilitychange', async () => { if (!document.hidden && (await d.purgeExpired())) render(true); });
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('./sw.js').catch(() => {});
 })();

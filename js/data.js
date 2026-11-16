@@ -198,6 +198,21 @@ export const DEFAULT_OBJ = [
 ];
 export function defaultObjectives(profId) { return DEFAULT_OBJ.map(([level, group, text]) => ({ id: uid(), profId, level, group, text })); }
 
+// ---------- pièces jointes : supprimées automatiquement après leur date limite ----------
+export async function purgeExpired() {
+  if (!db) return false;
+  const now = new Date().toISOString();
+  let changed = false;
+  for (const n of db.notes) {
+    if (!n.files || !n.files.length) continue;
+    const keep = [];
+    for (const f of n.files) { if (f.until <= now) { await delAudio(f.id).catch(() => {}); changed = true; } else keep.push(f); }
+    n.files = keep;
+  }
+  if (changed) { db.notes = db.notes.filter((n) => n.text || n.audioId || (n.files && n.files.length)); save(); }
+  return changed;
+}
+
 // ---------- suppressions en cascade ----------
 export async function deleteStudent(id) {
   for (const n of db.snotes.filter((x) => x.studentId === id)) if (n.audioId) await delAudio(n.audioId).catch(() => {});
@@ -210,6 +225,7 @@ export async function deleteStudent(id) {
 }
 export async function deleteClass(id) {
   for (const s of studentsOf(id)) await deleteStudent(s.id);
+  for (const n of db.notes.filter((x) => x.classId === id)) for (const b of [n.audioId, ...(n.files || []).map((f) => f.id)]) if (b) await delAudio(b).catch(() => {});
   db.notes = db.notes.filter((n) => n.classId !== id);
   db.attendance = db.attendance.filter((a) => a.classId !== id);
   db.classes = db.classes.filter((c) => c.id !== id);

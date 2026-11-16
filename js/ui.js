@@ -28,6 +28,7 @@ const P = {
   refresh: '<path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.8-3.4L23 10M1 14l4.7 4.4A9 9 0 0 0 20.5 15"/>',
   out: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>', search: '<circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/>',
   clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>', arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  clip: '<path d="M21.4 11.1l-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/>',
   mic: '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5M8 22h8"/>',
   stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>', send: '<path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/>',
   shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
@@ -115,6 +116,15 @@ export async function hydrateAudio(root = document) {
     }
     el.src = urls[id];
   }
+  for (const el of root.querySelectorAll('[data-blob],[data-blob-href]')) {
+    const id = el.dataset.blob || el.dataset.blobHref;
+    if (!urls[id]) {
+      const b = await getAudio(id).catch(() => null);
+      if (!b) { el.replaceWith(Object.assign(document.createElement('span'), { className: 'tiny mut', textContent: 'Pièce jointe expirée ou indisponible sur cet appareil' })); continue; }
+      urls[id] = URL.createObjectURL(b);
+    }
+    if (el.dataset.blob) el.src = urls[id]; else el.href = urls[id];
+  }
 }
 export const pending = {}; // zone → { blob, dur }
 let rec = null;
@@ -171,16 +181,67 @@ export async function takePending(zone) {
   delete pending[zone];
   return id;
 }
-export function composer(form, zone, attrs = '', placeholder = 'Écrire une note…') {
+// ---------- photos et fichiers (notes de classe) ----------
+export const FILE_DAYS = 7;
+const MAX_MB = 15;
+export const pendingFiles = {}; // zone → [{ blob, name, type, size, url }]
+export const fsize = (n) => (n > 1048576 ? (n / 1048576).toFixed(1) + ' Mo' : Math.max(1, Math.round(n / 1024)) + ' Ko');
+function filesHtml(zone) {
+  const l = pendingFiles[zone] || [];
+  if (!l.length) return '';
+  return `<div class="row wrap" style="gap:8px">${l.map((f, i) => `<span class="pill" style="background:var(--hi);font-size:13px;padding:6px 6px 6px 10px">${f.type.startsWith('image/') ? `<img src="${f.url}" alt="" style="width:28px;height:28px;object-fit:cover;border-radius:6px">` : ic('clip', 16)}<span data-notr dir="auto">${esc(f.name)}</span><button type="button" class="ib sm" style="width:28px;height:28px" data-act="file-rm" data-zone="${zone}" data-i="${i}" aria-label="Retirer ${esc(f.name)}">${ic('x', 14)}</button></span>`).join('')}</div>`;
+}
+const paintFiles = (zone) => { const z = document.getElementById(zone + '-files'); if (z) z.innerHTML = filesHtml(zone); };
+async function shrinkImage(file) {
+  try {
+    const bmp = await createImageBitmap(file);
+    const k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+    const cv = document.createElement('canvas');
+    cv.width = Math.round(bmp.width * k); cv.height = Math.round(bmp.height * k);
+    cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
+    const blob = await new Promise((r) => cv.toBlob(r, 'image/jpeg', 0.82));
+    return blob && blob.size < file.size ? blob : file;
+  } catch { return file; }
+}
+ACT['file-pick'] = (el) => document.getElementById(el.dataset.zone + '-f').click();
+ACT['file-rm'] = (el) => { pendingFiles[el.dataset.zone].splice(+el.dataset.i, 1); paintFiles(el.dataset.zone); };
+CHANGE['file-add'] = async (el) => {
+  const zone = el.dataset.zone;
+  const l = (pendingFiles[zone] = pendingFiles[zone] || []);
+  for (const f of el.files) {
+    if (l.length >= 5) { toast('5 pièces jointes maximum'); break; }
+    if (f.size > MAX_MB * 1048576) { toast(`Fichier trop lourd (${MAX_MB} Mo maximum)`); continue; }
+    const img = f.type.startsWith('image/');
+    const blob = img ? await shrinkImage(f) : f;
+    const name = img && blob !== f ? f.name.replace(/\.[^.]+$/, '') + '.jpg' : f.name;
+    l.push({ blob, name, type: blob.type || f.type || 'application/octet-stream', size: blob.size, url: URL.createObjectURL(blob) });
+  }
+  el.value = '';
+  paintFiles(zone);
+};
+export async function takeFiles(zone) {
+  const l = pendingFiles[zone] || [];
+  const until = new Date(Date.now() + FILE_DAYS * 864e5).toISOString();
+  const out = [];
+  for (const f of l) { const id = uid(); await putAudio(id, f.blob); out.push({ id, name: f.name, type: f.type, size: f.size, until }); }
+  delete pendingFiles[zone];
+  return out;
+}
+export function composer(form, zone, attrs = '', placeholder = 'Écrire une note…', withFiles = false) {
   return `<form class="composer" data-form="${form}" ${attrs}>
   <label class="sr" for="${zone}-t">Note</label>
   <textarea id="${zone}-t" name="text" class="inp" placeholder="${esc(placeholder)}"></textarea>
   <div id="${zone}">${zoneHtml(zone)}</div>
-  <div class="row"><button type="button" class="btn2 sm mic" data-act="rec" data-zone="${zone}">${ic('mic', 20)}Vocal</button><span class="grow"></span><button class="btn sm">${ic('send', 18)}Envoyer</button></div>
+  ${withFiles ? `<div id="${zone}-files">${filesHtml(zone)}</div><input id="${zone}-f" type="file" multiple class="sr" accept="image/*,application/pdf,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.txt" data-change="file-add" data-zone="${zone}" tabindex="-1">` : ''}
+  <div class="row wrap"><button type="button" class="btn2 sm mic" data-act="rec" data-zone="${zone}">${ic('mic', 20)}Vocal</button>${withFiles ? `<button type="button" class="btn2 sm" data-act="file-pick" data-zone="${zone}">${ic('clip', 20)}Photo / fichier</button>` : ''}<span class="grow"></span><button class="btn sm">${ic('send', 18)}Envoyer</button></div>
   </form>`;
 }
 export function msgHtml(m, delAct) {
   const audio = m.audioId ? `<audio controls preload="none" data-audio="${m.audioId}"></audio>` : '';
   const del = delAct ? `<button type="button" class="ib sm" data-act="${delAct}" data-id="${m.id}" aria-label="Supprimer la note">${ic('trash', 16)}</button>` : '';
-  return `<div class="msg"><div class="meta"><span>${esc(fdate(m.at, { weekday: 'short', day: 'numeric', month: 'short' }))} · ${ftime(m.at)}</span>${del}</div>${m.text ? `<div class="txt" data-notr dir="auto">${esc(m.text)}</div>` : ''}${audio}</div>`;
+  const files = (m.files || []).length ? `<div class="col" style="gap:8px">${m.files.map((f) => f.type.startsWith('image/')
+    ? `<a data-blob-href="${f.id}" target="_blank" rel="noopener" aria-label="Ouvrir la photo"><img data-blob="${f.id}" alt="${esc(f.name)}" style="display:block;max-width:100%;max-height:320px;border-radius:10px;border:2px solid var(--ink)"></a>`
+    : `<a class="btn2 sm" data-blob-href="${f.id}" download="${esc(f.name)}" style="align-self:flex-start;white-space:normal;text-align:start">${ic('clip', 18)}<span data-notr dir="auto">${esc(f.name)}</span> <span class="tiny mut">(${fsize(f.size)})</span></a>`).join('')}
+    <span class="tiny mut b">Pièces jointes disponibles jusqu’au ${fdate(m.files[0].until)}</span></div>` : '';
+  return `<div class="msg"><div class="meta"><span>${esc(fdate(m.at, { weekday: 'short', day: 'numeric', month: 'short' }))} · ${ftime(m.at)}</span>${del}</div>${m.text ? `<div class="txt" data-notr dir="auto">${esc(m.text)}</div>` : ''}${audio}${files}</div>`;
 }

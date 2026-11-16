@@ -1,7 +1,7 @@
 // Espace professeur : classes, élèves, appel, Coran, objectifs, notes, réglages
 import * as d from './data.js';
 import { ACT, FORMS, CHANGE, esc, ic, av, pill, fdate, flong, fshort, toast, openModal, closeModal, refreshModal, copyText, todayISO, daysSince,
-  STATUS, COLORS, COLOR_NAMES, ACC, DAYS, initials, fullName, takePending, msgHtml, composer, hydrateAudio , ask, askText } from './ui.js';
+  STATUS, COLORS, COLOR_NAMES, ACC, DAYS, initials, fullName, takePending, msgHtml, composer, hydrateAudio , ask, askText, takeFiles, pending, pendingFiles } from './ui.js';
 import * as F from './fiche.js';
 import { annoncesHtml } from './annonces.js';
 import { seed } from './seed.js';
@@ -145,19 +145,20 @@ export function classe(u, id) {
     return `<div class="li" style="position:relative">${av(initials(s), 42, ACC[k % 4], 14)}<a href="#/prof/eleve/${s.id}" class="grow" style="text-decoration:none;color:var(--ink)"><span class="b" style="display:block">${esc(s.prenoms)} ${esc(s.nom)}</span><span class="small mut b" style="font-weight:600">${kk.v} sourates · ${p.rate === null ? '—' : p.rate + ' %'} présence</span></a>${callBtn(s)}${ic('chev', 18)}</div>`;
   }).join('') || `<div class="col" style="padding:14px 0"><p class="mut small">Pas encore d’élève dans cette classe.</p><a class="btn" href="#/prof/eleve/new?c=${id}">${ic('plus', 20)}Ajouter un élève</a></div>`}</div></div>
   <div class="ck pad col" id="notes-classe"><h2>Notes pour toute la classe</h2><p class="small mut b" style="font-weight:600">Visibles sur la fiche de chaque élève de ${esc(c.name)}.</p>
-  ${composer('note-class', 'zc', '', 'Ex : pas de cours samedi prochain…')}
+  ${composer('note-class', 'zc', '', 'Ex : pas de cours samedi prochain… ou les devoirs en photo', true)}
+  <p class="tiny mut b">Photos et fichiers : visibles par les parents pendant 7 jours, puis supprimés automatiquement.</p>
   <div class="col">${notes.map((n) => msgHtml(n, 'note-del')).join('')}</div></div></div>`;
   return shell(u, 1, body);
 }
 FORMS['note-class'] = async (f, fd) => {
   const text = (fd.get('text') || '').trim();
+  if (!text && !pending['zc'] && !(pendingFiles['zc'] || []).length) { toast('Écrivez une note, ajoutez une photo ou un vocal'); return; }
   const audioId = await takePending('zc');
   if (audioId === false) return;
-  if (!text && !audioId) { toast('Écrivez une note ou enregistrez un vocal'); return; }
-  d.D().notes.push({ id: d.uid(), profId: ctx.cls.profId, authorId: d.me().id, scope: 'class', classId: ctx.cls.id, studentId: null, at: new Date().toISOString(), text, audioId });
+  const files = await takeFiles('zc');
+  d.D().notes.push({ id: d.uid(), profId: ctx.cls.profId, authorId: d.me().id, scope: 'class', classId: ctx.cls.id, studentId: null, at: new Date().toISOString(), text, audioId, files });
   d.save(); toast('Note publiée'); rerender();
 };
-
 // ---------- appel ----------
 // Chaque appel est enregistré avec sa date ET son heure : une classe peut avoir
 // un, deux cours par semaine, ou deux cours le même jour. Pas d'appel = pas de cours.
@@ -453,7 +454,7 @@ FORMS['note-student'] = async (f, fd) => {
 ACT['note-del'] = async (el) => {
   if (!ask('Supprimer cette note ?')) return;
   const m = d.D().notes.find((x) => x.id === el.dataset.id);
-  if (m && m.audioId) await d.delAudio(m.audioId).catch(() => {});
+  if (m) for (const b of [m.audioId, ...(m.files || []).map((x) => x.id)]) if (b) await d.delAudio(b).catch(() => {});
   d.D().notes = d.D().notes.filter((x) => x.id !== el.dataset.id);
   d.save(); rerender();
 };
