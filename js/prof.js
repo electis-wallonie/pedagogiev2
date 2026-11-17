@@ -1,7 +1,7 @@
 // Espace professeur : classes, élèves, appel, Coran, objectifs, notes, réglages
 import * as d from './data.js';
 import { ACT, FORMS, CHANGE, esc, ic, av, pill, fdate, flong, fshort, toast, openModal, closeModal, refreshModal, copyText, todayISO, daysSince,
-  STATUS, COLORS, COLOR_NAMES, ACC, DAYS, initials, fullName, takePending, msgHtml, composer, hydrateAudio , ask, askText, takeFiles, pending, pendingFiles } from './ui.js';
+  STATUS, COLORS, COLOR_NAMES, ACC, DAYS, schedLabel, nextLabel, initials, fullName, takePending, msgHtml, composer, hydrateAudio , ask, askText, takeFiles, pending, pendingFiles } from './ui.js';
 import * as F from './fiche.js';
 import { annoncesHtml } from './annonces.js';
 import { seed } from './seed.js';
@@ -72,6 +72,7 @@ export function dashboard(u) {
   const body = `<div class="page">
   ${top(d.isAdmin(u) ? 'Vue d’ensemble' : `Bonjour ${esc(u.name)}`, fdate(todayISO(), { weekday: 'long', day: 'numeric', month: 'long' }), null)}
   ${annoncesHtml()}
+  ${(() => { const nx = cl.map((c) => ({ c, n: d.nextCourse(c) })).filter((x) => x.n).sort((a, b) => a.n.when - b.n.when)[0]; return nx ? `<div class="ck pad row between wrap" style="background:var(--ink);color:#fff"><div><div class="tiny b" style="color:var(--yellow)">PROCHAIN COURS</div><div class="b" style="font-size:22px;margin-top:4px">${esc(nx.c.name)} · ${nextLabel(nx.n)}</div></div><a class="btn y" href="#/prof/classe/${nx.c.id}/appel">${ic('check', 20)}Faire l’appel</a></div>` : ''; })()}
   ${d.isAdmin(u) ? `<div class="grid3"><div class="ck stat" style="background:var(--pink)"><div class="v">${d.profs().length}</div><div class="l">professeurs</div></div><div class="ck stat" style="background:var(--blue2)"><div class="v">${cl.length}</div><div class="l">classes</div></div><div class="ck stat" style="background:var(--mint)"><div class="v">${sts.length}</div><div class="l">élèves</div></div></div>` : ''}
   ${cl.length ? '' : `<div class="ck pad col" style="background:var(--hi)"><h2>Bienvenue !</h2><p class="b" style="font-weight:600">Commencez par créer votre première classe, puis ajoutez vos élèves.</p><a class="btn" href="#/prof/classes?new=1">${ic('plus', 20)}Créer une classe</a></div>`}
   ${cl.length ? `<div class="row between"><h2>${d.isAdmin(u) ? 'Toutes les classes' : 'Mes classes'}</h2><a href="#/prof/classes" class="small">Tout voir</a></div>
@@ -85,9 +86,21 @@ export function dashboard(u) {
   </div></div>`;
   return shell(u, 0, body);
 }
+function schedLine(c, withNext = true) {
+  const sl = d.slotsOf(c);
+  if (!sl.length) return `<span class="tiny b" style="display:block">Horaires à compléter</span>`;
+  const n = d.nextCourse(c);
+  return `<span class="tiny b" style="display:block">${schedLabel(sl)}</span>${withNext && n ? `<span class="tiny b" style="display:block">Prochain cours : ${nextLabel(n)}</span>` : ''}`;
+}
+function courseCard(c) {
+  const sl = d.slotsOf(c);
+  if (!sl.length) return `<div class="ck flat pad row wrap" style="background:var(--hi);gap:10px">${ic('cal', 20)}<span class="grow b small">Horaires des cours à compléter</span><button class="btn2 sm" data-act="class-edit" data-id="${c.id}">${ic('edit', 16)}Ajouter les horaires</button></div>`;
+  const n = d.nextCourse(c);
+  return `<div class="ck flat pad col" style="gap:4px;background:var(--hi)"><span class="b">${ic('cal', 18)} Prochain cours : ${nextLabel(n)}</span><span class="small b" style="font-weight:600">Cours : ${schedLabel(sl)}</span></div>`;
+}
 function classTile(c) {
   return `<div class="ck tile" style="background:${colorOf(c)};position:relative"><a href="#/prof/classe/${c.id}" style="position:absolute;inset:0;border-radius:inherit" aria-label="${esc(c.name)}"></a><span class="big">${esc(c.name.replace(/^classe\s*/i, '') || c.name[0])}</span>
-  <span><span class="b" style="display:block;font-size:17px">${esc(c.name)}</span><span class="small b" style="font-weight:600;display:block">${d.studentsOf(c.id).length} élèves</span>${d.isAdmin(d.me()) ? `<span class="tiny b" style="display:block">${esc((d.user(c.profId) || {}).name || '')}</span>` : ''}<span class="tiny b" style="display:block">${lastAppel(c)}</span></span>
+  <span><span class="b" style="display:block;font-size:17px">${esc(c.name)}</span><span class="small b" style="font-weight:600;display:block">${d.studentsOf(c.id).length} élèves</span>${schedLine(c)}${d.isAdmin(d.me()) ? `<span class="tiny b" style="display:block">${esc((d.user(c.profId) || {}).name || '')}</span>` : ''}<span class="tiny b" style="display:block">${lastAppel(c)}</span></span>
   <a href="#/prof/classe/${c.id}/appel" class="btn2 sm" style="position:relative">${ic('check', 18)}Faire l’appel</a></div>`;
 }
 
@@ -99,6 +112,20 @@ export function classes(u, q) {
   if (q.get('new')) setTimeout(() => classForm(u), 0);
   return shell(u, 1, body);
 }
+function slotRows(n, slots = []) {
+  let h = '';
+  for (let i = 0; i < n; i++) {
+    const s = slots[i] || { day: 6, time: '10:00' };
+    h += `<div class="grid2"><div class="field"><label class="lbl" for="sd${i}">Cours ${i + 1} : jour</label><select id="sd${i}" name="day${i}" class="inp">${[1, 2, 3, 4, 5, 6, 0].map((k) => `<option value="${k}" ${+s.day === k ? 'selected' : ''}>${DAYS[k]}</option>`).join('')}</select></div>
+    <div class="field"><label class="lbl" for="st${i}">Heure</label><input id="st${i}" name="time${i}" type="time" class="inp" value="${s.time}" required></div></div>`;
+  }
+  return h;
+}
+CHANGE['slots-count'] = (el) => {
+  const n = +el.value, cur = [];
+  for (let i = 0; i < 5; i++) { const dd = document.getElementById('sd' + i), tt = document.getElementById('st' + i); if (dd) cur.push({ day: +dd.value, time: tt.value }); }
+  document.getElementById('slots').innerHTML = slotRows(n, cur);
+};
 function classForm(u, c = null) {
   const pid = c ? c.profId : (d.isAdmin(u) ? (d.profs()[0] || {}).id : u.id);
   const levels = d.levelsOf(pid);
@@ -107,6 +134,10 @@ function classForm(u, c = null) {
   <form class="col" data-form="class" data-id="${c ? c.id : ''}">
   <div class="field"><label class="lbl" for="cn">Nom de la classe</label><input id="cn" name="name" class="inp" required value="${esc(c ? c.name : `Classe ${d.myClasses(u).length + 1}`)}"></div>
   ${profSel}
+  <fieldset class="ck flat pad col" style="margin:0;gap:10px"><legend class="lbl" style="padding:0 6px">Cours de la semaine</legend>
+  <div class="field"><label class="lbl" for="cnb">Combien de cours par semaine ?</label><select id="cnb" class="inp" data-change="slots-count">${[1, 2, 3, 4, 5].map((k) => `<option value="${k}" ${k === Math.max(1, d.slotsOf(c).length) ? 'selected' : ''}>${k} cours</option>`).join('')}</select></div>
+  <div id="slots" class="col" style="gap:10px">${slotRows(Math.max(1, d.slotsOf(c).length), d.slotsOf(c))}</div>
+  <span class="hint" style="margin:0">Sert à afficher « Prochain cours » sur les fiches des élèves.</span></fieldset>
   <fieldset style="border:0;padding:0;margin:0"><legend class="lbl">Couleur</legend><div class="row">${Object.keys(COLORS).map((k) => `<label style="cursor:pointer"><input type="radio" name="color" value="${k}" class="sr" ${(c ? c.color : 'blue') === k ? 'checked' : ''}><span class="av swatch" style="width:48px;height:48px;background:${COLORS[k]}" title="${COLOR_NAMES[k]}"></span><span class="sr">${COLOR_NAMES[k]}</span></label>`).join('')}</div></fieldset>
   <div class="field"><label class="lbl" for="cl">Niveau Langue &amp; Religion par défaut</label><select id="cl" name="level" class="inp">${levels.map((l) => `<option value="${l}" ${(c ? c.level : 1) === l ? 'selected' : ''}>Niveau ${l}</option>`).join('')}</select></div>
   <button class="btn full">${c ? 'Enregistrer' : 'Créer la classe'}</button>
@@ -118,9 +149,11 @@ ACT['class-edit'] = (el) => classForm(d.me(), d.cls(el.dataset.id));
 FORMS.class = (f, fd) => {
   const u = d.me();
   const id = f.dataset.id;
-  const v = { name: (fd.get('name') || '').trim() || 'Classe', color: fd.get('color') || 'blue', level: +fd.get('level') || 1 };
+  const slots = [];
+  for (let i = 0; i < 5; i++) { if (fd.get('time' + i)) slots.push({ day: +fd.get('day' + i), time: fd.get('time' + i) }); }
+  const v = { name: (fd.get('name') || '').trim() || 'Classe', color: fd.get('color') || 'blue', level: +fd.get('level') || 1, slots };
   if (d.isAdmin(u)) { if (!fd.get('profId')) { toast('Créez d’abord un professeur'); return; } v.profId = fd.get('profId'); }
-  if (id) Object.assign(d.cls(id), v);
+  if (id) { const cc = d.cls(id); delete cc.day; delete cc.time; Object.assign(cc, v); }
   else { const c = { id: d.uid(), profId: u.id, ...v }; d.D().classes.push(c); d.save(); closeModal(); go(`#/prof/classe/${c.id}`); toast('Classe créée'); return; }
   d.save(); closeModal(); rerender(); toast('Classe enregistrée');
 };
@@ -139,6 +172,7 @@ export function classe(u, id) {
   const notes = d.D().notes.filter((n) => n.scope === 'class' && n.classId === id).sort((a, b) => b.at.localeCompare(a.at));
   const acts = [[`#/prof/classe/${id}/appel`, 'check', 'Faire l’appel', 'var(--primary)', '#fff'], [`#/prof/eleve/new?c=${id}`, 'plus', 'Élève', 'var(--surface)', 'var(--ink)'], [`#/prof/classe/${id}/historique`, 'clock', 'Historique', 'var(--surface)', 'var(--ink)'], ['#notes-classe', 'note', 'Note classe', 'var(--surface)', 'var(--ink)'], [`#/prof/classe/${id}/objectifs`, 'star', 'Objectifs classe', 'var(--yellow)', 'var(--ink)']];
   const body = `<div class="page">${top(esc(c.name), `${sts.length} élève(s) · ${lastAppel(c)}`, '#/prof/classes', `<button class="ib" data-act="class-edit" data-id="${id}" aria-label="Modifier la classe">${ic('edit', 18)}</button>`)}
+  ${courseCard(c)}
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:10px">${acts.map(([h, i, l, bg, fg]) => `<a href="${h}" class="ck col" style="gap:6px;align-items:center;padding:12px 4px;text-decoration:none;background:${bg};color:${fg};font-weight:800;font-size:13px;text-align:center">${ic(i, 24)}${l}</a>`).join('')}</div>
   <div class="ck pad" style="padding-top:4px;padding-bottom:4px"><div class="list">${sts.map((s, k) => {
     const p = d.presence(s); const kk = d.coranStats(s);
@@ -366,18 +400,18 @@ ACT.share = async (el) => {
 };
 
 const ETABS = [['coran', 'Coran'], ['langue', 'Langue & Religion'], ['presence', 'Présence'], ['notes', 'Notes']];
-export function eleve(u, id, tab = 'coran') {
+export function eleve(u, id, tab = 'coran', q = null) {
   const s = d.student(id);
   if (!d.canSeeStudent(u, s)) return shell(u, 2, `<div class="page">${top('Élève introuvable', '', '#/prof/eleves')}</div>`);
   ctx = { st: s };
   const c = d.cls(s.classId);
   let body = '';
   if (tab === 'coran') body = `${F.coranHead(s)}<h3>En cours</h3>${F.enCoursCards(s, 'sour')}<div class="ck pad col"><p class="small b">Touchez une sourate pour changer son état, ses dates ou laisser une note.</p>${F.mushaf(s, 'sour')}${F.legend()}</div>`;
-  else if (tab === 'langue') body = F.objectives(s, true);
+  else if (tab === 'langue') body = F.objectives(s, true, q && q.get('n'), `#/prof/eleve/${id}/langue`);
   else if (tab === 'presence') body = F.presence(s);
   else body = F.notes(s, true);
   return shell(u, 2, `<div class="page">
-  <div class="top"><a href="#/prof/classe/${c.id}" class="ib" aria-label="Retour">${ic('back', 20)}</a>${av(initials(s), 56, 'var(--yellow)', 19)}<div class="grow"><h1 style="font-size:24px">${esc(s.prenoms)} ${esc(s.nom)}</h1><div class="row wrap" style="gap:8px;margin-top:4px">${pill(esc(c.name), colorOf(c))}</div></div>
+  <div class="top"><a href="#/prof/classe/${c.id}" class="ib" aria-label="Retour">${ic('back', 20)}</a>${av(initials(s), 56, 'var(--yellow)', 19)}<div class="grow"><h1 style="font-size:24px">${esc(s.prenoms)} ${esc(s.nom)}</h1><div class="row wrap" style="gap:8px;margin-top:4px">${pill(esc(c.name), colorOf(c))}${d.nextCourse(c) ? `<span class="small b">Prochain cours : ${nextLabel(d.nextCourse(c))}</span>` : ''}</div></div>
   <a class="ib" href="#/prof/eleve/${id}/edit" aria-label="Modifier l’élève">${ic('edit', 18)}</a></div>
   ${F.parentBadge(s)}
   ${contactCard(s)}
@@ -436,7 +470,7 @@ ACT['snote-del'] = async (el) => {
   d.D().snotes = d.D().snotes.filter((x) => x.id !== el.dataset.id);
   d.save(); refreshModal(); rerenderKeepModal();
 };
-ACT['set-level'] = (el) => { ctx.st.level = +el.dataset.l; d.save(); rerender(); };
+ACT['set-level'] = (el) => { ctx.st.level = +el.dataset.l; d.save(); toast(`Niveau ${el.dataset.l} : niveau actuel`); rerender(); };
 ACT['toggle-obj'] = (el) => {
   const a = ctx.st.acquired;
   if (a[el.dataset.id]) delete a[el.dataset.id]; else a[el.dataset.id] = todayISO();

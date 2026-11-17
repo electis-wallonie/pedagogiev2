@@ -20,7 +20,7 @@ function guard(role) {
 const R = [
   [/^\/?$/, () => pub.home()],
   [/^\/installer$/, () => pub.install()],
-  [/^\/f\/([^/]+)(?:\/(\w+))?$/, (m) => pub.fiche(m[1], m[2])],
+  [/^\/f\/([^/]+)(?:\/(\w+))?$/, (m, q) => pub.fiche(m[1], m[2], q)],
   [/^\/login$/, () => { const u = d.me(); if (u && !u.mustChange) { location.hash = '#/prof'; return null; } return adm.loginView(); }],
   [/^\/mdp$/, () => { const u = d.me(); if (!u) { location.hash = '#/login'; return null; } return adm.pwView(u); }],
   [/^\/admin$/, () => { const u = guard('admin'); return u && adm.adminView(u); }],
@@ -35,7 +35,7 @@ const R = [
   [/^\/prof\/eleve\/new$/, (m, q) => { const u = guard('prof'); return u && prof.eleveNew(u, q); }],
   [/^\/prof\/eleve\/(\w+)\/cree$/, (m) => { const u = guard('prof'); return u && prof.eleveCree(u, m[1]); }],
   [/^\/prof\/eleve\/(\w+)\/edit$/, (m) => { const u = guard('prof'); return u && prof.eleveEdit(u, m[1]); }],
-  [/^\/prof\/eleve\/(\w+)(?:\/(coran|langue|presence|notes))?$/, (m) => { const u = guard('prof'); return u && prof.eleve(u, m[1], m[2]); }],
+  [/^\/prof\/eleve\/(\w+)(?:\/(coran|langue|presence|notes))?$/, (m, q) => { const u = guard('prof'); return u && prof.eleve(u, m[1], m[2], q); }],
   [/^\/prof\/import$/, () => { const u = guard('prof'); return u && importView(u); }],
   [/^\/prof\/reglages$/, () => { const u = guard('prof'); return u && prof.reglages(u); }],
   [/^\/prof\/objectifs$/, (m, q) => { const u = guard('prof'); return u && prof.objectifs(u, q); }],
@@ -95,6 +95,19 @@ document.addEventListener('input', (e) => {
   document.querySelectorAll(el.dataset.filter).forEach((r) => { r.classList.toggle('hide', !!q && !(r.dataset.q || '').includes(q)); });
 });
 ACT.lang = () => setLang(isAr ? 'fr' : 'ar');
+// glisser le doigt pour passer d'un niveau à l'autre
+let sx = null, sy = null;
+document.addEventListener('touchstart', (e) => { const t = e.touches[0]; sx = t.clientX; sy = t.clientY; }, { passive: true });
+document.addEventListener('touchend', (e) => {
+  const z = e.target.closest && e.target.closest('[data-swipe-prev],[data-swipe-next]');
+  if (!z || sx == null) return;
+  const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+  sx = null;
+  if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+  const rtl = document.documentElement.dir === 'rtl';
+  const target = (dx < 0) !== rtl ? z.dataset.swipeNext : z.dataset.swipePrev;
+  if (target) location.hash = target;
+}, { passive: true });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 
 (async function start() {

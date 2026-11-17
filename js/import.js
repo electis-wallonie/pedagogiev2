@@ -209,7 +209,7 @@ FORMS['imp-go'] = (f, fd) => {
     let cid = r.classId || (r.classe ? created[d.normCode(r.classe)] : def);
     if (!cid && r.classe) {
       if (!profId) { toast('Créez d’abord un professeur'); return; }
-      const c = { id: d.uid(), profId, name: r.classe, color: ['blue', 'mint', 'yellow', 'pink'][Object.keys(created).length % 4], level: 1 };
+      const c = { id: d.uid(), profId, name: r.classe, slots: [], color: ['blue', 'mint', 'yellow', 'pink'][Object.keys(created).length % 4], level: 1 };
       d.D().classes.push(c); created[d.normCode(r.classe)] = c.id; cid = c.id;
     }
     const c = d.cls(cid);

@@ -61,14 +61,22 @@ export function sourateSheet(st, n, edit) {
   ${seg}${dates}${thread}`;
 }
 
-export function objectives(st, edit) {
+// base : lien de l'onglet (ex. « #/f/CODE/langue ») ; view : niveau affiché (par défaut, le niveau actuel de l'élève).
+// Tout le monde peut parcourir les niveaux (bandeau, flèches, ou glisser le doigt) pour voir ce qu'il y a à apprendre.
+export function objectives(st, edit, view, base) {
   const pid = d.profOfStudent(st);
   const levels = d.levelsOf(pid);
-  const lv = st.level || 1;
+  const cur = st.level || 1;
+  const lv = levels.includes(+view) ? +view : cur;
   const objs = d.objectivesOf(pid, lv);
   const got = objs.filter((o) => st.acquired[o.id]).length;
   const groups = [...new Set(objs.map((o) => o.group))];
-  const seg = `<div class="seg" role="group" aria-label="Niveau">${levels.map((l) => edit ? `<button type="button" class="${l === lv ? 'on' : ''}" data-act="set-level" data-l="${l}">Niveau ${l}</button>` : `<span class="${l === lv ? 'on' : ''}" style="flex:1 1 0;min-height:42px;border-radius:var(--ri);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px">Niveau ${l}</span>`).join('')}</div>`;
+  const i = levels.indexOf(lv);
+  const prev = i > 0 ? `${base}?n=${levels[i - 1]}` : '', next = i < levels.length - 1 ? `${base}?n=${levels[i + 1]}` : '';
+  const seg = `<div class="seg" role="navigation" aria-label="Niveaux" style="overflow-x:auto">${levels.map((l) => `<a href="${base}?n=${l}" class="${l === lv ? 'on' : ''}" aria-current="${l === lv ? 'true' : 'false'}">Niveau ${l}${l === cur ? ' ★' : ''}</a>`).join('')}</div>`;
+  const status = lv === cur
+    ? `<div class="ck flat pad row wrap" style="background:var(--yellow);gap:8px;padding:10px 14px">${ic('star', 18)}<span class="b grow">Niveau actuel de ${esc(st.prenoms.split(' ')[0])}</span></div>`
+    : `<div class="ck flat pad row wrap" style="background:var(--neutral);gap:8px;padding:10px 14px"><span class="b grow">${lv < cur ? 'Niveau précédent' : 'Niveau à venir'} · ${esc(st.prenoms.split(' ')[0])} est au niveau ${cur}</span>${edit ? `<button type="button" class="btn2 sm" data-act="set-level" data-l="${lv}">Passer au niveau ${lv}</button>` : ''}</div>`;
   const list = groups.map((g) => `<div class="ck pad col"><h3>${esc(g)}</h3>${objs.filter((o) => o.group === g).map((o) => {
     const ok = !!st.acquired[o.id];
     const box = edit
@@ -76,8 +84,11 @@ export function objectives(st, edit) {
       : `<span class="av" style="width:30px;height:30px;border-radius:9px;background:${ok ? 'var(--v)' : 'var(--surface)'};color:var(--onv)">${ok ? ic('check', 16, 3.4) : ''}</span>`;
     return `<div class="row">${box}<span class="grow b small" style="font-weight:600">${esc(o.text)}</span>${ok ? `<span class="tiny mut b">${fshort(st.acquired[o.id])}</span>` : ''}</div>`;
   }).join('')}</div>`).join('');
-  return `<div class="row between"><h2>Langue &amp; Religion</h2><span class="b">${got} / ${objs.length} acquis</span></div>${seg}
-  <div class="bar"><i style="width:${objs.length ? (got / objs.length) * 100 : 0}%"></i></div>${list || '<p class="mut small">Aucun objectif défini pour ce niveau.</p>'}`;
+  const arrows = levels.length > 1 ? `<div class="row between">${prev ? `<a class="btn2 sm" href="${prev}">${ic('back', 18)}Niveau ${levels[i - 1]}</a>` : '<span></span>'}${next ? `<a class="btn2 sm" href="${next}">Niveau ${levels[i + 1]}${ic('chev', 18)}</a>` : '<span></span>'}</div>` : '';
+  return `<div class="row between"><h2>Langue &amp; Religion</h2><span class="b">${got} / ${objs.length} acquis</span></div>${seg}${status}
+  <div class="bar"><i style="width:${objs.length ? (got / objs.length) * 100 : 0}%"></i></div>
+  <div class="col" style="gap:14px" data-swipe-prev="${prev}" data-swipe-next="${next}">${list || '<p class="mut small">Aucun objectif défini pour ce niveau.</p>'}</div>${arrows}
+  ${levels.length > 1 ? '<p class="tiny mut b center">Glissez le doigt à gauche ou à droite pour changer de niveau.</p>' : ''}`;
 }
 
 export function presence(st, limit = 50) {

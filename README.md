@@ -13,6 +13,7 @@ Application web installable (PWA) qui remplace les feuilles de suivi papier : **
 ## Fonctionnalités
 
 - **Téléphone du parent** : saisi à la création de l’élève (ou importé). Visible **uniquement** par les profs et l’admin, avec les boutons Appeler / SMS / WhatsApp sur la fiche élève, dans les listes et sur le récapitulatif de l’appel (absents). Jamais affiché aux parents.
+- **Horaires des classes** : à la création d’une classe, on indique le nombre de cours par semaine puis le jour et l’heure de chacun (ex. mardi 10h, jeudi 17h30). « Prochain cours » s’affiche sur le tableau de bord, la page de la classe, la fiche élève (prof) et la fiche parent.
 - **Classes** : nom, jour, heure, couleur, niveau de départ.
 - **Import Excel** (.xlsx ou .csv) : colonnes Classe, Nom, Prénom(s), Âge (ou Date de naissance), Parent. Les classes manquantes sont créées, les doublons ignorés, et la liste des codes est téléchargeable à la fin.
 - **Messages de la direction** (admin) : texte et/ou vocal, visibles entre deux dates en haut des fiches et des tableaux de bord.
@@ -24,7 +25,7 @@ Application web installable (PWA) qui remplace les feuilles de suivi papier : **
   - Passer une sourate « en cours » enregistre sa **date de début d’apprentissage**. Elle reste modifiable, pour savoir avec certitude depuis quand l’élève a commencé.
   - Sur une sourate en cours, l’imam laisse des **notes datées** (ce qu’il faut réviser, jusqu’où…), en **texte** et/ou en **message vocal**. C’est le cahier de l’élève.
   - À la validation : date de fin enregistrée, notes effacées.
-- **Langue & Religion** : objectifs par niveau, définis par le professeur. Validation élève par élève, ou pour **toute la classe d’un coup** (un objectif ou tout un niveau), avec correction possible élève par élève.
+- **Langue & Religion** : objectifs par niveau, définis par le professeur. Tout le monde (parents compris) peut parcourir tous les niveaux (onglets, flèches ou glisser le doigt) pour voir ce qui est à apprendre ; le niveau actuel de l’élève est marqué ★. Validation élève par élève, ou pour **toute la classe d’un coup** (un objectif ou tout un niveau), avec correction possible élève par élève.
 - **Notes** : personnelles (un élève) ou pour toute la classe, en texte ou vocal. Les notes **pour toute la classe** acceptent aussi des **photos et fichiers** (tableau en photo, devoirs en PDF…, 5 max, 15 Mo max, photos compressées), **supprimés automatiquement au bout de 7 jours**.
 - **Fiche parent** : aperçu, Coran, Langue & Religion, présence (« absent à ce cours », avec la date), notes.
 - PWA installable et utilisable hors connexion. Mise en page mobile et ordinateur.

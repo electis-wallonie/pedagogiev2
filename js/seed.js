@@ -63,6 +63,7 @@ export async function seed() {
   const pattern = (k, i) => ((k * 7 + i * 3) % 13 === 0 ? 'A' : (k * 5 + i) % 17 === 0 ? 'E' : 'P');
   // Classe 1 : samedi 9h · Classe 2 : mercredi 17h30 et samedi 14h (2 cours par semaine) · Classe 3 : dimanche 10h
   const slots = [[[6, '09:00']], [[3, '17:30'], [6, '14:00']], [[0, '10:00']]];
+  C.forEach((c, ci) => { c.slots = slots[ci].map(([day, time]) => ({ day, time })); });
   C.forEach((c, ci) => {
     const sessions = [];
     for (const [dow, time] of slots[ci]) for (const date of lastDays(dow, 6).slice(1)) sessions.push({ date, time });

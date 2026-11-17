@@ -61,6 +61,16 @@ export function fdate(iso, opt = { weekday: 'short', day: 'numeric', month: 'sho
 export const flong = (iso) => fdate(iso, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 export const fshort = (iso) => fdate(iso, { day: '2-digit', month: '2-digit', year: 'numeric' });
 export const ftime = (iso) => new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+const ORDER = [1, 2, 3, 4, 5, 6, 0];
+export const hm = (t) => (t || '').replace(':', 'h');
+export function schedLabel(slots) { return slots.slice().sort((a, b) => ORDER.indexOf(a.day) - ORDER.indexOf(b.day) || a.time.localeCompare(b.time)).map((s) => `${DAYS[s.day]} ${hm(s.time)}`).join(' · '); }
+export function nextLabel(n) {
+  if (!n) return '';
+  const iso = `${n.when.getFullYear()}-${String(n.when.getMonth() + 1).padStart(2, '0')}-${String(n.when.getDate()).padStart(2, '0')}`;
+  const k = Math.round((new Date(iso + 'T12:00:00') - new Date(todayISO() + 'T12:00:00')) / 864e5);
+  const day = k === 0 ? 'Aujourd’hui' : k === 1 ? 'Demain' : fdate(iso, { weekday: 'long', day: 'numeric', month: 'long' });
+  return `${day} à ${hm(n.slot.time)}`;
+}
 export const ask = (m) => window.confirm(tr(m));
 export const askText = (m, v) => window.prompt(tr(m), v);
 export function daysSince(iso) { return Math.max(0, Math.round((new Date(todayISO() + 'T12:00:00') - new Date(iso + 'T12:00:00')) / 864e5)); }

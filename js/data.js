@@ -128,6 +128,27 @@ export const myStudents = (u) => { const ids = myClasses(u).map((c) => c.id); re
 export const canSeeClass = (u, c) => !!c && (isAdmin(u) || c.profId === u.id);
 export const canSeeStudent = (u, s) => !!s && canSeeClass(u, cls(s.classId));
 
+// ---------- horaires des classes ----------
+// Une classe a 0, 1 ou plusieurs cours par semaine : slots = [{ day: 0-6 (0 = dimanche), time: 'HH:MM' }]
+export function slotsOf(c) {
+  if (!c) return [];
+  if (Array.isArray(c.slots)) return c.slots.filter((s) => s && s.time && s.day != null);
+  if (c.day != null && c.time) return [{ day: +c.day, time: c.time }]; // anciennes données
+  return [];
+}
+// Prochain cours à partir de maintenant (un cours en cours depuis moins d'1 h compte encore)
+export function nextCourse(c, now = new Date()) {
+  let best = null;
+  for (const s of slotsOf(c)) {
+    const [h, m] = s.time.split(':').map(Number);
+    const t = new Date(now); t.setHours(h, m, 0, 0);
+    t.setDate(t.getDate() + ((s.day - now.getDay() + 7) % 7));
+    if (t.getTime() < now.getTime() - 60 * 60e3) t.setDate(t.getDate() + 7);
+    if (!best || t < best.when) best = { when: t, slot: s };
+  }
+  return best;
+}
+
 // ---------- messages de la direction ----------
 export function activeAnnouncements(today) {
   return (db.announcements || []).filter((a) => a.from <= today && today <= a.to).sort((a, b) => b.at.localeCompare(a.at));

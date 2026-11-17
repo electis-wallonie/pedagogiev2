@@ -1,5 +1,6 @@
 // Côté parents / élèves : accueil avec le code, fiche en lecture seule, installation
 import * as d from './data.js';
+import { schedLabel, nextLabel } from './ui.js';
 import { ACT, FORMS, esc, ic, av, pill, fdate, flong, toast, openModal, initials } from './ui.js';
 import * as F from './fiche.js';
 import { annoncesHtml } from './annonces.js';
@@ -69,7 +70,7 @@ ACT.install = async () => { if (!deferredPrompt) return; deferredPrompt.prompt()
 // ---------- fiche parent ----------
 const TABS = [['apercu', 'home', 'Aperçu'], ['coran', 'book', 'Coran'], ['langue', 'star', 'Langue'], ['presence', 'cal', 'Présence'], ['notes', 'note', 'Notes']];
 let current = null;
-export function fiche(code, tab = 'apercu') {
+export function fiche(code, tab = 'apercu', q = null) {
   const st = d.byCode(decodeURIComponent(code));
   if (!st) { lastError = decodeURIComponent(code); return home(); }
   current = st;
@@ -88,12 +89,13 @@ export function fiche(code, tab = 'apercu') {
       <a href="${base}/coran" class="ck stat" style="background:var(--yellow);text-decoration:none;color:var(--ink)"><div class="v">${k.v}</div><div class="l">sourates validées</div></a>
       <a href="${base}/langue" class="ck stat" style="background:var(--blue2);text-decoration:none;color:var(--ink)"><div class="v">${got}/${objs.length}</div><div class="l">objectifs</div></a>
       <a href="${base}/presence" class="ck stat" style="background:var(--mint);text-decoration:none;color:var(--ink)"><div class="v">${p.rate === null ? '—' : p.rate + '%'}</div><div class="l">présence</div></a></div>
+      ${d.nextCourse(c) ? `<div class="ck pad col" style="gap:4px;background:var(--blue2)"><span class="tiny b">PROCHAIN COURS</span><span class="b" style="font-size:21px">${nextLabel(d.nextCourse(c))}</span><span class="small b" style="font-weight:600">${esc(c.name)} · ${schedLabel(d.slotsOf(c))}</span></div>` : ''}
       <h2>Sourate en cours</h2>${F.enCoursCards(st, 'p-sour')}
       ${last ? `<div class="ck pad row between wrap"><div><div class="b">Dernier cours</div><div class="small mut b" style="font-weight:600">${flong(last.date)}</div></div>${pill(last.s === 'P' ? 'Présent' : last.s === 'A' ? 'Absent à ce cours' : 'Absent · prévenu', `var(--${last.s === 'P' ? 'present' : last.s === 'A' ? 'absent' : 'prev'})`, `var(--on${last.s === 'P' ? 'present' : last.s === 'A' ? 'absent' : 'prev'})`)}</div>` : ''}
       ${note ? `<div class="ck pad col" style="background:var(--ink);color:#fff;gap:6px"><span class="tiny b" style="color:var(--yellow)">DERNIÈRE NOTE · ${esc(fdate(note.at))}</span>${note.text ? `<span data-notr dir="auto" style="white-space:pre-wrap">${esc(note.text)}</span>` : (note.files || []).length ? '<span>Pièce jointe</span>' : '<span>Message vocal</span>'}${(note.files || []).length ? `<a href="#/f/${encodeURIComponent(st.code)}/notes" style="color:var(--yellow)">Voir les pièces jointes</a>` : ''}</div>` : ''}`;
   } else if (tab === 'coran') {
     body = `${F.coranHead(st)}${F.enCoursCards(st, 'p-sour')}<div class="ck pad col">${F.mushaf(st, 'p-sour')}${F.legend()}</div><p class="tiny mut">Touchez une sourate pour voir ses dates.</p>`;
-  } else if (tab === 'langue') body = F.objectives(st, false);
+  } else if (tab === 'langue') body = F.objectives(st, false, q && q.get('n'), `${base}/langue`);
   else if (tab === 'presence') body = F.presence(st);
   else body = F.notes(st, false);
   const desk = `<div class="seg desk" role="navigation" aria-label="Sections">${TABS.map(([id, , l]) => `<a href="${base}/${id}" class="${id === tab ? 'on' : ''}">${l}</a>`).join('')}</div>`;
