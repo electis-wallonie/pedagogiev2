@@ -262,3 +262,29 @@ input:focus-visible + .swatch{outline:3px solid var(--primary);outline-offset:3p
   .pdf h2{font-size:15px}
   .pdf .pill{font-size:9px;padding:1px 6px}
 }
+
+/* emploi du temps « agenda » (salles) */
+.cal-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.cal{display:flex;min-width:max-content;width:100%}
+.cal-col{flex:1 1 0;min-width:92px;display:flex;flex-direction:column}
+.cal-axcol{flex:0 0 40px;min-width:40px}
+.cal-head{height:30px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;border-bottom:var(--bw) solid var(--ink);white-space:nowrap;padding:0 4px}
+.cal-axis{position:relative}
+.cal-axis span{position:absolute;right:6px;transform:translateY(-50%);font-size:11px;font-weight:700;color:var(--muted)}
+.cal-axis span:first-child{transform:none}
+.cal-body{position:relative;border-inline-start:2px solid var(--neutral);background-image:linear-gradient(to bottom,var(--neutral) 1.5px,transparent 1.5px);background-color:var(--surface)}
+.cal-col:last-child .cal-body{border-inline-end:2px solid var(--neutral)}
+.cal-ev{all:unset;box-sizing:border-box;position:absolute;left:4px;right:4px;border:2.5px solid var(--ink);border-radius:10px;padding:3px 6px;display:flex;flex-direction:column;gap:1px;font-size:12px;line-height:1.15;overflow:hidden;box-shadow:2px 2px 0 var(--ink);cursor:pointer;color:var(--ink)}
+div.cal-ev{cursor:default}
+.cal-ev:focus-visible{outline:3px solid var(--primary)}
+.cal-t{font-size:11px;font-weight:600}
+@media print{
+  .pdf .cal-head{height:18px;font-size:9px;border-bottom-width:1.5px}
+  .pdf .cal-col{min-width:0}
+  .pdf .cal{min-width:0}
+  .pdf .cal-axcol{flex-basis:26px;min-width:26px}
+  .pdf .cal-axis span{font-size:7px;right:3px}
+  .pdf .cal-ev{font-size:8px;padding:1px 3px;border-width:1.5px;border-radius:5px;box-shadow:none;left:2px;right:2px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pdf .cal-t{font-size:7px}
+  .pdf .cal-body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}

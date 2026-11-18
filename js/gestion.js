@@ -78,18 +78,37 @@ function grid(cols, lo, hi, live = true) {
   }
   return `<div class="lt-wrap"><table class="lt"><thead><tr><th></th>${cols.map((c) => `<th scope="col">${esc(c.label)}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>`;
 }
+// Rendu « agenda » : une colonne par jour (ou par salle), un trait par heure, chaque cours en bloc à la couleur de sa classe.
+const DAY0 = 6 * 60, DAY1 = 24 * 60; // de 6h à minuit
+const CLS_COL = { blue: '#9DB5FF', mint: '#6EE7B7', yellow: '#FFD400', pink: '#FF8FB1' };
+function span() { const [lo, hi] = range(); return [Math.min(lo, DAY0), Math.max(hi, DAY1)]; }
+function cal(cols, lo, hi, live = true, pph = 34) {
+  const H = ((hi - lo) / 60) * pph;
+  const hours = []; for (let t = lo; t <= hi; t += 60) hours.push(t);
+  const axis = `<div class="cal-axis" style="height:${H}px">${hours.map((t) => `<span style="top:${((t - lo) / 60) * pph}px">${t === 24 * 60 ? '0h' : hh(d.fromMin(t))}</span>`).join('')}</div>`;
+  const colsHtml = cols.map((c) => `<div class="cal-col"><div class="cal-head">${esc(c.label)}</div><div class="cal-body" style="height:${H}px;background-size:100% ${pph}px">${c.blocks.map((b) => {
+    const top = ((b.a - lo) / 60) * pph, h = Math.max(18, ((b.b - b.a) / 60) * pph);
+    const cl = d.cls(b.ids[0]);
+    const bg = b.conflict ? '' : `background:${CLS_COL[(cl || {}).color] || CLS_COL.blue}`;
+    const one = [...new Set(b.ids)].length === 1;
+    const inner = `<span class="b">${esc([...new Set(b.names)].join(' + '))}</span><span class="cal-t">${hh(d.fromMin(b.a))} – ${hh(d.fromMin(b.b))}</span>${b.conflict ? `<span class="cal-t b">${ic('alert', 11)} Conflit</span>` : ''}`;
+    return live && one ? `<button type="button" class="cal-ev${b.conflict ? ' lt-conf' : ''}" style="top:${top}px;height:${h}px;${bg}" data-act="loc-edit" data-id="${b.ids[0]}" aria-label="${esc(c.label)} : ${esc(b.names.join(', '))}">${inner}</button>`
+      : `<div class="cal-ev${b.conflict ? ' lt-conf' : ''}" style="top:${top}px;height:${h}px;${bg}">${inner}</div>`;
+  }).join('')}</div></div>`).join('');
+  return `<div class="cal-wrap"><div class="cal"><div class="cal-col cal-axcol"><div class="cal-head"></div>${axis}</div>${colsHtml}</div></div>`;
+}
 const usedDays = () => ORDER.filter((day) => usage().some((x) => +x.s.day === day));
 // vue par salle : une carte par salle, la semaine en colonnes
 function roomCard(l, days, lo, hi, live = true) {
   const n = usage().filter((x) => x.s.localId === l.id).length;
   const cols = days.map((day) => ({ label: DAYS[day], blocks: blocks(day, l.id) }));
   return `<div class="ck pad col lt-card" style="gap:10px"><div class="row between wrap"><h2>${ic('door', 20)} ${esc(l.name)}</h2>${pill(n ? `${n} créneau(x) par semaine` : 'Libre toute la semaine', n ? 'var(--neutral)' : 'var(--present)')}</div>
-  ${days.length ? grid(cols, lo, hi, live) : ''}</div>`;
+  ${days.length ? cal(cols, lo, hi, live, live ? 34 : 15) : ''}</div>`;
 }
 // vue par jour : une carte par jour, les salles en colonnes
 function dayCard(day, lo, hi, live = true) {
   const cols = d.D().locaux.map((l) => ({ label: l.name, blocks: blocks(day, l.id) }));
-  return `<div class="ck pad col lt-card" style="gap:10px"><h2>${DAYS[day]}</h2>${grid(cols, lo, hi, live)}</div>`;
+  return `<div class="ck pad col lt-card" style="gap:10px"><h2>${DAYS[day]}</h2>${cal(cols, lo, hi, live)}</div>`;
 }
 function freeList(day, a, b) {
   if (!(b > a)) return '<p class="small err">L’heure de fin doit être après l’heure de début.</p>';
@@ -106,7 +125,7 @@ export function locauxView(u, q) {
   const L = d.D().locaux;
   const v = q && q.get('v') === 'jour' ? 'jour' : 'salle';
   const days = usedDays();
-  const [lo, hi] = range();
+  const [lo, hi] = span();
   const missing = d.D().classes.filter((c) => !d.slotsOf(c).length || d.slotsOf(c).some((s) => !s.localId || !d.local(s.localId)));
   const nconf = conflicts();
   const locRows = L.map((l) => {
@@ -138,12 +157,11 @@ export function locauxView(u, q) {
 export function locauxPdf(u) {
   // toute la semaine, de 8h à 22h (au moins), pour que la personne voie aussi les jours entièrement libres
   const L = d.D().locaux, days = ORDER;
-  const [lo0, hi0] = range();
-  const lo = Math.min(lo0, 8 * 60), hi = Math.max(hi0, 22 * 60);
+  const [lo, hi] = span();
   const now = new Date().toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' });
   return `<div class="page pdf"><div class="row between wrap noprint" style="gap:8px"><a class="btn2 sm" href="#/admin/locaux">${ic('back', 18)}Retour</a><button class="btn sm" data-act="print">${ic('dl', 18)}Enregistrer en PDF / imprimer</button></div>
   <p class="small mut b noprint" style="font-weight:600">Dans la fenêtre d’impression, choisissez « Enregistrer au format PDF » (sur téléphone : Partager → Imprimer → PDF). Vous pouvez ensuite l’envoyer par e-mail ou WhatsApp.</p>
-  <div class="col" style="gap:4px"><span class="b" style="font-size:26px">Emploi du temps des salles</span><span class="b" data-notr dir="auto">${esc(mosqueName())}</span><span class="small mut b">Au ${now} · cases blanches = créneaux libres, cases rouges = créneaux déjà pris</span></div>
+  <div class="col" style="gap:4px"><span class="b" style="font-size:26px">Emploi du temps des salles</span><span class="b" data-notr dir="auto">${esc(mosqueName())}</span><span class="small mut b">Au ${now} · de 6h à minuit · chaque bloc = un cours, à la couleur de sa classe · zone vide = salle libre</span></div>
   ${L.map((l) => roomCard(l, days, lo, hi, false)).join('')}
   ${!days.length ? '<p class="b">Aucune salle n’est encore utilisée : tous les créneaux sont libres.</p>' : ''}</div>`;
 }

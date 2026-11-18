@@ -160,7 +160,7 @@ export const RULES2 = [
   [/^Pour le (.+)$/, (m) => `ليوم ${m[1]}`],
   [/^Au (.+)$/, (m) => `بتاريخ ${m[1]}`],
   [/^(\d+) conflit\(s\) : deux classes dans la même salle en même temps\.$/, (m) => `${m[1]} تعارض : قسمان في نفس القاعة في نفس الوقت.`],
-  [/^cases blanches = créneaux libres, cases rouges = créneaux déjà pris$/, () => 'الخانات البيضاء = حصص فارغة، الخانات الحمراء = حصص محجوزة'],
+  [/^de 6h à minuit · chaque bloc = un cours, à la couleur de sa classe · zone vide = salle libre$/, () => 'من 6 صباحًا إلى منتصف الليل · كل خانة = حصة بلون قسمها · المساحة الفارغة = قاعة متاحة'],
   [/^Devoirs enregistrés · e-mail prêt pour (\d+) parent\(s\)$/, (m) => `تم حفظ الواجبات · البريد جاهز لـ ${m[1]} وليّ أمر`],
   [/^Devoirs enregistrés sur les fiches · aucun e-mail de parent dans cette classe$/, () => 'تم حفظ الواجبات في البطاقات · لا يوجد بريد للأولياء في هذا القسم'],
   [/^La date du prochain cours est remplie toute seule\.[\s\S]*$/, (m) => `يُملأ تاريخ الحصة القادمة تلقائياً. عند الإرسال تظهر الواجبات في بطاقة كل تلميذ، ويفتح بريدك وأولياء القسم كمرسَل إليهم : ما عليك إلا الإرسال.`],
