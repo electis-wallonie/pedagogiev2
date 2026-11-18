@@ -11,7 +11,7 @@ let db = null;
 export const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
 export function load() {
   try { db = JSON.parse(localStorage.getItem(KEY)); } catch { db = null; }
-  if (db && db.users) { db.announcements = db.announcements || []; }
+  if (db && db.users) { db.announcements = db.announcements || []; migrateGestion(db); }
   return db;
 }
 export function save() { localStorage.setItem(KEY, JSON.stringify(db)); }
@@ -258,4 +258,99 @@ export async function deleteProf(id) {
   db.notes = db.notes.filter((n) => n.profId !== id);
   db.users = db.users.filter((u) => u.id !== id);
   save();
+}
+
+// ---------- gestion : locaux, heures des profs, familles, finances ----------
+export const DEFAULT_LOCAUX = ['Local 1', 'Local 2', 'Local 3', 'Salle de prière hommes', 'Salle de prière femmes'];
+function migrateGestion(x) {
+  if (!Array.isArray(x.locaux)) x.locaux = DEFAULT_LOCAUX.map((name) => ({ id: uid(), name }));
+  if (!Array.isArray(x.families)) x.families = [];
+  if (!x.finance) x.finance = {};
+  const f = x.finance;
+  if (f.rate == null) f.rate = 10;
+  f.incomes = f.incomes || [];
+  f.expenses = f.expenses || [];
+  f.overrides = f.overrides || {};
+}
+export const local = (id) => (db.locaux || []).find((l) => l.id === id);
+export const toMin = (t) => { const [h, m] = String(t || '0:0').split(':').map(Number); return h * 60 + (m || 0); };
+export const fromMin = (n) => `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`;
+export const slotMin = (s) => (s && s.time && s.end ? Math.max(0, toMin(s.end) - toMin(s.time)) : 0);
+// Durée d'un appel = durée du créneau de la classe ce jour-là (le plus proche de l'heure de l'appel)
+export function recSlot(a) {
+  const sl = slotsOf(cls(a.classId));
+  if (!sl.length) return null;
+  const dow = new Date(a.date + 'T12:00:00').getDay();
+  const cand = sl.filter((s) => +s.day === dow);
+  const pool = cand.length ? cand : sl;
+  let at = 12 * 60;
+  if (a.at) { const t = new Date(a.at); if (!isNaN(t)) at = t.getHours() * 60 + t.getMinutes(); }
+  return pool.slice().sort((x, y) => Math.abs(toMin(x.time) - at) - Math.abs(toMin(y.time) - at))[0];
+}
+// Un appel compte quand il a été terminé (« Terminer l'appel »). Les anciens appels comptent.
+export const recDone = (a) => a.done !== false;
+export const monthOf = (iso) => (iso || '').slice(0, 7);
+export const curMonth = () => { const t = new Date(); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}`; };
+export function profHours(profId, month = curMonth()) {
+  const ids = classesOf(profId).map((c) => c.id);
+  let min = 0, n = 0, missing = 0;
+  for (const a of db.attendance) {
+    if (!ids.includes(a.classId) || monthOf(a.date) !== month || !recDone(a)) continue;
+    n++;
+    const m = slotMin(recSlot(a));
+    if (!m) missing++;
+    min += m;
+  }
+  return { min, n, missing };
+}
+export const fmtH = (min) => { const h = Math.floor(min / 60), m = min % 60; return m ? `${h} h ${String(m).padStart(2, '0')}` : `${h} h`; };
+export const profRate = (p) => (p && p.rate != null && p.rate !== '' ? +p.rate : +db.finance.rate || 0);
+
+// familles et cotisations
+export const family = (id) => db.families.find((f) => f.id === id);
+export const familyKids = (fid) => db.students.filter((s) => s.familyId === fid).sort((a, b) => a.prenoms.localeCompare(b.prenoms));
+export function famPaid(f) {
+  if (f.status === 'paid') return +f.cotisation || 0;
+  if (f.status === 'partial') return Math.min(+f.paid || 0, +f.cotisation || 0);
+  return 0;
+}
+export function cotisations() {
+  let theo = 0, real = 0;
+  for (const f of db.families) { theo += +f.cotisation || 0; real += famPaid(f); }
+  return { theo, real, rest: theo - real };
+}
+// recettes « autres » : un don ponctuel compte une fois, un don mensuel compte chaque mois depuis sa date
+export function monthsBetween(a, b) { const [y1, m1] = a.split('-').map(Number), [y2, m2] = b.split('-').map(Number); return (y2 - y1) * 12 + (m2 - m1); }
+export function incomeTotal(month = null) {
+  let t = 0;
+  for (const i of db.finance.incomes) {
+    const m0 = monthOf(i.date);
+    if (month) { if (i.monthly ? m0 <= month : m0 === month) t += +i.amount || 0; }
+    else t += (+i.amount || 0) * (i.monthly ? Math.max(0, monthsBetween(m0, curMonth()) + 1) : 1);
+  }
+  return t;
+}
+export function profCost(p, month) {
+  const o = (db.finance.overrides[month] || {})[p.id];
+  if (o != null && o !== '') return +o;
+  return Math.round((profHours(p.id, month).min / 60) * profRate(p) * 100) / 100;
+}
+export function monthExpenses(month) {
+  const profsT = profs().reduce((t, p) => t + profCost(p, month), 0);
+  const other = db.finance.expenses.filter((e) => monthOf(e.date) === month).reduce((t, e) => t + (+e.amount || 0), 0);
+  return { profs: profsT, other, total: profsT + other };
+}
+// mois ayant des données (appels, dépenses) jusqu'au mois en cours
+export function financeMonths() {
+  const all = [...db.attendance.map((a) => monthOf(a.date)), ...db.finance.expenses.map((e) => monthOf(e.date)), curMonth()].filter(Boolean).sort();
+  const out = []; let m = all[0];
+  while (m <= curMonth()) { out.push(m); const [y, mm] = m.split('-').map(Number); m = mm === 12 ? `${y + 1}-01` : `${y}-${String(mm + 1).padStart(2, '0')}`; }
+  return out.reverse();
+}
+export function financeSummary() {
+  const c = cotisations();
+  const other = incomeTotal();
+  const dep = financeMonths().reduce((t, m) => t + monthExpenses(m).total, 0);
+  const rec = c.real + other;
+  return { c, other, rec, dep, solde: rec - dep };
 }

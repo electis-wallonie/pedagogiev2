@@ -5,6 +5,7 @@ import { ACT, FORMS, CHANGE, esc, ic, av, pill, fdate, flong, fshort, toast, ope
 import * as F from './fiche.js';
 import { annoncesHtml } from './annonces.js';
 import { seed } from './seed.js';
+import { localLine, hoursCard, elevesSeg, famPill } from './gestion.js';
 
 const go = (h) => { if (location.hash === h) window.dispatchEvent(new Event('hashchange')); else location.hash = h; };
 const rerender = () => window.dispatchEvent(new Event('hashchange'));
@@ -77,6 +78,7 @@ export function dashboard(u) {
   ${cl.length ? '' : `<div class="ck pad col" style="background:var(--hi)"><h2>Bienvenue !</h2><p class="b" style="font-weight:600">Commencez par créer votre première classe, puis ajoutez vos élèves.</p><a class="btn" href="#/prof/classes?new=1">${ic('plus', 20)}Créer une classe</a></div>`}
   ${cl.length ? `<div class="row between"><h2>${d.isAdmin(u) ? 'Toutes les classes' : 'Mes classes'}</h2><a href="#/prof/classes" class="small">Tout voir</a></div>
   <div class="gridauto">${cl.map((c) => classTile(c)).join('')}</div>` : ''}
+  ${d.isAdmin(u) ? hoursCard() : ''}
   <div class="grid3"><div class="ck stat" style="background:var(--yellow)"><div class="v">${sv}</div><div class="l">sourates validées (7 j)</div></div>
   <div class="ck stat" style="background:var(--blue2)"><div class="v">${oa}</div><div class="l">objectifs acquis (7 j)</div></div>
   <div class="ck stat" style="background:var(--mint)"><div class="v">${ap}</div><div class="l">appels faits (7 j)</div></div></div>
@@ -100,8 +102,8 @@ function courseCard(c) {
 }
 function classTile(c) {
   return `<div class="ck tile" style="background:${colorOf(c)};position:relative"><a href="#/prof/classe/${c.id}" style="position:absolute;inset:0;border-radius:inherit" aria-label="${esc(c.name)}"></a><span class="big">${esc(c.name.replace(/^classe\s*/i, '') || c.name[0])}</span>
-  <span><span class="b" style="display:block;font-size:17px">${esc(c.name)}</span><span class="small b" style="font-weight:600;display:block">${d.studentsOf(c.id).length} élèves</span>${schedLine(c)}${d.isAdmin(d.me()) ? `<span class="tiny b" style="display:block">${esc((d.user(c.profId) || {}).name || '')}</span>` : ''}<span class="tiny b" style="display:block">${lastAppel(c)}</span></span>
-  <a href="#/prof/classe/${c.id}/appel" class="btn2 sm" style="position:relative">${ic('check', 18)}Faire l’appel</a></div>`;
+  <span><span class="b" style="display:block;font-size:17px">${esc(c.name)}</span><span class="small b" style="font-weight:600;display:block">${d.studentsOf(c.id).length} élèves</span>${schedLine(c)}${d.isAdmin(d.me()) ? `<span class="tiny b" style="display:block">${esc((d.user(c.profId) || {}).name || '')}</span>` : ''}${d.isAdmin(d.me()) ? `<span class="tiny b" style="display:block">${localLine(c)}</span>` : ''}<span class="tiny b" style="display:block">${lastAppel(c)}</span></span>
+  <span class="row wrap" style="gap:6px;position:relative"><a href="#/prof/classe/${c.id}/appel" class="btn2 sm">${ic('check', 18)}Faire l’appel</a>${d.isAdmin(d.me()) ? `<button type="button" class="btn2 sm" data-act="loc-edit" data-id="${c.id}">${ic('door', 18)}Local utilisé</button>` : ''}</span></div>`;
 }
 
 // ---------- classes ----------
@@ -116,14 +118,15 @@ function slotRows(n, slots = []) {
   let h = '';
   for (let i = 0; i < n; i++) {
     const s = slots[i] || { day: 6, time: '10:00' };
-    h += `<div class="grid2"><div class="field"><label class="lbl" for="sd${i}">Cours ${i + 1} : jour</label><select id="sd${i}" name="day${i}" class="inp">${[1, 2, 3, 4, 5, 6, 0].map((k) => `<option value="${k}" ${+s.day === k ? 'selected' : ''}>${DAYS[k]}</option>`).join('')}</select></div>
-    <div class="field"><label class="lbl" for="st${i}">Heure</label><input id="st${i}" name="time${i}" type="time" class="inp" value="${s.time}" required></div></div>`;
+    h += `<div class="grid3" style="gap:8px"><div class="field"><label class="lbl" for="sd${i}">Cours ${i + 1} : jour</label><select id="sd${i}" name="day${i}" class="inp">${[1, 2, 3, 4, 5, 6, 0].map((k) => `<option value="${k}" ${+s.day === k ? 'selected' : ''}>${DAYS[k]}</option>`).join('')}</select></div>
+    <div class="field"><label class="lbl" for="st${i}">Début</label><input id="st${i}" name="time${i}" type="time" class="inp" value="${s.time}" required></div>
+    <div class="field"><label class="lbl" for="se${i}">Fin</label><input id="se${i}" name="end${i}" type="time" class="inp" value="${s.end || ''}"></div></div>`;
   }
   return h;
 }
 CHANGE['slots-count'] = (el) => {
   const n = +el.value, cur = [];
-  for (let i = 0; i < 5; i++) { const dd = document.getElementById('sd' + i), tt = document.getElementById('st' + i); if (dd) cur.push({ day: +dd.value, time: tt.value }); }
+  for (let i = 0; i < 5; i++) { const dd = document.getElementById('sd' + i), tt = document.getElementById('st' + i), ee = document.getElementById('se' + i); if (dd) cur.push({ day: +dd.value, time: tt.value, end: ee.value }); }
   document.getElementById('slots').innerHTML = slotRows(n, cur);
 };
 function classForm(u, c = null) {
@@ -137,7 +140,7 @@ function classForm(u, c = null) {
   <fieldset class="ck flat pad col" style="margin:0;gap:10px"><legend class="lbl" style="padding:0 6px">Cours de la semaine</legend>
   <div class="field"><label class="lbl" for="cnb">Combien de cours par semaine ?</label><select id="cnb" class="inp" data-change="slots-count">${[1, 2, 3, 4, 5].map((k) => `<option value="${k}" ${k === Math.max(1, d.slotsOf(c).length) ? 'selected' : ''}>${k} cours</option>`).join('')}</select></div>
   <div id="slots" class="col" style="gap:10px">${slotRows(Math.max(1, d.slotsOf(c).length), d.slotsOf(c))}</div>
-  <span class="hint" style="margin:0">Sert à afficher « Prochain cours » sur les fiches des élèves.</span></fieldset>
+  <span class="hint" style="margin:0">Sert à afficher « Prochain cours » sur les fiches des élèves. L’heure de fin sert au compteur d’heures du professeur et au planning des locaux.</span></fieldset>
   <fieldset style="border:0;padding:0;margin:0"><legend class="lbl">Couleur</legend><div class="row">${Object.keys(COLORS).map((k) => `<label style="cursor:pointer"><input type="radio" name="color" value="${k}" class="sr" ${(c ? c.color : 'blue') === k ? 'checked' : ''}><span class="av swatch" style="width:48px;height:48px;background:${COLORS[k]}" title="${COLOR_NAMES[k]}"></span><span class="sr">${COLOR_NAMES[k]}</span></label>`).join('')}</div></fieldset>
   <div class="field"><label class="lbl" for="cl">Niveau Langue &amp; Religion par défaut</label><select id="cl" name="level" class="inp">${levels.map((l) => `<option value="${l}" ${(c ? c.level : 1) === l ? 'selected' : ''}>Niveau ${l}</option>`).join('')}</select></div>
   <button class="btn full">${c ? 'Enregistrer' : 'Créer la classe'}</button>
@@ -150,7 +153,14 @@ FORMS.class = (f, fd) => {
   const u = d.me();
   const id = f.dataset.id;
   const slots = [];
-  for (let i = 0; i < 5; i++) { if (fd.get('time' + i)) slots.push({ day: +fd.get('day' + i), time: fd.get('time' + i) }); }
+  const old = id ? d.slotsOf(d.cls(id)) : [];
+  for (let i = 0; i < 5; i++) {
+    if (!fd.get('time' + i)) continue;
+    const s = { ...(old[i] || {}), day: +fd.get('day' + i), time: fd.get('time' + i), end: fd.get('end' + i) || '' };
+    if (!s.end) delete s.end;
+    else if (s.end <= s.time) { toast('L’heure de fin doit être après l’heure de début'); return; }
+    slots.push(s);
+  }
   const v = { name: (fd.get('name') || '').trim() || 'Classe', color: fd.get('color') || 'blue', level: +fd.get('level') || 1, slots };
   if (d.isAdmin(u)) { if (!fd.get('profId')) { toast('Créez d’abord un professeur'); return; } v.profId = fd.get('profId'); }
   if (id) { const cc = d.cls(id); delete cc.day; delete cc.time; Object.assign(cc, v); }
@@ -226,7 +236,7 @@ export function appel(u, id, recId, q) {
 // « Faire l'appel » : l'appel est créé tout de suite avec la date du jour (pas d'heure).
 // Si un appel existe déjà aujourd'hui, on demande : le modifier, ou faire un 2e appel (2e cours).
 function newRec(c) {
-  const rec = { id: d.uid(), classId: c.id, date: todayISO(), at: new Date().toISOString(), records: {} };
+  const rec = { id: d.uid(), classId: c.id, date: todayISO(), at: new Date().toISOString(), records: {}, done: false };
   d.D().attendance.push(rec); d.save();
   return rec;
 }
@@ -255,6 +265,7 @@ export function appelOk(u, id, recId) {
   const c = d.cls(id);
   const rec = recById(recId);
   if (!d.canSeeClass(u, c) || !rec) return shell(u, 1, '');
+  if (rec.done === false) { rec.done = true; d.save(); } // appel validé → compte dans les heures du professeur
   const r = rec.records;
   const sts = d.studentsOf(id);
   const cnt = (k) => sts.filter((s) => r[s.id] === k).length;
@@ -341,8 +352,9 @@ ACT['cobj-level'] = () => {
 export function eleves(u) {
   const sts = d.myStudents(u).sort((a, b) => a.nom.localeCompare(b.nom));
   const body = `<div class="page">${top('Élèves', `${sts.length} élève(s)`, null, `<a class="btn sm" href="#/prof/eleve/new">${ic('plus', 18)}Élève</a>`)}
+  ${d.isAdmin(u) ? elevesSeg(0) : ''}
   <div class="field"><label class="sr" for="q">Rechercher</label><input id="q" class="inp" placeholder="Rechercher un élève…" data-filter=".li"></div>
-  <div class="ck pad" style="padding-top:4px;padding-bottom:4px"><div class="list">${sts.map((s, k) => `<div class="li" data-q="${esc((s.prenoms + ' ' + s.nom + ' ' + s.parent + ' ' + d.cls(s.classId).name).toLowerCase())}">${av(initials(s), 42, ACC[k % 4], 14)}<a href="#/prof/eleve/${s.id}" class="grow" style="text-decoration:none;color:var(--ink)"><span class="b" style="display:block">${esc(s.prenoms)} ${esc(s.nom)}</span><span class="small mut b" style="font-weight:600">${esc(d.cls(s.classId).name)} · Parent : ${esc(s.parent)}</span></a>${callBtn(s)}${ic('chev', 18)}</div>`).join('') || '<p class="mut small" style="padding:12px 0">Aucun élève.</p>'}</div></div></div>`;
+  <div class="ck pad" style="padding-top:4px;padding-bottom:4px"><div class="list">${sts.map((s, k) => `<div class="li" data-q="${esc((s.prenoms + ' ' + s.nom + ' ' + s.parent + ' ' + d.cls(s.classId).name).toLowerCase())}">${av(initials(s), 42, ACC[k % 4], 14)}<a href="#/prof/eleve/${s.id}" class="grow" style="text-decoration:none;color:var(--ink)"><span class="b" style="display:block">${esc(s.prenoms)} ${esc(s.nom)}</span><span class="small mut b" style="font-weight:600">${esc(d.cls(s.classId).name)} · Parent : ${esc(s.parent)}${d.isAdmin(u) ? famPill(s) : ''}</span></a>${callBtn(s)}${ic('chev', 18)}</div>`).join('') || '<p class="mut small" style="padding:12px 0">Aucun élève.</p>'}</div></div></div>`;
   return shell(u, 2, body);
 }
 function studentForm(u, s, classId) {

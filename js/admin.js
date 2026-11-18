@@ -3,6 +3,7 @@ import * as d from './data.js';
 import { ACT, FORMS, esc, ic, av, pill, fdate, toast, openModal, closeModal, copyText, todayISO, takePending , ask, askText } from './ui.js';
 import { shell } from './prof.js';
 import { langBtn } from './public.js';
+import { locauxTile, financeTile, hoursPill } from './gestion.js';
 
 const go = (h) => { if (location.hash === h) window.dispatchEvent(new Event('hashchange')); else location.hash = h; };
 let loginErr = false;
@@ -62,7 +63,7 @@ export function adminView(u) {
   const rows = profs.map((p) => {
     const nc = d.classesOf(p.id).length, ns = d.studentsOfProf(p.id).length;
     return `<div class="li">${av(p.name.split(' ').map((w) => w[0]).join('').slice(0, 2), 44, 'var(--blue2)', 14)}
-    <div class="grow"><div class="b">${esc(p.name)}</div><div class="small mut b" style="font-weight:600">Identifiant : <b>${esc(p.login)}</b> · ${nc} classe(s) · ${ns} élève(s)${p.mustChange ? ' · ' + pill('Mot de passe temporaire', 'var(--yellow)') : ''}</div></div>
+    <div class="grow"><div class="b">${esc(p.name)}</div><div class="small mut b" style="font-weight:600">Identifiant : <b>${esc(p.login)}</b> · ${nc} classe(s) · ${ns} élève(s) ${hoursPill(p)}${p.mustChange ? ' · ' + pill('Mot de passe temporaire', 'var(--yellow)') : ''}</div></div>
     <button class="ib sm" data-act="prof-reset" data-id="${p.id}" aria-label="Réinitialiser le mot de passe de ${esc(p.name)}">${ic('key', 18)}</button>
     <button class="ib sm" data-act="prof-del" data-id="${p.id}" aria-label="Supprimer ${esc(p.name)}">${ic('trash', 18)}</button></div>`;
   }).join('');
@@ -75,7 +76,8 @@ export function adminView(u) {
   const in7 = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
   return shell(u, 4, `<div class="page">
   <div class="top"><span class="logo">${ic('shield', 22, 2.6)}</span><div class="grow"><div class="small mut b">Administration</div><h1>Direction</h1></div></div>
-  <p class="mut b" style="font-weight:600">En tant qu’administrateur, vous voyez et gérez tout : toutes les classes, tous les élèves, l’appel, le Coran, les objectifs et les notes, comme un professeur. Ici : les comptes des professeurs et les messages de la direction.</p>
+  <p class="mut b" style="font-weight:600">En tant qu’administrateur, vous voyez et gérez tout : toutes les classes, tous les élèves, l’appel, le Coran, les objectifs et les notes, comme un professeur. Ici : les locaux, les finances, les comptes des professeurs et les messages de la direction.</p>
+  <div class="grid2">${locauxTile()}${financeTile()}</div>
   <div class="ck pad col" id="messages"><h2>${ic('mega', 22)} Message de la direction</h2>
   <p class="small mut b" style="font-weight:600">Affiché en haut de toutes les fiches élèves (parents) et des tableaux de bord (professeurs), entre les deux dates choisies.</p>
   <form class="col" data-form="ann">

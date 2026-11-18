@@ -6,6 +6,7 @@ import * as pub from './public.js';
 import * as adm from './admin.js';
 import * as prof from './prof.js';
 import { importView } from './import.js';
+import * as gest from './gestion.js';
 import { startAutoTranslate, setLang, isAr } from './i18n.js';
 
 const app = document.getElementById('app');
@@ -23,6 +24,9 @@ const R = [
   [/^\/f\/([^/]+)(?:\/(\w+))?$/, (m, q) => pub.fiche(m[1], m[2], q)],
   [/^\/login$/, () => { const u = d.me(); if (u && !u.mustChange) { location.hash = '#/prof'; return null; } return adm.loginView(); }],
   [/^\/mdp$/, () => { const u = d.me(); if (!u) { location.hash = '#/login'; return null; } return adm.pwView(u); }],
+  [/^\/admin\/locaux$/, () => { const u = guard('admin'); return u && gest.locauxView(u); }],
+  [/^\/admin\/finances$/, (m, q) => { const u = guard('admin'); return u && gest.financesView(u, q); }],
+  [/^\/prof\/familles$/, () => { const u = guard('prof'); return u && gest.famillesView(u); }],
   [/^\/admin$/, () => { const u = guard('admin'); return u && adm.adminView(u); }],
   [/^\/prof$/, () => { const u = guard('prof'); return u && prof.dashboard(u); }],
   [/^\/prof\/classes$/, (m, q) => { const u = guard('prof'); return u && prof.classes(u, q); }],

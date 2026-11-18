@@ -90,6 +90,32 @@ export async function seed() {
     { id: uid(), profId: prof.id, scope: 'class', classId: C[1].id, studentId: null, at: stamp(9, 15), text: 'Pas de cours le samedi des vacances. Reprise la semaine suivante.', audioId: null },
     { id: uid(), profId: prof.id, scope: 'student', classId: C[1].id, studentId: yas.id, at: stamp(2, 16), text: 'Très appliquée, participe beaucoup. Continuer 10 minutes de révision par jour.', audioId: null },
   );
+  // locaux, fin des cours, familles et finances
+  const L = ['Local 1', 'Local 2', 'Local 3', 'Salle de prière hommes', 'Salle de prière femmes'].map((name) => ({ id: uid(), name }));
+  db.locaux = L;
+  C[0].slots[0].end = '12:00'; C[0].slots[0].localId = L[0].id;
+  C[1].slots[0].end = '19:00'; C[1].slots[0].localId = L[1].id;
+  C[1].slots[1].end = '16:00'; C[1].slots[1].localId = L[1].id;
+  C[2].slots[0].end = '12:30'; C[2].slots[0].localId = L[3].id;
+  db.families = [];
+  const fams = {};
+  for (const s of db.students) {
+    const k = s.nom + '|' + s.parent;
+    if (!fams[k]) { fams[k] = { id: uid(), name: 'Famille ' + s.nom, cotisation: 0, status: 'unpaid', paid: 0 }; db.families.push(fams[k]); }
+    s.familyId = fams[k].id;
+  }
+  db.families.forEach((f, i) => {
+    const n = db.students.filter((s) => s.familyId === f.id).length;
+    f.cotisation = n > 1 ? 250 : 150;
+    f.status = i % 4 === 1 ? 'unpaid' : i % 4 === 2 ? 'partial' : 'paid';
+    if (f.status === 'partial') f.paid = 75;
+  });
+  db.finance = { rate: 10, overrides: {}, incomes: [
+    { id: uid(), label: 'Don anonyme', amount: 500, date: daysAgo(20), monthly: false },
+  ], expenses: [
+    { id: uid(), label: 'Fournitures scolaires (cahiers, stylos)', amount: 85, date: daysAgo(3) },
+  ] };
+
   db.announcements.push({ id: uid(), text: 'Bienvenue sur la nouvelle application de suivi ! Vous y retrouverez l’avancement de votre enfant, ses présences et les notes de l’imam.', audioId: null, from: daysAgo(1), to: daysAgo(-14), at: stamp(1, 9), authorId: admin.id });
   save();
 }
