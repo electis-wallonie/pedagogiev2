@@ -14,7 +14,7 @@ const daysAgo = (n) => { const d = new Date(); d.setDate(d.getDate() - n); retur
 const stamp = (n, h = 14) => { const d = new Date(); d.setDate(d.getDate() - n); d.setHours(h, 10, 0, 0); return d.toISOString(); };
 
 // À augmenter à chaque nouvelle version des données de démo : les appareils qui ont une ancienne démo la rechargent tout seuls.
-export const SEED_VERSION = 9;
+export const SEED_VERSION = 10;
 export async function seed() {
   await clearAudio().catch(() => {});
   const admin = await makeUser('admin', 'admin', 'Administrateur', 'admin1234', false);
@@ -155,6 +155,5 @@ export async function seed() {
     { id: uid(), at: stamp(2), theme: 'Famille / mariage', q: 'Peut-on célébrer le mariage religieux à la mosquée ?', r: 'Oui, sur rendez-vous avec l’imam, quelques semaines avant la date.' },
     { id: uid(), at: stamp(5), freq: true, theme: 'Zakat / aumône', q: 'À qui remettre la zakat al-Fitr ?', r: 'La mosquée collecte la zakat al-Fitr pendant les derniers jours du Ramadan et la redistribue aux familles dans le besoin avant la prière de l’Aïd. Le montant est annoncé chaque année.' },
   ];
-  db.announcements.push({ id: uid(), text: 'Bienvenue sur la nouvelle application de suivi ! Vous y retrouverez l’avancement de votre enfant, ses présences et les notes de l’imam.', audioId: null, from: daysAgo(1), to: daysAgo(-14), at: stamp(1, 9), authorId: admin.id });
   save();
 }
