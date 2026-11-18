@@ -406,3 +406,10 @@ a.bd:hover{color:var(--ink);transform:rotate(var(--rot,0deg)) translate(-1px,-1p
 .sec-t{font-size:24px;font-weight:800;line-height:1.1;margin:10px 0 -2px;display:flex;align-items:center;gap:8px}
 button.bd{border:var(--bw) solid var(--ink)}
 .bcard h2{color:#fff}
+/* lisibilité dans les cartes bleues : choix segmentés et textes secondaires */
+.bcard .seg label,.bcard .seg .rolebtn,.bcard .seg a,.bcard .seg button{color:var(--ink)}
+.bcard .seg input:checked + .rolebtn{background:var(--ink);color:#fff}
+.bcard .mut,.bcard .tiny.mut,.bcard .small.mut,.bcard .hint{color:#DCE3FF!important}
+.bcard .ck,.bcard .li{color:var(--ink)}
+.bcard .ck .mut,.bcard .li .mut{color:var(--muted)!important}
+.bcard a:not(.btn):not(.btn2){color:#fff}
