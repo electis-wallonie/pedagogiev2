@@ -435,3 +435,8 @@ button.bd{border:var(--bw) solid var(--ink)}
 .bd .mut,.bd .tiny,.ck[style*="background:var(--yellow)"] .mut,.ck[style*="background:var(--mint)"] .mut,.ck[style*="background:var(--pink)"] .mut,.ck[style*="background:var(--blue2)"] .mut,.ck[style*="background:var(--hi)"] .mut,.w1-card .mut{color:var(--ink)!important}
 /* blocs marine : textes secondaires en blanc franc */
 .hero2 .hero-s,.hero2 > p,.hero2 > .mut{color:#fff!important}
+/* Chourouq : libellé « Lever du soleil » fin et discret, avec un petit soleil levant */
+.sun-l{display:flex;align-items:center;gap:4px;font-size:13px;font-weight:400;line-height:1.2;color:var(--muted)}
+.sun-l.big{font-size:14px;margin-top:1px}
+.pt3.past .sun-l{color:inherit}
+.sun-l svg{flex:none}
