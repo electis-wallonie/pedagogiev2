@@ -277,7 +277,7 @@ export function famillesView(u) {
     const kids = d.familyKids(f.id);
     return `<div class="ck pad col fam" style="gap:10px" data-q="${esc((f.name + ' ' + kids.map((k) => k.prenoms + ' ' + k.nom + ' ' + k.parent).join(' ')).toLowerCase())}">
     <div class="row between wrap" style="gap:8px"><span class="b" style="font-size:18px">${esc(f.name)}</span><span class="row wrap" style="gap:6px"><button type="button" class="btn2 sm" data-act="fam-pay" data-id="${f.id}" aria-label="Cotisation : ${eur(f.cotisation)}">${ic('euro', 16)}${eur(f.cotisation)}</button>${payBtn(f)}<button class="ib sm" data-act="fam-edit" data-id="${f.id}" aria-label="Modifier ${esc(f.name)}">${ic('edit', 16)}</button></span></div>
-    <div class="row wrap" style="gap:6px">${kids.map((k, i) => `<a class="pill" href="#/prof/eleve/${k.id}" style="background:${ACC[i % 4]};text-decoration:none">${esc(k.prenoms.split(' ')[0])} · ${esc(d.cls(k.classId).name)}</a>`).join('') || '<span class="small mut">Aucun enfant</span>'}</div></div>`;
+    <div class="row wrap" style="gap:6px">${kids.map((k, i) => `<a class="pill" href="#/prof/eleve/${k.id}" style="background:${ACC[i % 4]};text-decoration:none;color:var(--ink)">${esc(k.prenoms.split(' ')[0])} · ${esc(d.cls(k.classId).name)}</a>`).join('') || '<span class="small mut">Aucun enfant</span>'}</div></div>`;
   }).join('');
   return shell(u, 2, `<div class="page">${top('Élèves', `${F.length} famille(s) · ${d.D().students.length} élève(s)`, null, `<button class="btn sm" data-act="fam-new">${ic('plus', 18)}Famille</button>`)}
   ${elevesSeg(1)}

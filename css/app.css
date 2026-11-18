@@ -1,6 +1,6 @@
 /* Suivi — thème C5 « Pastille Pop » */
 :root{
-  --ink:#0B1F66; --muted:#3D4E85; --primary:#1F4FFF; --onprimary:#FFFFFF;
+  --ink:#0B1F66; --muted:#2F3E75; --primary:#1F4FFF; --onprimary:#FFFFFF;
   --yellow:#FFD400; --blue2:#9DB5FF; --pink:#FF8FB1; --mint:#6EE7B7;
   --surface:#FFFFFF; --field:#F4F7FF; --bg:#EEF3FF; --hi:#FFF6BF; --neutral:#EEF2FF;
   --present:#6EE7B7; --onpresent:#053B2A; --absent:#FF5A5F; --onabsent:#2B0001; --prev:#FFD400; --onprev:#0B1F66;
@@ -413,3 +413,25 @@ button.bd{border:var(--bw) solid var(--ink)}
 .bcard .ck,.bcard .li{color:var(--ink)}
 .bcard .ck .mut,.bcard .li .mut{color:var(--muted)!important}
 .bcard a:not(.btn):not(.btn2){color:#fff}
+/* ===== Lisibilité (audit global) : tailles minimales, contrastes renforcés ===== */
+.small{font-size:14px}
+.tiny{font-size:13px}
+.hint{font-size:13px;color:var(--muted)}
+.pill{font-size:13px}
+.tabbar a{font-size:12.5px}
+.hero-chip span,.pt3-cd span{font-size:12px}
+.cal-t{font-size:12px!important}
+.cal-axis span{font-size:12px}
+::placeholder{color:#5A6385;opacity:1}
+/* onglets en grands titres : l'onglet inactif reste lisible */
+.qz-tabs a,.seg:not(.desk):has(> a) a,.btabs a{color:#5A6385}
+.qz-tabs a.on,.seg:not(.desk):has(> a) a.on,.btabs a.on{color:var(--ink)}
+/* cartes bleues : tout le texte en blanc franc */
+.bcard,.bcard p,.bcard .mut,.bcard .tiny,.bcard .small,.bcard .hint,.bcard summary{color:#fff!important}
+.bcard .hint,.bcard p,.bcard .tiny,.bcard .small{font-weight:600}
+.bcard .ck,.bcard .ck *:not(.btn),.bcard .li,.bcard .seg label,.bcard .seg .rolebtn,.bcard .pill{color:var(--ink)!important}
+.bcard .seg input:checked + .rolebtn{color:#fff!important}
+/* sur fonds de couleur (bandes, cartes, pastilles), le texte secondaire passe en encre */
+.bd .mut,.bd .tiny,.ck[style*="background:var(--yellow)"] .mut,.ck[style*="background:var(--mint)"] .mut,.ck[style*="background:var(--pink)"] .mut,.ck[style*="background:var(--blue2)"] .mut,.ck[style*="background:var(--hi)"] .mut,.w1-card .mut{color:var(--ink)!important}
+/* blocs marine : textes secondaires en blanc franc */
+.hero2 .hero-s,.hero2 > p,.hero2 > .mut{color:#fff!important}

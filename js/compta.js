@@ -66,7 +66,7 @@ ACT['compta-add'] = (el) => {
   const kind = el.dataset.k, m = el.dataset.m;
   openModal(() => `<div class="row between"><h2>${kind === 'inc' ? 'Nouvelle recette' : 'Nouvelle dépense'}</h2><button class="ib" data-act="close-modal" aria-label="Fermer">${ic('x', 20)}</button></div>${entryForm(kind, m, kind === 'inc' ? d.INCOME_CATS : d.EXPENSE_CATS)}`);
 };
-const addBtns = (m) => `<button class="btn sm" data-act="compta-add" data-k="inc" data-m="${m}" style="background:#2BB673">${ic('plus', 18)}Recette</button><button class="btn sm" data-act="compta-add" data-k="exp" data-m="${m}" style="background:var(--absent);color:var(--onabsent)">${ic('plus', 18)}Dépense</button>`;
+const addBtns = (m) => `<button class="btn sm" data-act="compta-add" data-k="inc" data-m="${m}" style="background:var(--mint);color:var(--ink)">${ic('plus', 18)}Recette</button><button class="btn sm" data-act="compta-add" data-k="exp" data-m="${m}" style="background:var(--absent);color:var(--onabsent)">${ic('plus', 18)}Dépense</button>`;
 
 export function view(u, page, q) {
   const months = d.financeMonths();
