@@ -280,7 +280,8 @@ export async function deleteProf(id) {
 // ---------- gestion : locaux, heures des profs, familles, finances ----------
 export const DEFAULT_LOCAUX = ['Local 1', 'Local 2', 'Local 3', 'Salle de prière hommes', 'Salle de prière femmes'];
 function migrateGestion(x) {
-  if (!Array.isArray(x.locaux)) x.locaux = DEFAULT_LOCAUX.map((name) => ({ id: uid(), name }));
+  // vraie mosquée : la direction crée ses salles elle-même (la démo a ses salles d'exemple)
+  if (!Array.isArray(x.locaux)) x.locaux = x.demo ? DEFAULT_LOCAUX.map((name) => ({ id: uid(), name })) : [];
   if (!Array.isArray(x.families)) x.families = [];
   if (!x.finance) x.finance = {};
   const f = x.finance;

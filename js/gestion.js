@@ -3,6 +3,7 @@ import * as d from './data.js';
 import { locale } from './i18n.js';
 import { ACT, FORMS, CHANGE, esc, ic, av, pill, fdate, toast, openModal, closeModal, refreshModal, todayISO, ask, askText, DAYS, ACC, initials, fullName } from './ui.js';
 import { shell } from './prof.js';
+import { mosqueName } from './mosquee.js';
 
 const go = (h) => { if (location.hash === h) window.dispatchEvent(new Event('hashchange')); else location.hash = h; };
 const rerender = () => window.dispatchEvent(new Event('hashchange'));
@@ -43,17 +44,18 @@ function conflicts() {
 export function locauxSummary() {
   return { n: d.D().locaux.length, used: usage().length, conflicts: conflicts(), days: ORDER.filter((day) => usage().some((x) => +x.s.day === day)).length };
 }
-function dayTable(day) {
-  const L = d.D().locaux;
-  const all = usage().filter((x) => +x.s.day === day);
-  const lo = Math.floor(Math.min(...all.map((x) => d.toMin(x.s.time))) / 60) * 60;
-  const hi = Math.ceil(Math.max(...all.map((x) => endMin(x.s))) / 60) * 60;
+// Grille générique : colonnes (salles ou jours) × lignes de 30 minutes, créneaux occupés en rouge
+function range() {
+  const all = usage();
+  if (!all.length) return [9 * 60, 12 * 60];
+  return [Math.floor(Math.min(...all.map((x) => d.toMin(x.s.time))) / 60) * 60, Math.ceil(Math.max(...all.map((x) => endMin(x.s))) / 60) * 60];
+}
+function grid(cols, lo, hi, live = true) {
   const rows = (hi - lo) / 30;
-  // découpe en lignes de 30 minutes
-  const plan = L.map((l) => {
+  const plan = cols.map((c) => {
     const bl = [];
-    for (const b of blocks(day, l.id)) {
-      let rs = Math.floor((b.a - lo) / 30), re = Math.max(rs + 1, Math.ceil((b.b - lo) / 30));
+    for (const b of c.blocks) {
+      const rs = Math.max(0, Math.floor((b.a - lo) / 30)), re = Math.max(rs + 1, Math.ceil((b.b - lo) / 30));
       const last = bl[bl.length - 1];
       if (last && rs < last.re) { last.re = Math.max(last.re, re); last.names.push(...b.names); last.ids.push(...b.ids); last.b = Math.max(last.b, b.b); last.conflict = last.conflict || b.conflict; continue; }
       bl.push({ ...b, rs, re });
@@ -64,16 +66,30 @@ function dayTable(day) {
   for (let r = 0; r < rows; r++) {
     const t = lo + r * 30;
     body += `<tr><th scope="row" class="lt-h">${t % 60 === 0 ? hh(d.fromMin(t)) : ''}</th>`;
-    L.forEach((l, li) => {
-      const b = plan[li].find((x) => x.rs <= r && r < x.re);
-      if (!b) { body += `<td class="lt-free" title="${esc(l.name)} libre à ${hh(d.fromMin(t))}"></td>`; return; }
+    cols.forEach((c, ci) => {
+      const b = plan[ci].find((x) => x.rs <= r && r < x.re);
+      if (!b) { body += `<td class="lt-free" title="${esc(c.label)} libre à ${hh(d.fromMin(t))}"></td>`; return; }
       if (b.rs !== r) return;
       const one = [...new Set(b.ids)].length === 1;
-      body += `<td class="lt-busy${b.conflict ? ' lt-conf' : ''}" rowspan="${b.re - b.rs}"><button type="button" class="lt-btn" ${one ? `data-act="loc-edit" data-id="${b.ids[0]}"` : ''} aria-label="${esc(l.name)} : ${esc(b.names.join(', '))}"><span class="b">${esc([...new Set(b.names)].join(' + '))}</span><span class="tiny">${hh(d.fromMin(b.a))} – ${hh(d.fromMin(b.b))}${b.noEnd ? ' (fin ?)' : ''}</span>${b.conflict ? `<span class="tiny b">${ic('alert', 12)} Conflit</span>` : ''}</button></td>`;
+      const inner = `<span class="b">${esc([...new Set(b.names)].join(' + '))}</span><span class="tiny">${hh(d.fromMin(b.a))} – ${hh(d.fromMin(b.b))}${b.noEnd ? ' (fin ?)' : ''}</span>${b.conflict ? `<span class="tiny b">${ic('alert', 12)} Conflit</span>` : ''}`;
+      body += `<td class="lt-busy${b.conflict ? ' lt-conf' : ''}" rowspan="${b.re - b.rs}">${live ? `<button type="button" class="lt-btn" ${one ? `data-act="loc-edit" data-id="${b.ids[0]}"` : ''} aria-label="${esc(c.label)} : ${esc(b.names.join(', '))}">${inner}</button>` : `<div class="lt-btn">${inner}</div>`}</td>`;
     });
     body += '</tr>';
   }
-  return `<div class="ck pad col" style="gap:10px"><h2>${DAYS[day]}</h2><div class="lt-wrap"><table class="lt"><thead><tr><th></th>${L.map((l) => `<th scope="col">${esc(l.name)}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div></div>`;
+  return `<div class="lt-wrap"><table class="lt"><thead><tr><th></th>${cols.map((c) => `<th scope="col">${esc(c.label)}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>`;
+}
+const usedDays = () => ORDER.filter((day) => usage().some((x) => +x.s.day === day));
+// vue par salle : une carte par salle, la semaine en colonnes
+function roomCard(l, days, lo, hi, live = true) {
+  const n = usage().filter((x) => x.s.localId === l.id).length;
+  const cols = days.map((day) => ({ label: DAYS[day], blocks: blocks(day, l.id) }));
+  return `<div class="ck pad col lt-card" style="gap:10px"><div class="row between wrap"><h2>${ic('door', 20)} ${esc(l.name)}</h2>${pill(n ? `${n} créneau(x) par semaine` : 'Libre toute la semaine', n ? 'var(--neutral)' : 'var(--present)')}</div>
+  ${days.length ? grid(cols, lo, hi, live) : ''}</div>`;
+}
+// vue par jour : une carte par jour, les salles en colonnes
+function dayCard(day, lo, hi, live = true) {
+  const cols = d.D().locaux.map((l) => ({ label: l.name, blocks: blocks(day, l.id) }));
+  return `<div class="ck pad col lt-card" style="gap:10px"><h2>${DAYS[day]}</h2>${grid(cols, lo, hi, live)}</div>`;
 }
 function freeList(day, a, b) {
   if (!(b > a)) return '<p class="small err">L’heure de fin doit être après l’heure de début.</p>';
@@ -86,9 +102,11 @@ CHANGE['loc-find'] = () => {
   const day = +document.getElementById('lf-d').value, a = d.toMin(document.getElementById('lf-a').value), b = d.toMin(document.getElementById('lf-b').value);
   document.getElementById('lf-res').innerHTML = freeList(day, a, b);
 };
-export function locauxView(u) {
+export function locauxView(u, q) {
   const L = d.D().locaux;
-  const days = ORDER.filter((day) => usage().some((x) => +x.s.day === day));
+  const v = q && q.get('v') === 'jour' ? 'jour' : 'salle';
+  const days = usedDays();
+  const [lo, hi] = range();
   const missing = d.D().classes.filter((c) => !d.slotsOf(c).length || d.slotsOf(c).some((s) => !s.localId || !d.local(s.localId)));
   const nconf = conflicts();
   const locRows = L.map((l) => {
@@ -96,22 +114,40 @@ export function locauxView(u) {
     return `<div class="li"><span class="av" style="width:40px;height:40px;background:var(--blue2)">${ic('door', 18)}</span><div class="grow"><div class="b">${esc(l.name)}</div><div class="small mut b" style="font-weight:600">${n ? `${n} créneau(x) par semaine` : 'Jamais utilisé'}</div></div>
     <button class="ib sm" data-act="loc-ren" data-id="${l.id}" aria-label="Renommer ${esc(l.name)}">${ic('edit', 16)}</button><button class="ib sm" data-act="loc-del" data-id="${l.id}" aria-label="Supprimer ${esc(l.name)}">${ic('trash', 16)}</button></div>`;
   }).join('');
-  return shell(u, 4, `<div class="page">${top('Locaux', 'Direction · disponibilité de la semaine', '#/admin')}
-  <div class="row wrap" style="gap:8px">${pill('&nbsp;', 'var(--present)')}<span class="small b">Libre</span>${pill('&nbsp;', 'var(--absent)')}<span class="small b">Utilisé</span>${nconf ? pill(`${ic('alert', 14)} ${nconf} conflit(s) : deux classes dans le même local en même temps`, 'var(--yellow)') : ''}</div>
-  <p class="small mut b" style="font-weight:600">Seuls les jours où au moins un local est utilisé sont affichés. Touchez un créneau rouge pour changer le local ou l’horaire de la classe.</p>
-  ${days.length ? days.map(dayTable).join('') : `<div class="ck pad col" style="background:var(--hi)"><h2>Aucun local renseigné</h2><p class="b" style="font-weight:600">Indiquez pour chaque classe le local utilisé et ses horaires : le planning se remplit tout seul.</p></div>`}
-  ${missing.length ? `<div class="ck pad col"><h2>Classes sans local</h2><div class="list">${missing.map((c) => `<div class="li"><span class="grow b">${esc(c.name)}</span><button class="btn2 sm" data-act="loc-edit" data-id="${c.id}">${ic('door', 16)}Local utilisé</button></div>`).join('')}</div></div>` : ''}
-  <div class="grid2 stack" style="align-items:start">
-  <div class="ck pad col"><h2>${ic('clock', 20)} Trouver un local libre</h2><p class="small mut b" style="font-weight:600">Ex. : un prof veut ouvrir une classe le samedi matin.</p>
+  const listCard = `<div class="ck pad col" id="salles"><div class="row between"><h2>${ic('door', 20)} Les salles de la mosquée</h2>${pill(L.length + ' local(aux)', 'var(--neutral)')}</div>
+    <p class="small mut b" style="font-weight:600">Ajoutez vos salles avec les noms que vous voulez (salle de prière, salle de classe, bureau, cuisine…).</p>
+    <div class="list">${locRows || '<p class="small mut">Aucune salle pour le moment.</p>'}</div>
+    <form class="row" data-form="loc-add"><label class="sr" for="la">Nom du local</label><input id="la" name="name" class="inp" placeholder="ex. Salle polyvalente" required><button class="btn sm">${ic('plus', 18)}Ajouter</button></form></div>`;
+  const finder = `<div class="ck pad col" style="background:var(--hi)"><h2>${ic('clock', 20)} Trouver un local libre</h2><p class="small mut b" style="font-weight:600">Ex. : un prof veut ouvrir une classe le samedi matin.</p>
     <div class="grid2" style="gap:8px"><div class="field" style="grid-column:1/-1"><label class="lbl" for="lf-d">Jour</label><select id="lf-d" class="inp" data-change="loc-find">${ORDER.map((k) => `<option value="${k}" ${k === 6 ? 'selected' : ''}>${DAYS[k]}</option>`).join('')}</select></div>
     <div class="field"><label class="lbl" for="lf-a">De</label><input id="lf-a" type="time" class="inp" value="09:00" data-change="loc-find"></div>
     <div class="field"><label class="lbl" for="lf-b">À</label><input id="lf-b" type="time" class="inp" value="12:00" data-change="loc-find"></div></div>
-    <div id="lf-res">${freeList(6, 540, 720)}</div></div>
-  <div class="ck pad col"><div class="row between"><h2>Liste des locaux</h2>${pill(L.length + ' local(aux)', 'var(--neutral)')}</div>
-    <div class="list">${locRows || '<p class="small mut">Aucun local.</p>'}</div>
-    <form class="row" data-form="loc-add"><label class="sr" for="la">Nom du local</label><input id="la" name="name" class="inp" placeholder="ex. Salle polyvalente" required><button class="btn sm">${ic('plus', 18)}Ajouter</button></form></div>
-  </div></div>`);
+    <div id="lf-res">${freeList(6, 540, 720)}</div></div>`;
+  return shell(u, 4, `<div class="page">${top('Locaux', 'Direction · emploi du temps des salles', '#/admin', L.length ? `<a class="btn sm" href="#/admin/locaux/pdf">${ic('dl', 18)}PDF</a>` : '')}
+  ${L.length ? finder : ''}
+  ${L.length ? `<div class="row wrap between" style="gap:8px"><div class="seg" style="flex:1 1 260px"><a href="#/admin/locaux" class="${v === 'salle' ? 'on' : ''}">Par salle</a><a href="#/admin/locaux?v=jour" class="${v === 'jour' ? 'on' : ''}">Par jour</a></div>
+  <div class="row wrap" style="gap:8px">${pill('&nbsp;', 'var(--present)')}<span class="small b">Libre</span>${pill('&nbsp;', 'var(--absent)')}<span class="small b">Pris</span></div></div>
+  ${nconf ? `<div class="err">${ic('alert', 16)} ${nconf} conflit(s) : deux classes dans la même salle en même temps.</div>` : ''}
+  <p class="small mut b" style="font-weight:600">Seuls les jours où une salle est utilisée sont affichés. Touchez un créneau rouge pour changer la salle ou l’horaire de la classe.</p>
+  ${!days.length ? `<div class="ck pad col" style="background:var(--hi)"><h2>Aucun créneau pour le moment</h2><p class="b" style="font-weight:600">Indiquez pour chaque classe la salle utilisée (bouton « Local utilisé » sur la classe) : l’emploi du temps se remplit tout seul.</p></div>`
+    : v === 'salle' ? L.map((l) => roomCard(l, days, lo, hi)).join('') : days.map((day) => dayCard(day, lo, hi)).join('')}` : ''}
+  ${missing.length && L.length ? `<div class="ck pad col"><h2>Classes sans salle</h2><div class="list">${missing.map((c) => `<div class="li"><span class="grow b">${esc(c.name)}</span><button class="btn2 sm" data-act="loc-edit" data-id="${c.id}">${ic('door', 16)}Local utilisé</button></div>`).join('')}</div></div>` : ''}
+  ${listCard}</div>`);
 }
+// ---------- PDF : emploi du temps de toutes les salles, à envoyer à qui veut réserver un créneau ----------
+export function locauxPdf(u) {
+  // toute la semaine, de 8h à 22h (au moins), pour que la personne voie aussi les jours entièrement libres
+  const L = d.D().locaux, days = ORDER;
+  const [lo0, hi0] = range();
+  const lo = Math.min(lo0, 8 * 60), hi = Math.max(hi0, 22 * 60);
+  const now = new Date().toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' });
+  return `<div class="page pdf"><div class="row between wrap noprint" style="gap:8px"><a class="btn2 sm" href="#/admin/locaux">${ic('back', 18)}Retour</a><button class="btn sm" data-act="print">${ic('dl', 18)}Enregistrer en PDF / imprimer</button></div>
+  <p class="small mut b noprint" style="font-weight:600">Dans la fenêtre d’impression, choisissez « Enregistrer au format PDF » (sur téléphone : Partager → Imprimer → PDF). Vous pouvez ensuite l’envoyer par e-mail ou WhatsApp.</p>
+  <div class="col" style="gap:4px"><span class="b" style="font-size:26px">Emploi du temps des salles</span><span class="b" data-notr dir="auto">${esc(mosqueName())}</span><span class="small mut b">Au ${now} · cases blanches = créneaux libres, cases rouges = créneaux déjà pris</span></div>
+  ${L.map((l) => roomCard(l, days, lo, hi, false)).join('')}
+  ${!days.length ? '<p class="b">Aucune salle n’est encore utilisée : tous les créneaux sont libres.</p>' : ''}</div>`;
+}
+ACT.print = () => window.print();
 FORMS['loc-add'] = (f, fd) => { const name = (fd.get('name') || '').trim(); if (!name) return; d.D().locaux.push({ id: d.uid(), name }); d.save(); toast('Local ajouté'); rerender(); };
 ACT['loc-ren'] = (el) => { const l = d.local(el.dataset.id); const n = askText('Nouveau nom du local', l.name); if (n && n.trim()) { l.name = n.trim(); d.save(); rerender(); } };
 ACT['loc-del'] = (el) => {

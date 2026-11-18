@@ -242,3 +242,23 @@ input:focus-visible + .swatch{outline:3px solid var(--primary);outline-offset:3p
 
 @media(max-width:420px){.seg.roles{flex-direction:column}.hide-sm{display:none}}
 .btn2.on-pill{background:var(--yellow)}
+
+/* emploi du temps des salles : export PDF */
+@media print{
+  .noprint{display:none!important}
+  .pdf .lt-card{break-inside:avoid;page-break-inside:avoid;margin-bottom:10px}
+  .lt-wrap{overflow:visible!important}
+  .lt td,.lt th{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .lt-free{background:#FFFFFF!important;border:1px solid #D5DCF2}
+  .lt-busy{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{background:#FFFFFF}
+  .pdf{padding:0!important;gap:8px!important}
+  .pdf .ck{box-shadow:none!important;padding:8px 10px!important;border-width:2px!important}
+  .pdf .lt{border-spacing:1px;table-layout:fixed;width:100%;min-width:0}
+  .pdf .lt td{height:9px;min-width:0}
+  .pdf .lt th{font-size:9px;padding:1px 3px}
+  .pdf .lt .lt-h{font-size:8px;transform:translateY(-5px)}
+  .pdf .lt-btn{font-size:8px;padding:1px 3px;gap:0}
+  .pdf h2{font-size:15px}
+  .pdf .pill{font-size:9px;padding:1px 6px}
+}
