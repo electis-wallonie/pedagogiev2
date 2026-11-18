@@ -1,4 +1,55 @@
-# Suivi : suivi pédagogique (PWA)
+# Application de mosquée : modèle « 360° »
+
+Une application web installable (PWA), **la même pour toutes les mosquées**. Chaque mosquée reçoit sa propre copie de ce dépôt, configurée par un seul fichier : `mosquee.json`.
+
+- **Côté public, sans compte :** Prières (reliées à Mawaqit), Questions à l’imam, Cours (fiche d’un élève, enfant ou adulte, avec son code), Contact.
+- **Côté équipe, avec identifiant :** méga administrateur, administrateurs, comptabilité, professeurs.
+
+## Déployer l’app pour une nouvelle mosquée (procédure pour Claude)
+
+1. **Copier ce dépôt** dans un nouveau dépôt GitHub au nom de la mosquée.
+2. **Poser ces questions** à l’équipe, puis remplir `mosquee.json` :
+
+| Question | Champ de `mosquee.json` | Exemple |
+|---|---|---|
+| Lien de la page **Mawaqit officielle** de la mosquée ? | `mawaqit` | `https://mawaqit.net/fr/mosquee-st-jean-de-braye` |
+| Nom à afficher (laisser vide = nom Mawaqit) ? | `nom` | `Mosquée Al-Mouhsinine` |
+| Quel **style** ? (voir `css/styles/`) | `style` | `pastille` ou `sobre` |
+| Couleur de la barre du téléphone ? | `couleurTheme` | `#1F4FFF` |
+
+3. **Lancer la synchronisation Mawaqit :** onglet *Actions* → « Horaires Mawaqit » → *Run workflow*. Elle crée `data/mawaqit.json`, puis tourne seule chaque nuit.
+4. **Déployer sur Cloudflare Pages :** relier le dépôt, sans commande de build, dossier de sortie `/`. Chaque mise à jour des horaires redéploie automatiquement. GitHub Pages fonctionne aussi.
+5. **Première connexion :** compte `admin` (méga administrateur). Il crée ensuite les administrateurs, la comptabilité et les professeurs, avec téléphone et e-mail obligatoires. Dans Direction → *Mosquée & espace public*, il ajoute les destinataires de la page Contact (direction, imam, trésorier…).
+
+## Horaires de prière : reliés à Mawaqit, sans serveur
+
+Le navigateur ne peut pas lire directement une page Mawaqit depuis un autre site : c’est une protection standard des navigateurs, appelée CORS. On passe donc par une **GitHub Action quotidienne** (`.github/workflows/mawaqit.yml` → `scripts/mawaqit.mjs`) :
+
+- elle ouvre la page officielle donnée dans `mosquee.json` ;
+- elle reprend telle quelle la variable `confData` de Mawaqit : horaires de l’année, iqama, Jumu’a, Aïd, services, annonces ;
+- elle écrit le petit fichier `data/mawaqit.json`.
+
+L’app lit ce fichier à chaque ouverture et ne stocke rien sur l’appareil. Comme le calendrier de toute l’année est inclus, les horaires restent justes même si une synchronisation échoue.
+
+## Styles
+
+- Chaque style est un fichier `css/styles/<nom>.css` qui ne change que les couleurs, les contours et les arrondis. La structure de l’app reste identique.
+- **Ajouter un style :** créer `css/styles/mon-style.css`, puis mettre `"style": "mon-style"` dans `mosquee.json`.
+- Styles disponibles : `pastille` (vif, par défaut) et `sobre` (vert et or, contours fins).
+
+## Les rôles
+
+| Compte | Ce qu’il voit |
+|---|---|
+| **Méga administrateur** | Tout. Crée les administrateurs, la comptabilité et les professeurs. |
+| **Administrateur** | Toute l’école et la direction. Crée des professeurs. |
+| **Comptabilité** | Uniquement l’espace comptabilité : tableau de bord, journal, recettes, dépenses, cotisations, enseignants, rapports. |
+| **Professeur** | Ses classes et ses élèves. |
+| **Public** | Prières, Imam, Cours (avec un code), Contact. Aucun compte. |
+
+---
+
+## Module école : suivi pédagogique
 
 Application web installable (PWA) qui remplace les feuilles de suivi papier : **Coran**, **Langue & Religion**, **assiduité** et **notes de l’imam** (texte ou message vocal).
 

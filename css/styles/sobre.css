@@ -1,0 +1,9 @@
+/* Style « Sobre » : vert et or, contours fins, ambiance calme de mosquée.
+   Un style ne change que les variables et quelques détails : toute la structure de l'app reste la même. */
+:root{
+  --ink:#16302B; --muted:#4A615B; --primary:#0F6E56; --onprimary:#FFFFFF;
+  --yellow:#E9C46A; --blue2:#B9D8CF; --pink:#F2C6B8; --mint:#9ED9B8;
+  --surface:#FFFFFF; --field:#F6F4EE; --bg:#F3F0E8; --hi:#FBF3DC; --neutral:#EDEAE1;
+  --bw:1.5px; --sh:0 6px 20px rgba(22,48,43,.08); --r:18px; --rb:14px; --ri:12px;
+}
+.btn,.btn2,.btnd{box-shadow:none}

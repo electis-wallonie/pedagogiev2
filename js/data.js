@@ -120,7 +120,13 @@ export function ageOf(st) {
 }
 
 // ---------- périmètre : un prof voit ses classes, l'admin voit tout ----------
-export const isAdmin = (u) => u && u.role === 'admin';
+// Rôles : méga administrateur (admin + super), administrateur, comptabilité, professeur
+export const isAdmin = (u) => !!u && u.role === 'admin';
+export const isSuper = (u) => !!u && u.role === 'admin' && !!u.super;
+export const isCompta = (u) => !!u && u.role === 'compta';
+export const canCompta = (u) => isAdmin(u) || isCompta(u);
+export const roleLabel = (u) => (!u ? '' : isSuper(u) ? 'Méga administrateur' : u.role === 'admin' ? 'Administrateur' : u.role === 'compta' ? 'Comptabilité' : 'Professeur');
+export const homeOf = (u) => (isCompta(u) ? '#/compta' : '#/prof');
 export const profs = () => db.users.filter((u) => u.role === 'prof').sort((a, b) => a.name.localeCompare(b.name));
 export const user = (id) => db.users.find((u) => u.id === id);
 export const myClasses = (u) => (isAdmin(u) ? db.classes.slice() : db.classes.filter((c) => c.profId === u.id)).sort((a, b) => a.name.localeCompare(b.name, 'fr', { numeric: true }));
@@ -271,6 +277,15 @@ function migrateGestion(x) {
   f.incomes = f.incomes || [];
   f.expenses = f.expenses || [];
   f.overrides = f.overrides || {};
+  // le premier administrateur devient méga administrateur
+  if (!x.users.some((u) => u.super)) { const a = x.users.filter((u) => u.role === 'admin').sort((p, q) => (p.createdAt || '').localeCompare(q.createdAt || ''))[0]; if (a) a.super = true; }
+  // la mosquée : nom, lien Mawaqit, destinataires de la page Contact, questions à l'imam
+  x.mosque = x.mosque || { name: '' };
+  if (!Array.isArray(x.contacts)) {
+    const a = x.users.find((u) => u.role === 'admin' && u.email);
+    x.contacts = [{ id: uid(), label: 'La direction', email: (x.contact && x.contact.email) || (a && a.email) || '' }];
+  }
+  if (!Array.isArray(x.faq)) x.faq = [];
 }
 export const local = (id) => (db.locaux || []).find((l) => l.id === id);
 export const toMin = (t) => { const [h, m] = String(t || '0:0').split(':').map(Number); return h * 60 + (m || 0); };

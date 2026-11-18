@@ -8,6 +8,8 @@ import * as prof from './prof.js';
 import { importView } from './import.js';
 import * as gest from './gestion.js';
 import * as contact from './contact.js';
+import * as mosq from './mosquee.js';
+import * as compta from './compta.js';
 import { startAutoTranslate, setLang, isAr } from './i18n.js';
 
 const app = document.getElementById('app');
@@ -16,19 +18,24 @@ function guard(role) {
   const u = d.me();
   if (!u) { location.hash = '#/login'; return null; }
   if (u.mustChange) { location.hash = '#/mdp'; return null; }
-  if (role === 'admin' ? u.role !== 'admin' : !['prof', 'admin'].includes(u.role)) { location.hash = '#/prof'; return null; }
+  const ok = role === 'admin' ? d.isAdmin(u) : role === 'compta' ? d.canCompta(u) : role === 'team' ? true : ['prof', 'admin'].includes(u.role);
+  if (!ok) { location.hash = d.homeOf(u); return null; }
   return u;
 }
 const R = [
-  [/^\/?$/, () => pub.home()],
+  [/^\/?$/, (m, q) => mosq.prieres(q)],
+  [/^\/imam$/, (m, q) => mosq.imam(q)],
+  [/^\/cours$/, () => pub.home()],
   [/^\/installer$/, () => pub.install()],
   [/^\/contact$/, (m, q) => contact.contactPage(q)],
-  [/^\/prof\/annuaire$/, () => { const u = guard('prof'); return u && contact.annuaire(u); }],
+  [/^\/prof\/annuaire$/, () => { const u = guard('team'); return u && contact.annuaire(u); }],
+  [/^\/admin\/public$/, () => { const u = guard('admin'); return u && mosq.adminPublic(u); }],
+  [/^\/compta(?:\/(\w+))?$/, (m, q) => { const u = guard('compta'); return u && compta.view(u, m[1] || 'bord', q); }],
   [/^\/f\/([^/]+)(?:\/(\w+))?$/, (m, q) => pub.fiche(m[1], m[2], q)],
-  [/^\/login$/, () => { const u = d.me(); if (u && !u.mustChange) { location.hash = '#/prof'; return null; } return adm.loginView(); }],
+  [/^\/login$/, () => { const u = d.me(); if (u && !u.mustChange) { location.hash = d.homeOf(u); return null; } return adm.loginView(); }],
   [/^\/mdp$/, () => { const u = d.me(); if (!u) { location.hash = '#/login'; return null; } return adm.pwView(u); }],
   [/^\/admin\/locaux$/, () => { const u = guard('admin'); return u && gest.locauxView(u); }],
-  [/^\/admin\/finances$/, (m, q) => { const u = guard('admin'); return u && gest.financesView(u, q); }],
+  [/^\/admin\/finances$/, () => { location.hash = '#/compta'; return null; }],
   [/^\/prof\/familles$/, () => { const u = guard('prof'); return u && gest.famillesView(u); }],
   [/^\/admin$/, () => { const u = guard('admin'); return u && adm.adminView(u); }],
   [/^\/prof$/, () => { const u = guard('prof'); return u && prof.dashboard(u); }],
@@ -119,6 +126,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal
 
 (async function start() {
   startAutoTranslate();
+  await mosq.loadConfig();
   if (!d.load() || !d.D().users) await seed();
   d.load();
   await d.purgeExpired();

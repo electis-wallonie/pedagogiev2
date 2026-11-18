@@ -17,9 +17,13 @@ export async function seed() {
   await clearAudio().catch(() => {});
   const admin = await makeUser('admin', 'admin', 'Administrateur', 'admin1234', false);
   const prof = await makeUser('prof', 'rahman', 'M. Rahman', 'prof1234', false);
-  Object.assign(admin, { tel: '+32 470 00 00 01', email: 'direction@exemple.be' });
+  Object.assign(admin, { name: 'Méga administrateur', super: true, tel: '+32 470 00 00 01', email: 'mega.admin@exemple.be' });
+  const direction = await makeUser('admin', 'direction', 'M. Directeur', 'admin1234', false);
+  Object.assign(direction, { tel: '+32 470 00 00 03', email: 'direction@exemple.be' });
+  const tresorier = await makeUser('compta', 'tresorier', 'Trésorier', 'compta1234', false);
+  Object.assign(tresorier, { tel: '+32 470 00 00 04', email: 'tresorier@exemple.be' });
   Object.assign(prof, { tel: '+32 470 00 00 02', email: 'rahman@exemple.be' });
-  setDb({ v: 1, demo: true, users: [admin, prof], classes: [], students: [], attendance: [], objectives: [], notes: [], snotes: [], announcements: [] });
+  setDb({ v: 1, demo: true, users: [admin, direction, tresorier, prof], classes: [], students: [], attendance: [], objectives: [], notes: [], snotes: [], announcements: [] });
   const db = D();
 
   const C = [
@@ -129,6 +133,17 @@ export async function seed() {
     { id: uid(), cat: 'fournitures', label: 'Cahiers et stylos (école)', amount: 85, date: daysAgo(3) },
   ] };
 
+  db.mosque = { name: '' };
+  db.contacts = [
+    { id: uid(), label: 'La direction', email: 'direction@exemple.be' },
+    { id: uid(), label: 'L’imam', email: 'imam@exemple.be' },
+    { id: uid(), label: 'Le trésorier', email: 'tresorier@exemple.be' },
+    { id: uid(), label: 'Le directeur de l’école', email: 'ecole@exemple.be' },
+  ];
+  db.faq = [
+    { id: uid(), at: stamp(10), theme: 'Prière', q: 'Peut-on rattraper une prière manquée ?', r: 'Oui. La prière manquée (qada) se rattrape dès qu’on s’en souvient, dans l’ordre, de préférence avant la prière suivante. Pour toute situation particulière, venez en parler à l’imam après une prière.' },
+    { id: uid(), at: stamp(5), theme: 'Zakat / aumône', q: 'À qui remettre la zakat al-Fitr ?', r: 'La mosquée collecte la zakat al-Fitr pendant les derniers jours du Ramadan et la redistribue aux familles dans le besoin avant la prière de l’Aïd. Le montant est annoncé chaque année.' },
+  ];
   db.announcements.push({ id: uid(), text: 'Bienvenue sur la nouvelle application de suivi ! Vous y retrouverez l’avancement de votre enfant, ses présences et les notes de l’imam.', audioId: null, from: daysAgo(1), to: daysAgo(-14), at: stamp(1, 9), authorId: admin.id });
   save();
 }

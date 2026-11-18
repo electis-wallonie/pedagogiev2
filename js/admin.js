@@ -4,7 +4,8 @@ import { ACT, FORMS, esc, ic, av, pill, fdate, toast, openModal, closeModal, cop
 import { shell } from './prof.js';
 import { langBtn } from './public.js';
 import { locauxTile, financeTile, hoursPill } from './gestion.js';
-import { contactFields, readContact, directionContactCard } from './contact.js';
+import { contactFields, readContact } from './contact.js';
+import { publicTile } from './mosquee.js';
 
 const go = (h) => { if (location.hash === h) window.dispatchEvent(new Event('hashchange')); else location.hash = h; };
 let loginErr = false;
@@ -12,7 +13,7 @@ let loginErr = false;
 export function loginView() {
   const err = loginErr; loginErr = false;
   return `<div class="page narrow" style="padding-top:30px">
-  <div class="row"><a href="#/" class="ib" aria-label="Retour">${ic('back', 20)}</a><span class="logo">${ic('book', 22, 2.6)}</span><span class="b grow" style="font-size:18px">Espace enseignant</span>${langBtn()}</div>
+  <div class="row"><a href="#/" class="ib" aria-label="Retour">${ic('back', 20)}</a><span class="logo">${ic('book', 22, 2.6)}</span><span class="b grow" style="font-size:18px">Espace équipe</span>${langBtn()}</div>
   <h1>Connexion</h1>
   <form class="ck pad col" data-form="login">
     <div class="field"><label class="lbl" for="lg">Identifiant</label><input id="lg" name="login" class="inp" autocomplete="username" autocapitalize="none" required></div>
@@ -22,15 +23,14 @@ export function loginView() {
     <p class="small mut b" style="font-weight:600">Pas de compte ? Les comptes enseignants sont créés par l’administrateur.</p>
   </form>
   ${d.D().demo ? `<div class="ck flat pad col" style="background:var(--hi);gap:8px"><span class="b">Comptes de démonstration</span>
-    <div class="row between small"><span><b>Admin</b> : admin / admin1234</span><button class="btn2 sm" data-act="demo-login" data-l="admin" data-p="admin1234">Utiliser</button></div>
-    <div class="row between small"><span><b>Prof</b> : rahman / prof1234</span><button class="btn2 sm" data-act="demo-login" data-l="rahman" data-p="prof1234">Utiliser</button></div></div>` : ''}
+    ${[['Méga admin', 'admin', 'admin1234'], ['Admin', 'direction', 'admin1234'], ['Comptabilité', 'tresorier', 'compta1234'], ['Prof', 'rahman', 'prof1234']].map(([r, l, p]) => `<div class="row between small"><span><b>${r}</b> : ${l} / ${p}</span><button class="btn2 sm" data-act="demo-login" data-l="${l}" data-p="${p}">Utiliser</button></div>`).join('')}</div>` : ''}
   </div>`;
 }
 FORMS.login = async (f, fd) => {
   const u = await d.checkLogin(fd.get('login') || '', fd.get('pw') || '');
   if (!u) { loginErr = true; go('#/login'); return; }
   d.login(u);
-  go(u.mustChange ? '#/mdp' : '#/prof');
+  go(u.mustChange ? '#/mdp' : d.homeOf(u));
 };
 ACT['demo-login'] = (el) => { document.getElementById('lg').value = el.dataset.l; document.getElementById('pw').value = el.dataset.p; };
 ACT.logout = () => { d.logout(); go('#/'); };
@@ -59,15 +59,21 @@ FORMS.pw = async (f, fd) => {
 };
 
 // ---------- admin ----------
+const ROLE_BG = { super: 'var(--yellow)', admin: 'var(--pink)', compta: 'var(--mint)', prof: 'var(--blue2)' };
+const roleKey = (u) => (d.isSuper(u) ? 'super' : u.role);
+// le méga administrateur crée tous les comptes ; un administrateur crée les professeurs
+const creatable = (me) => (d.isSuper(me) ? [['prof', 'Professeur'], ['admin', 'Administrateur'], ['compta', 'Comptabilité']] : [['prof', 'Professeur']]);
+const canManage = (me, u) => u.id !== me.id && !d.isSuper(u) && (d.isSuper(me) || u.role === 'prof');
 export function adminView(u) {
-  const profs = d.D().users.filter((x) => x.role === 'prof').sort((a, b) => a.name.localeCompare(b.name));
-  const rows = profs.map((p) => {
-    const nc = d.classesOf(p.id).length, ns = d.studentsOfProf(p.id).length;
-    return `<div class="li">${av(p.name.split(' ').map((w) => w[0]).join('').slice(0, 2), 44, 'var(--blue2)', 14)}
-    <div class="grow"><div class="b">${esc(p.name)}</div><div class="small mut b" style="font-weight:600">Identifiant : <b>${esc(p.login)}</b> · ${nc} classe(s) · ${ns} élève(s) ${hoursPill(p)}${p.mustChange ? ' · ' + pill('Mot de passe temporaire', 'var(--yellow)') : ''}</div><div class="small b" style="font-weight:600;word-break:break-all">${p.tel || p.email ? `${esc(p.tel || '')}${p.tel && p.email ? ' · ' : ''}${esc(p.email || '')}` : '<span style="color:var(--absent)">Téléphone et e-mail à compléter</span>'}</div></div>
-    <button class="ib sm" data-act="user-contact" data-id="${p.id}" aria-label="Coordonnées de ${esc(p.name)}">${ic('phone', 18)}</button>
-    <button class="ib sm" data-act="prof-reset" data-id="${p.id}" aria-label="Réinitialiser le mot de passe de ${esc(p.name)}">${ic('key', 18)}</button>
-    <button class="ib sm" data-act="prof-del" data-id="${p.id}" aria-label="Supprimer ${esc(p.name)}">${ic('trash', 18)}</button></div>`;
+  const team = d.D().users.slice().sort((a, b) => (['super', 'admin', 'compta', 'prof'].indexOf(roleKey(a)) - ['super', 'admin', 'compta', 'prof'].indexOf(roleKey(b))) || a.name.localeCompare(b.name));
+  const rows = team.map((p) => {
+    const info = p.role === 'prof' ? ` · ${d.classesOf(p.id).length} classe(s) · ${d.studentsOfProf(p.id).length} élève(s)` : '';
+    return `<div class="li" style="align-items:flex-start">${av(p.name.split(' ').map((w) => w[0]).join('').slice(0, 2), 44, ROLE_BG[roleKey(p)], 14)}
+    <div class="grow"><div class="row wrap" style="gap:6px"><span class="b">${esc(p.name)}${p.id === u.id ? ' (moi)' : ''}</span>${pill(d.roleLabel(p), ROLE_BG[roleKey(p)])}</div>
+    <div class="small mut b" style="font-weight:600">Identifiant : <b>${esc(p.login)}</b>${info} ${p.role === 'prof' || d.profHours(p.id).n ? hoursPill(p) : ''}${p.mustChange ? ' · ' + pill('Mot de passe temporaire', 'var(--hi)') : ''}</div>
+    <div class="small b" style="font-weight:600;word-break:break-all">${p.tel || p.email ? `${esc(p.tel || '')}${p.tel && p.email ? ' · ' : ''}${esc(p.email || '')}` : '<span style="color:var(--absent)">Téléphone et e-mail à compléter</span>'}</div></div>
+    ${canManage(u, p) || p.id === u.id ? `<button class="ib sm" data-act="user-contact" data-id="${p.id}" aria-label="Coordonnées de ${esc(p.name)}">${ic('phone', 18)}</button>` : ''}
+    ${canManage(u, p) ? `<button class="ib sm" data-act="prof-reset" data-id="${p.id}" aria-label="Réinitialiser le mot de passe de ${esc(p.name)}">${ic('key', 18)}</button><button class="ib sm" data-act="prof-del" data-id="${p.id}" aria-label="Supprimer ${esc(p.name)}">${ic('trash', 18)}</button>` : ''}</div>`;
   }).join('');
   const today = todayISO();
   const ann = (d.D().announcements || []).slice().sort((a, b) => b.from.localeCompare(a.from));
@@ -76,13 +82,12 @@ export function adminView(u) {
     return `<div class="li" style="align-items:flex-start"><div class="grow col" style="gap:6px"><div class="row wrap" style="gap:8px">${pill(st[0], st[1])}<span class="small b">${fdate(a.from)} → ${fdate(a.to)}</span></div>${a.text ? `<div data-notr dir="auto" style="white-space:pre-wrap;font-weight:500">${esc(a.text)}</div>` : ''}${a.audioId ? `<audio controls preload="none" data-audio="${a.audioId}" style="width:100%;height:40px"></audio>` : ''}</div><button class="ib sm" data-act="ann-del" data-id="${a.id}" aria-label="Supprimer le message">${ic('trash', 16)}</button></div>`;
   }).join('');
   const in7 = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
+  const roles = creatable(u);
   return shell(u, 4, `<div class="page">
-  <div class="top"><span class="logo">${ic('shield', 22, 2.6)}</span><div class="grow"><div class="small mut b">Administration</div><h1>Direction</h1></div></div>
-  <p class="mut b" style="font-weight:600">En tant qu’administrateur, vous voyez et gérez tout : toutes les classes, tous les élèves, l’appel, le Coran, les objectifs et les notes, comme un professeur. Ici : les locaux, les finances, les comptes des professeurs et les messages de la direction.</p>
-  <div class="grid2">${locauxTile()}${financeTile()}</div>
-  ${directionContactCard()}
+  <div class="top"><span class="logo">${ic('shield', 22, 2.6)}</span><div class="grow"><div class="small mut b">${d.roleLabel(u)}</div><h1>Direction</h1></div></div>
+  <div class="grid3">${publicTile()}${locauxTile()}${financeTile()}</div>
   <div class="ck pad col" id="messages"><h2>${ic('mega', 22)} Message de la direction</h2>
-  <p class="small mut b" style="font-weight:600">Affiché en haut de toutes les fiches élèves (parents) et des tableaux de bord (professeurs), entre les deux dates choisies.</p>
+  <p class="small mut b" style="font-weight:600">Affiché en haut de toutes les fiches élèves et des tableaux de bord de l’équipe, entre les deux dates choisies.</p>
   <form class="col" data-form="ann">
     <div class="grid2"><div class="field"><label class="lbl" for="af">Visible du</label><input id="af" name="from" type="date" class="inp" value="${today}" required></div><div class="field"><label class="lbl" for="at">Jusqu’au</label><input id="at" name="to" type="date" class="inp" value="${in7}" required></div></div>
     <label class="sr" for="za-t">Message</label><textarea id="za-t" name="text" class="inp" placeholder="Ex : l’école sera fermée samedi prochain…"></textarea>
@@ -92,15 +97,17 @@ export function adminView(u) {
   <div class="list">${annRows || '<p class="small mut">Aucun message pour le moment.</p>'}</div></div>
   <div class="grid2 stack" style="align-items:start">
   <form class="ck pad col" data-form="new-prof">
-    <h2>Nouveau professeur</h2>
-    <div class="field"><label class="lbl" for="np-n">Nom affiché aux parents</label><input id="np-n" name="name" class="inp" placeholder="ex. Imam Youssef" required></div>
+    <h2>Nouveau compte</h2>
+    ${roles.length > 1 ? `<fieldset style="border:0;padding:0;margin:0"><legend class="lbl">Type de compte</legend><div class="seg">${roles.map(([k, l], i) => `<label style="flex:1"><input type="radio" name="role" value="${k}" class="sr" ${i === 0 ? 'checked' : ''}><span class="rolebtn">${l}</span></label>`).join('')}</div></fieldset>
+    <p class="tiny mut b">Professeur : ses classes et ses élèves. Administrateur : gère toute l’école et la direction. Comptabilité : uniquement l’espace comptable (recettes, dépenses, cotisations, rapports).</p>` : '<input type="hidden" name="role" value="prof">'}
+    <div class="field"><label class="lbl" for="np-n">Nom affiché</label><input id="np-n" name="name" class="inp" placeholder="ex. Imam Youssef" required></div>
     ${contactFields({}, 'np')}
     <div class="field"><label class="lbl" for="np-l">Identifiant de connexion</label><input id="np-l" name="login" class="inp" autocapitalize="none" placeholder="ex. youssef" pattern="[a-zA-Z0-9._\\-]{3,30}" required><span class="hint">Lettres, chiffres, point ou tiret, 3 caractères minimum</span></div>
-    <div class="field"><label class="lbl" for="np-p">Mot de passe temporaire</label><div class="row"><input id="np-p" name="pw" class="inp" value="${d.randomPw()}" required minlength="8"><button type="button" class="ib" data-act="gen-pw" aria-label="Générer un autre mot de passe">${ic('refresh', 18)}</button></div><span class="hint">Le professeur devra le changer à sa première connexion.</span></div>
+    <div class="field"><label class="lbl" for="np-p">Mot de passe temporaire</label><div class="row"><input id="np-p" name="pw" class="inp" value="${d.randomPw()}" required minlength="8"><button type="button" class="ib" data-act="gen-pw" aria-label="Générer un autre mot de passe">${ic('refresh', 18)}</button></div><span class="hint">À changer à la première connexion.</span></div>
     <button class="btn full">${ic('plus', 20)}Créer le compte</button>
   </form>
-  <div class="ck pad col"><div class="row between"><h2>Professeurs</h2>${pill(profs.length + ' compte(s)', 'var(--neutral)')}</div>
-  <div class="list">${rows || '<p class="mut small">Aucun professeur pour le moment.</p>'}</div></div>
+  <div class="ck pad col"><div class="row between"><h2>L’équipe</h2>${pill(team.length + ' compte(s)', 'var(--neutral)')}</div>
+  <div class="list">${rows}</div><a class="btn2 sm" href="#/prof/annuaire" style="align-self:flex-start">${ic('users', 16)}Annuaire de l’équipe</a></div>
   </div></div>`);
 }
 FORMS.ann = async (f, fd) => {
@@ -122,7 +129,7 @@ ACT['ann-del'] = async (el) => {
 };
 ACT['gen-pw'] = () => { document.getElementById('np-p').value = d.randomPw(); };
 function credsModal(title, name, login, pw) {
-  const txt = `Suivi — accès enseignant\nAdresse : ${location.origin}${location.pathname}#/login\nIdentifiant : ${login}\nMot de passe temporaire : ${pw}`;
+  const txt = `Accès à l’application de la mosquée\nAdresse : ${location.origin}${location.pathname}#/login\nIdentifiant : ${login}\nMot de passe temporaire : ${pw}`;
   openModal(() => `<div class="row between"><h2>${title}</h2><button class="ib" data-act="close-modal" aria-label="Fermer">${ic('x', 20)}</button></div>
   <p class="mut b" style="font-weight:600">Transmettez ces identifiants à ${esc(name)}. Le mot de passe ne sera plus affiché ensuite.</p>
   <div class="ck flat pad col" style="background:var(--hi)"><div><span class="small mut b">Identifiant</span><div class="code" style="font-size:20px">${esc(login)}</div></div><div><span class="small mut b">Mot de passe temporaire</span><div class="code" style="font-size:20px">${esc(pw)}</div></div></div>
@@ -130,6 +137,8 @@ function credsModal(title, name, login, pw) {
 }
 ACT['copy-creds'] = (el) => copyText(el.dataset.t);
 FORMS['new-prof'] = async (f, fd) => {
+  const role = fd.get('role') || 'prof';
+  if (!creatable(d.me()).some(([k]) => k === role)) { toast('Vous ne pouvez pas créer ce type de compte'); return; }
   const login = (fd.get('login') || '').trim().toLowerCase();
   const name = (fd.get('name') || '').trim();
   const pw = fd.get('pw') || '';
@@ -137,15 +146,15 @@ FORMS['new-prof'] = async (f, fd) => {
   if (d.D().users.some((u) => u.login === login)) { toast('Cet identifiant existe déjà'); return; }
   if (pw.length < 8) { toast('Mot de passe : 8 caractères minimum'); return; }
   const ct = readContact(fd); if (!ct) return;
-  const u = await d.makeUser('prof', login, name, pw, true);
+  const u = await d.makeUser(role, login, name, pw, true);
   Object.assign(u, ct);
-  d.D().users.push(u); d.D().objectives.push(...d.defaultObjectives(u.id)); d.save();
+  d.D().users.push(u); if (role === 'prof') d.D().objectives.push(...d.defaultObjectives(u.id)); d.save();
   go('#/admin');
   credsModal('Compte créé', name, login, pw);
 };
 ACT['prof-reset'] = async (el) => {
   const u = d.D().users.find((x) => x.id === el.dataset.id);
-  if (!u || !ask(`Réinitialiser le mot de passe de ${u.name} ?`)) return;
+  if (!u || !canManage(d.me(), u) || !ask(`Réinitialiser le mot de passe de ${u.name} ?`)) return;
   const pw = d.randomPw();
   await d.setPassword(u, pw, true);
   go('#/admin');
@@ -153,8 +162,9 @@ ACT['prof-reset'] = async (el) => {
 };
 ACT['prof-del'] = async (el) => {
   const u = d.D().users.find((x) => x.id === el.dataset.id);
-  if (!u || !ask(`Supprimer le compte de ${u.name} ?\n\nToutes ses classes, ses élèves et leur suivi seront effacés définitivement.`)) return;
-  await d.deleteProf(u.id);
+  if (!u || !canManage(d.me(), u)) return;
+  if (!ask(`Supprimer le compte de ${u.name} ?${u.role === 'prof' ? '\n\nToutes ses classes, ses élèves et leur suivi seront effacés définitivement.' : ''}`)) return;
+  if (u.role === 'prof') await d.deleteProf(u.id); else { d.D().users = d.D().users.filter((x) => x.id !== u.id); d.save(); }
   toast('Compte supprimé');
   go('#/admin');
 };

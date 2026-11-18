@@ -10,7 +10,7 @@ const top = (title, sub, back, right = '') => `<div class="top">${back ? `<a hre
 const ORDER = [1, 2, 3, 4, 5, 6, 0];
 const hh = (t) => (t || '').replace(/^0(\d)/, '$1').replace(':', 'h').replace(/h00$/, 'h');
 export const eur = (n) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(+n || 0);
-const monthLabel = (m) => { const s = new Date(m + '-15T12:00:00').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }); return s[0].toUpperCase() + s.slice(1); };
+export const monthLabel = (m) => { const s = new Date(m + '-15T12:00:00').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }); return s[0].toUpperCase() + s.slice(1); };
 const num = (v) => { const x = parseFloat(String(v ?? '').replace(',', '.')); return isNaN(x) ? 0 : Math.round(x * 100) / 100; };
 
 // =====================================================================
@@ -192,13 +192,14 @@ ACT['hours-detail'] = (el) => {
   const p = d.user(el.dataset.id), m = el.dataset.m, h = d.profHours(p.id, m);
   openModal(() => `<div class="row between"><h2>${esc(p.name)} · ${monthLabel(m)}</h2><button class="ib" data-act="close-modal" aria-label="Fermer">${ic('x', 20)}</button></div>
   <div class="ck flat pad row between" style="background:var(--mint)"><span class="b">${h.n} cours</span><span class="b" style="font-size:22px">${d.fmtH(h.min)}</span></div>
-  <div class="list">${h.list.map(({ a, min }) => { const c = d.cls(a.classId) || {}; const own = c.profId === p.id; const t = a.at ? new Date(a.at) : null; return `<a class="li" href="#/prof/classe/${a.classId}/appel/${a.id}" style="text-decoration:none;color:var(--ink)"><div class="grow"><div class="b">${fdate(a.date, { weekday: 'long', day: 'numeric', month: 'long' })}</div><div class="small mut b" style="font-weight:600">${esc(c.name || '')}${t && !isNaN(t) ? ` · appel à ${hh(String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0'))}` : ''}${own ? '' : ` · remplacement (titulaire : ${esc((d.user(c.profId) || {}).name || '—')})`}</div></div><span class="b">${min ? d.fmtH(min) : 'durée ?'}</span></a>`; }).join('') || '<p class="small mut">Aucun appel ce mois-ci.</p>'}</div>`);
+  <div class="list">${h.list.map(({ a, min }) => { const c = d.cls(a.classId) || {}; const own = c.profId === p.id; const t = a.at ? new Date(a.at) : null; const tag = d.isCompta(d.me()) ? 'div' : 'a';
+    return `<${tag} class="li" ${tag === 'a' ? `href="#/prof/classe/${a.classId}/appel/${a.id}"` : ''} style="text-decoration:none;color:var(--ink)"><div class="grow"><div class="b">${fdate(a.date, { weekday: 'long', day: 'numeric', month: 'long' })}</div><div class="small mut b" style="font-weight:600">${esc(c.name || '')}${t && !isNaN(t) ? ` · appel à ${hh(String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0'))}` : ''}${own ? '' : ` · remplacement (titulaire : ${esc((d.user(c.profId) || {}).name || '—')})`}</div></div><span class="b">${min ? d.fmtH(min) : 'durée ?'}</span></${tag}>`; }).join('') || '<p class="small mut">Aucun appel ce mois-ci.</p>'}</div>`);
 };
 
 // =====================================================================
 // FAMILLES & COTISATIONS
 // =====================================================================
-const PAY = { unpaid: ['Pas payé', 'var(--absent)', 'var(--onabsent)'], partial: ['Partiel', '#FF9F43', 'var(--ink)'], paid: ['Payé', 'var(--present)', 'var(--onpresent)'] };
+export const PAY = { unpaid: ['Pas payé', 'var(--absent)', 'var(--onabsent)'], partial: ['Partiel', '#FF9F43', 'var(--ink)'], paid: ['Payé', 'var(--present)', 'var(--onpresent)'] };
 function payBtn(f) {
   const [l, bg, fg] = PAY[f.status] || PAY.unpaid;
   const pct = f.cotisation ? Math.round((d.famPaid(f) / f.cotisation) * 100) : 0;
@@ -308,7 +309,7 @@ ACT['fam-auto'] = () => {
 export function financeTile() {
   const s = d.financeSummary();
   const up = s.solde >= 0;
-  return `<a href="#/admin/finances" class="ck pad col" style="gap:6px;text-decoration:none;color:var(--ink);background:${up ? 'var(--mint)' : 'var(--pink)'}"><span class="row between"><span class="b" style="font-size:18px">${ic('euro', 20)} Finances</span>${ic('chev', 18)}</span>
+  return `<a href="#/compta" class="ck pad col" style="gap:6px;text-decoration:none;color:var(--ink);background:${up ? 'var(--mint)' : 'var(--pink)'}"><span class="row between"><span class="b" style="font-size:18px">${ic('euro', 20)} Finances</span>${ic('chev', 18)}</span>
   <span class="row" style="gap:8px;align-items:baseline"><span style="font-size:28px;font-weight:800">${up ? '▲' : '▼'} ${eur(s.solde)}</span><span class="small b">solde</span></span>
   <span class="small b" style="font-weight:600">Recettes ${eur(s.rec)} · Dépenses ${eur(s.dep)} · dons, zakat, loyer, énergie…</span></a>`;
 }
@@ -318,24 +319,8 @@ export function locauxTile() {
   <span style="font-size:28px;font-weight:800">${s.n} local(aux)</span>
   <span class="small b" style="font-weight:600">${s.used} créneau(x) occupé(s) sur ${s.days} jour(s)${s.conflicts ? ` · ${ic('alert', 13)} ${s.conflicts} conflit(s)` : ''}</span></a>`;
 }
-export function financesView(u, q) {
-  const t = q.get('t') === 'dep' ? 'dep' : 'rec';
-  const months = d.financeMonths();
-  const m = months.includes(q.get('m')) ? q.get('m') : d.curMonth();
-  const s = d.financeSummary();
-  const up = s.solde >= 0;
-  const recM = d.incomeTotal(m), depM = d.monthExpenses(m).total;
-  const recap = `<div class="ck pad col" style="gap:8px;background:var(--ink);color:#fff"><div class="tiny b" style="color:var(--yellow)">RÉCAPITULATIF</div>
-  <div class="row wrap" style="gap:10px;align-items:baseline"><span style="font-size:34px;font-weight:800;color:${up ? 'var(--mint)' : 'var(--absent)'}">${up ? '▲' : '▼'} ${eur(s.solde)}</span><span class="b">solde</span></div>
-  <div class="row wrap small b" style="gap:16px"><span>Recettes encaissées : ${eur(s.rec)}</span><span>Dépenses : ${eur(s.dep)}</span></div>
-  <div class="row wrap small b" style="gap:16px;color:var(--yellow)"><span>${monthLabel(m)} : + ${eur(recM)} / − ${eur(depM)}</span></div></div>`;
-  const i = months.indexOf(m);
-  const nav = `<div class="row between"><a class="ib ${i < months.length - 1 ? '' : 'hide'}" href="#/admin/finances?t=${t}&m=${months[i + 1]}" aria-label="Mois précédent">${ic('back', 20)}</a><span class="b" style="font-size:20px">${monthLabel(m)}${m === d.curMonth() ? ' · en cours' : ''}</span><a class="ib ${i > 0 ? '' : 'hide'}" href="#/admin/finances?t=${t}&m=${months[i - 1]}" aria-label="Mois suivant">${ic('chev', 20)}</a></div>`;
-  const seg = `<div class="seg" role="navigation" aria-label="Finances"><a href="#/admin/finances?t=rec&m=${m}" class="${t === 'rec' ? 'on' : ''}">Recettes</a><a href="#/admin/finances?t=dep&m=${m}" class="${t === 'dep' ? 'on' : ''}">Dépenses</a></div>`;
-  return shell(u, 4, `<div class="page">${top('Finances', 'Direction · trésorerie de l’association', '#/admin')}${recap}${seg}${nav}${t === 'rec' ? recettes(m, months) : depenses(m, months)}</div>`);
-}
 // formulaire commun recette / dépense
-function entryForm(kind, m, cats) {
+export function entryForm(kind, m, cats) {
   const p = kind === 'inc' ? 'i' : 'e';
   return `<form class="col" data-form="${kind}-add"><div class="grid2 stack">
   <div class="field"><label class="lbl" for="${p}c">Catégorie</label><select id="${p}c" name="cat" class="inp">${cats.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></div>
@@ -344,44 +329,22 @@ function entryForm(kind, m, cats) {
   <label class="row small b" style="gap:8px;cursor:pointer"><input type="checkbox" name="monthly" style="width:20px;height:20px">Tous les mois (${kind === 'inc' ? 'don récurrent, prélèvement automatique' : 'loyer, électricité, assurance…'})</label>
   <button class="btn sm" style="align-self:flex-start">${ic('plus', 18)}${kind === 'inc' ? 'Ajouter la recette' : 'Ajouter la dépense'}</button></form>`;
 }
-function entryList(items, cats, del) {
+export function entryList(items, cats, del) {
   if (!items.length) return '<p class="small mut">Rien pour ce mois-ci.</p>';
   return byCat(items, cats).map(({ k, l, total }) => `<div class="col" style="gap:0"><div class="row between" style="padding:10px 0 4px"><span class="b">${l}</span><span class="b">${eur(total)}</span></div>
   ${items.filter((x) => (cats.some((c) => c[0] === x.cat) ? x.cat : 'autre') === k).sort((a, b) => b.date.localeCompare(a.date)).map((x) => `<div class="li" style="padding-left:12px"><div class="grow"><div class="small b">${esc(x.label || l)}</div><div class="tiny mut b">${x.monthly ? `chaque mois depuis ${fdate(x.date, { month: 'long', year: 'numeric' })}` : fdate(x.date, { day: 'numeric', month: 'long' })}</div></div><span class="small b">${eur(x.amount)}</span><button class="ib sm" data-act="${del}" data-id="${x.id}" aria-label="Supprimer">${ic('trash', 16)}</button></div>`).join('')}</div>`).join('');
 }
 const byCat = (items, cats) => d.byCat(items, cats);
-function recettes(m, months) {
-  const inc = d.incomesOf(m);
-  const c = d.cotisations();
-  const F = d.D().families;
-  const pct = c.theo ? Math.round((c.real / c.theo) * 100) : 0;
-  const cnt = (k) => F.filter((f) => f.status === k).length;
-  return `<div class="ck pad col"><div class="row between wrap"><h2>${ic('plus', 20)} Recettes du mois</h2><span class="b" style="font-size:20px">${eur(d.incomeTotal(m))}</span></div>
-  ${entryForm('inc', m, d.INCOME_CATS)}
-  <div class="col" style="gap:0">${entryList(inc, d.INCOME_CATS, 'inc-del')}</div></div>
-  <div class="ck pad col"><div class="row between wrap"><h2>${ic('users', 20)} Cotisations de l’école (année)</h2><a class="btn2 sm" href="#/prof/familles">Gérer les familles</a></div>
-  <p class="small mut b" style="font-weight:600">Reprises automatiquement des familles (Élèves → Familles &amp; cotisations).</p>
-  <div class="grid2"><div class="ck flat pad col" style="gap:2px"><span class="small b mut">Théorique (à payer)</span><span class="b" style="font-size:24px">${eur(c.theo)}</span></div><div class="ck flat pad col" style="gap:2px;background:var(--mint)"><span class="small b">Réelle (déjà payée)</span><span class="b" style="font-size:24px">${eur(c.real)}</span></div></div>
-  <div class="prog" role="img" aria-label="${pct} % payé"><span style="width:${pct}%"></span></div>
-  <div class="row wrap" style="gap:8px">${pill(`${pct} % encaissé`, 'var(--neutral)')}${pill(`${cnt('paid')} payé`, PAY.paid[1], PAY.paid[2])}${pill(`${cnt('partial')} partiel`, PAY.partial[1])}${pill(`${cnt('unpaid')} pas payé`, PAY.unpaid[1], PAY.unpaid[2])}${pill(`Reste ${eur(c.rest)}`, 'var(--hi)')}</div></div>
-  ${historyCard('rec', m, months)}`;
-}
-function historyCard(t, m, months) {
-  return `<div class="ck pad col"><h2>${ic('clock', 20)} Historique</h2><div class="list">${months.map((x) => { const r = d.incomeTotal(x), e = d.monthExpenses(x).total; return `<a class="li" href="#/admin/finances?t=${t}&m=${x}" style="text-decoration:none;color:var(--ink)"><span class="grow b">${monthLabel(x)}${x === m ? ' ★' : ''}</span><span class="small b" style="color:#0A7A50">+ ${eur(r)}</span><span class="small b" style="color:#C0262C">− ${eur(e)}</span>${ic('chev', 18)}</a>`; }).join('')}</div>
-  <p class="tiny mut b">Les cotisations de l’école sont annuelles : elles comptent dans le solde global, pas dans les mois.</p></div>`;
-}
 FORMS['inc-add'] = (f, fd) => {
   const amount = num(fd.get('amount'));
   if (!amount) { toast('Indiquez un montant'); return; }
   d.D().finance.incomes.push({ id: d.uid(), cat: fd.get('cat'), label: (fd.get('label') || '').trim(), amount, date: fd.get('date'), monthly: !!fd.get('monthly') });
-  d.save(); toast('Recette ajoutée'); go(`#/admin/finances?t=rec&m=${d.monthOf(fd.get('date'))}`);
+  d.save(); toast('Recette ajoutée'); closeModal(); rerender();
 };
 ACT['inc-del'] = (el) => { if (!ask('Supprimer cette recette ?')) return; d.D().finance.incomes = d.D().finance.incomes.filter((x) => x.id !== el.dataset.id); d.save(); rerender(); };
-function depenses(m, months) {
+export function teacherRows(m) {
   const fin = d.D().finance;
   const ov = fin.overrides[m] || {};
-  const tot = d.monthExpenses(m);
-  const ex = d.expensesOf(m);
   const rows = d.staff(m).map((p) => {
     const h = d.profHours(p.id, m);
     const auto = Math.round((h.min / 60) * d.profRate(p) * 100) / 100;
@@ -390,15 +353,9 @@ function depenses(m, months) {
     <div class="grid2"><div class="field"><label class="lbl" for="pr-${p.id}">Taux horaire (€)</label><input id="pr-${p.id}" class="inp" inputmode="decimal" value="${p.rate ?? ''}" placeholder="${fin.rate} (par défaut)" data-change="fin-prate" data-id="${p.id}"></div>
     <div class="field"><label class="lbl" for="po-${p.id}">Montant retenu (€)</label><input id="po-${p.id}" class="inp" inputmode="decimal" value="${ov[p.id] ?? ''}" placeholder="${auto} (calcul auto)" data-change="fin-ov" data-id="${p.id}" data-m="${m}"></div></div></div>`;
   }).join('');
-  return `<div class="ck pad col"><div class="row between wrap"><h2>${ic('note', 20)} Dépenses du mois</h2><span class="b" style="font-size:20px">${eur(tot.other)}</span></div>
-  ${entryForm('exp', m, d.EXPENSE_CATS)}
-  <div class="col" style="gap:0">${entryList(ex, d.EXPENSE_CATS, 'exp-del')}</div></div>
-  <details class="ck pad col" ${tot.profs ? '' : ''}><summary class="row between wrap" style="cursor:pointer;list-style:none"><span class="b" style="font-size:20px">${ic('book', 20)} Enseignants de l’école</span><span class="b" style="font-size:20px">${eur(tot.profs)}</span></summary>
-  <div class="col" style="gap:10px;margin-top:12px"><p class="small mut b" style="font-weight:600">Calcul automatique : heures du compteur (appels faits par chaque personne, remplacements compris) × taux horaire. Laissez « Montant retenu » vide pour garder le calcul, ou tapez un autre montant. Mettez le taux à 0 pour un bénévole.</p>
+  return `<p class="small mut b" style="font-weight:600">Calcul automatique : heures du compteur (appels faits par chaque personne, remplacements compris) × taux horaire. Laissez « Montant retenu » vide pour garder le calcul, ou tapez un autre montant. Mettez le taux à 0 pour un bénévole.</p>
   <div class="field" style="max-width:260px"><label class="lbl" for="fr">Taux horaire par défaut (€)</label><input id="fr" class="inp" inputmode="decimal" value="${fin.rate}" data-change="fin-rate"></div>
-  ${rows || '<p class="small mut">Aucun enseignant.</p>'}</div></details>
-  <div class="ck pad row between" style="background:var(--yellow)"><span class="b" style="font-size:18px">Total des dépenses · ${monthLabel(m)}</span><span class="b" style="font-size:24px">${eur(tot.total)}</span></div>
-  ${historyCard('dep', m, months)}`;
+  ${rows || '<p class="small mut">Aucun enseignant.</p>'}`;
 }
 CHANGE['fin-rate'] = (el) => { d.D().finance.rate = num(el.value); d.save(); softRender(); };
 CHANGE['fin-prate'] = (el) => { const p = d.user(el.dataset.id); if (el.value.trim() === '') delete p.rate; else p.rate = num(el.value); d.save(); softRender(); };
@@ -412,6 +369,6 @@ FORMS['exp-add'] = (f, fd) => {
   if (!amount) { toast('Indiquez un montant'); return; }
   d.D().finance.expenses.push({ id: d.uid(), cat: fd.get('cat'), label: (fd.get('label') || '').trim(), amount, date: fd.get('date'), monthly: !!fd.get('monthly') });
   d.save(); toast('Dépense ajoutée');
-  go(`#/admin/finances?t=dep&m=${d.monthOf(fd.get('date'))}`);
+  closeModal(); rerender();
 };
 ACT['exp-del'] = (el) => { if (!ask('Supprimer cette dépense ?')) return; d.D().finance.expenses = d.D().finance.expenses.filter((x) => x.id !== el.dataset.id); d.save(); rerender(); };

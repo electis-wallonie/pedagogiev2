@@ -5,6 +5,7 @@ import { ACT, FORMS, esc, ic, av, pill, fdate, flong, toast, openModal, initials
 import * as F from './fiche.js';
 import { annoncesHtml } from './annonces.js';
 import { isAr } from './i18n.js';
+import { pubShell } from './mosquee.js';
 export const langBtn = () => `<button class="btn2 sm" data-act="lang" lang="${isAr ? 'fr' : 'ar'}">${ic('globe', 18)}<span data-notr dir="auto">${isAr ? 'Français' : 'العربية'}</span></button>`;
 
 let lastError = null;
@@ -20,15 +21,14 @@ export function home() {
   const saved = d.savedCodes().map((c) => d.byCode(c)).filter(Boolean);
   const err = lastError;
   lastError = null;
-  const kids = saved.length ? `<div class="col"><h2>Mes fiches</h2>${saved.map((s) => {
+  const kids = saved.length ? `<div class="col"><h2>Mes fiches enregistrées</h2>${saved.map((s) => {
     const c = d.cls(s.classId);
     return `<a href="#/f/${encodeURIComponent(s.code)}" class="ck pad row" style="text-decoration:none;color:var(--ink)">${av(initials(s), 48, 'var(--yellow)', 16)}<span class="grow"><span class="b" style="display:block;font-size:17px">${esc(s.prenoms.split(' ')[0])} ${esc(s.nom)}</span><span class="small mut b">${esc(c ? c.name : '')}</span></span>${ic('chev', 20)}</a>`;
   }).join('')}<button class="btn2 sm" data-act="forget-codes" style="align-self:flex-start">Oublier ces fiches sur cet appareil</button></div>` : '';
-  return `<div class="page"><div class="home-grid">
+  return pubShell(2, `<div class="home-grid">
   <div class="col" style="gap:18px">
-    <div class="row wrap">${logo(48)}<span class="b" style="font-size:22px">Suivi</span><span class="grow"></span>${langBtn()}<a href="#/contact" class="btn2 sm">${ic('mail', 16)}Contact</a><a href="#/login" class="btn2 sm">Espace prof</a></div>
-    <h1 style="font-size:clamp(34px,6vw,60px);line-height:1">Où en est<br>mon enfant ?</h1>
-    <p class="mut b" style="font-weight:600;font-size:17px">Tapez le code donné par l’enseignant. Pas de compte, pas de mot de passe.</p>
+    <h1 style="font-size:clamp(30px,5vw,52px);line-height:1.05">Suivi des cours</h1>
+    <p class="mut b" style="font-weight:600;font-size:17px">Tapez le code de suivi donné par l’enseignant : celui de votre enfant, ou le vôtre si vous suivez vous-même un cours. Pas de compte, pas de mot de passe.</p>
     <form class="ck pad col" data-form="code" novalidate>
       <div class="field"><label class="lbl" for="code">Code de suivi</label>
       <input id="code" name="code" class="inp code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ex. CL2-YIB-KARIM-03052016-AB12" value="${esc(err || '')}" ${err ? 'aria-invalid="true" aria-describedby="code-err"' : ''}></div>
@@ -40,14 +40,14 @@ export function home() {
     <a href="#/installer" class="small">Installer l’app sur mon téléphone</a>
   </div>
   <div>${blobs()}</div>
-  </div></div>`;
+  </div>`);
 }
 FORMS.code = (f, fd) => {
   const code = (fd.get('code') || '').trim();
   const st = d.byCode(code);
   if (!st) {
     lastError = code || ' ';
-    if (location.hash === '#/') window.dispatchEvent(new Event('hashchange')); else location.hash = '#/';
+    if (location.hash === '#/cours') window.dispatchEvent(new Event('hashchange')); else location.hash = '#/cours';
     return;
   }
   if (fd.get('remember')) d.rememberCode(st.code);
@@ -101,7 +101,7 @@ export function fiche(code, tab = 'apercu', q = null) {
   const desk = `<div class="seg desk" role="navigation" aria-label="Sections">${TABS.map(([id, , l]) => `<a href="${base}/${id}" class="${id === tab ? 'on' : ''}">${l}</a>`).join('')}</div>`;
   const mob = `<nav class="tabbar" aria-label="Sections">${TABS.map(([id, i, l]) => `<a href="${base}/${id}" class="${id === tab ? 'on' : ''}"><span>${ic(i, 22)}</span>${l}</a>`).join('')}</nav>`;
   return `<div class="page">
-  <div class="row between"><a href="#/" class="row" style="text-decoration:none;color:var(--ink)">${logo(36)}<span class="b">Suivi</span></a><div class="row" style="gap:8px">${langBtn()}<a href="#/contact?c=${encodeURIComponent(st.code)}" class="btn2 sm">${ic('mail', 16)}Contacter</a></div></div>
+  <div class="row between"><a href="#/cours" class="row" style="text-decoration:none;color:var(--ink)">${ic('back', 20)}${logo(36)}<span class="b">Cours</span></a><div class="row" style="gap:8px">${langBtn()}<a href="#/contact" class="btn2 sm">${ic('mail', 16)}Contact</a></div></div>
   <div class="ck pad row">${av(initials(st), 60, 'var(--yellow)', 20)}<div class="grow"><h1 style="font-size:25px">${esc(st.prenoms)} ${esc(st.nom)}</h1>
   <div class="row wrap" style="gap:8px;margin-top:6px">${pill(esc(c ? c.name : ''), 'var(--blue2)')}</div></div></div>
   ${F.parentBadge(st)}

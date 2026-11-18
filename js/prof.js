@@ -24,11 +24,11 @@ export function shell(u, active, body) {
   nav.push(['prof/reglages', 'gear', 'Réglages', 3]);
   const cl = d.myClasses(u).map((c) => `<a class="sub" href="#/prof/classe/${c.id}"><span style="width:14px;height:14px;border-radius:5px;border:2px solid var(--ink);background:${colorOf(c)}"></span><span class="grow">${esc(c.name)}</span><span class="mut">${d.studentsOf(c.id).length}</span></a>`).join('');
   return `<div class="shell"><nav class="side" aria-label="Navigation">
-  <div class="row" style="padding:0 6px 16px"><span class="logo">${ic('book', 22, 2.6)}</span><span class="b" style="font-size:20px">Suivi</span>${admin ? pill('Admin', 'var(--yellow)') : ''}</div>
+  <div class="row" style="padding:0 6px 16px"><span class="logo">${ic('book', 22, 2.6)}</span><span class="b" style="font-size:20px">Suivi</span>${admin ? pill(d.isSuper(u) ? 'Méga admin' : 'Admin', 'var(--yellow)') : ''}</div>
   ${nav.map(([h, i, l, k]) => `<a class="nav ${k === active ? 'on' : ''}" href="#/${h}">${ic(i, 20)}${l}</a>`).join('')}
   <div class="tiny mut b" style="padding:18px 14px 4px">${admin ? 'TOUTES LES CLASSES' : 'MES CLASSES'}</div>${cl}
   <a class="sub" href="#/prof/classes?new=1" style="color:var(--primary)">${ic('plus', 16)}Nouvelle classe</a>
-  <span class="grow"></span><div class="row" style="padding:8px 6px">${av(u.name.split(' ').map((w) => w[0]).join('').slice(0, 2), 40, 'var(--yellow)', 13)}<div class="grow"><div class="b small">${esc(u.name)}</div><div class="tiny mut b">${admin ? 'Administrateur' : 'Enseignant'}</div></div><button class="ib sm" data-act="lang" aria-label="Langue">${ic('globe', 16)}</button><button class="ib sm" data-act="logout" aria-label="Se déconnecter">${ic('out', 16)}</button></div>
+  <span class="grow"></span><div class="row" style="padding:8px 6px">${av(u.name.split(' ').map((w) => w[0]).join('').slice(0, 2), 40, 'var(--yellow)', 13)}<div class="grow"><div class="b small">${esc(u.name)}</div><div class="tiny mut b">${d.roleLabel(u)}</div></div><button class="ib sm" data-act="lang" aria-label="Langue">${ic('globe', 16)}</button><button class="ib sm" data-act="logout" aria-label="Se déconnecter">${ic('out', 16)}</button></div>
   </nav><main class="main">${body}</main>
   <nav class="tabbar" aria-label="Navigation">${nav.map(([h, i, l, k]) => `<a class="${k === active ? 'on' : ''}" href="#/${h}"><span>${ic(i, 22)}</span>${l}</a>`).join('')}</nav></div>`;
 }

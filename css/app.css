@@ -195,3 +195,32 @@ input:focus-visible + .swatch{outline:3px solid var(--primary);outline-offset:3p
 /* barre de progression (cotisations) */
 .prog{height:14px;border:var(--bw) solid var(--ink);border-radius:999px;background:var(--surface);overflow:hidden}
 .prog span{display:block;height:100%;background:var(--present)}
+
+/* espace public : prières */
+.pub{padding-bottom:120px}
+.prayers{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(min-width:760px){.prayers{grid-template-columns:repeat(6,1fr)}}
+.pr{display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 6px;text-align:center}
+.pr .pt{font-size:26px;font-weight:800;line-height:1.1}
+.pr.on{background:var(--yellow)}
+.pr.sun{background:var(--neutral)}
+
+/* comptes : choix du rôle */
+.seg label{display:flex}
+.rolebtn{flex:1;display:flex;align-items:center;justify-content:center;min-height:42px;border-radius:var(--ri);font-weight:800;font-size:14px;cursor:pointer;padding:0 8px;text-align:center}
+.seg input:checked + .rolebtn{background:var(--ink);color:#fff}
+.seg input:focus-visible + .rolebtn{outline:3px solid var(--primary)}
+/* espace comptabilité */
+.compta .side .nav.on{background:var(--mint)}
+.compta .tabbar a.on span{background:var(--mint)}
+.grid4{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+@media(min-width:900px){.grid4{grid-template-columns:repeat(4,1fr)}}
+.kpi{font-size:26px;font-weight:800;line-height:1.1}
+.hbar{height:12px;border-radius:999px;background:var(--neutral);overflow:hidden}
+.hbar span{display:block;height:100%;border-radius:999px}
+.dot{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-1px}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:start;padding:8px 10px;background:var(--neutral);font-size:13px}
+.tbl td{padding:8px 10px;border-top:2px solid var(--neutral)}
+.pos{color:#0A7A50}.neg{color:#C0262C}
+@media print{.side,.tabbar,.demo,button,.seg{display:none!important}.page{padding:0!important}.ck{box-shadow:none!important}}
