@@ -343,3 +343,4 @@ div.cal-ev{cursor:default}
 .w1-c{display:flex;gap:12px;align-items:center;background:var(--surface);border:var(--bw) solid var(--ink);border-radius:14px;padding:10px 12px}
 .w1-ic{width:44px;height:44px;flex:none;border-radius:12px;border:var(--bw) solid var(--ink);display:flex;align-items:center;justify-content:center;box-sizing:border-box}
 @media(min-width:960px){.w1-h{font-size:30px}}
+.cd{font-variant-numeric:tabular-nums;letter-spacing:.5px}

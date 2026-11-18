@@ -85,7 +85,16 @@ function hijri(date) {
   } catch { return ''; }
 }
 const SERVICES = [['womenSpace', 'Espace femmes'], ['ablutions', 'Salle d’ablutions'], ['janazaPrayer', 'Prière mortuaire (janaza)'], ['aidPrayer', 'Prière de l’Aïd'], ['childrenCourses', 'Cours pour enfants'], ['adultCourses', 'Cours pour adultes'], ['ramadanMeal', 'Repas du Ramadan'], ['handicapAccessibility', 'Accès handicapés'], ['parking', 'Parking']];
-setInterval(() => { const el = document.getElementById('np-in'); if (el) { const n = nextPrayer(); if (n) el.textContent = inLabel(n.at); } }, 30000);
+// Compte à rebours en direct (chaque seconde) ; à zéro, la page passe d'elle-même à la prière suivante.
+const cdText = (ms) => { const t = Math.max(0, Math.ceil(ms / 1000)), h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, sec = t % 60, p2 = (n) => String(n).padStart(2, '0'); return h ? `${h}:${p2(m)}:${p2(sec)}` : `${p2(m)}:${p2(sec)}`; };
+const targetOf = (np) => { const x = new Date(); if (np.tomorrow) x.setDate(x.getDate() + 1); const [h, m] = np.time.split(':').map(Number); x.setHours(h, m, 0, 0); return x.getTime(); };
+let cdDone = 0;
+setInterval(() => {
+  const el = document.getElementById('np-in'); if (!el) return;
+  const left = +el.dataset.at - Date.now();
+  el.textContent = cdText(left);
+  if (left <= 0 && Date.now() - cdDone > 5000) { cdDone = Date.now(); window.dispatchEvent(new CustomEvent('soft-render')); }
+}, 1000);
 export function prieres(q) {
   if (!MW && !MW_ERR) { loadMawaqit(); return pubShell(0, `<h1>Horaires de prière</h1><div class="ck pad"><p class="b">Chargement des horaires…</p></div>`); }
   const tilesHtml = '';
@@ -111,7 +120,7 @@ export function prieres(q) {
   const label = (i) => (i === 2 && fri && jum.length ? ['Jumu’a', 'الجمعة'] : PR[i]);
   const timeOf = (i) => (i === 2 && fri && jum.length ? jum[0] : t[i]);
   const iqOf = (i) => { const qi = i === 0 ? 0 : i >= 2 ? i - 1 : -1; return iq && qi >= 0 ? iq[qi] : ''; };
-  const block = (i, time, extra, tomorrow) => { const [f, a] = tomorrow ? PR[0] : label(i); return `<div class="pt3-next" style="--rot:${tomorrow ? 0 : ROT[i]}deg"><div class="row between" style="gap:10px;align-items:center"><div class="col" style="gap:0;min-width:0"><span class="tiny b up" style="color:var(--yellow);letter-spacing:1.5px"><span>${tomorrow ? 'Demain' : 'Prochaine'}</span> · ${isAr ? '' : `<span data-notr>${esc(f)}</span> `}<span data-notr lang="ar">${a}</span></span><span class="pt3-big">${time}</span>${extra}</div><span class="pt3-cd"><b id="np-in">${inLabel(np.at)}</b><span>avant l’adhan</span></span></div></div>`; };
+  const block = (i, time, extra, tomorrow) => { const [f, a] = tomorrow ? PR[0] : label(i); return `<div class="pt3-next" style="--rot:${tomorrow ? 0 : ROT[i]}deg"><div class="row between" style="gap:10px;align-items:center"><div class="col" style="gap:0;min-width:0"><span class="tiny b up" style="color:var(--yellow);letter-spacing:1.5px"><span>${tomorrow ? 'Demain' : 'Prochaine'}</span> · ${isAr ? '' : `<span data-notr>${esc(f)}</span> `}<span data-notr lang="ar">${a}</span></span><span class="pt3-big">${time}</span>${extra}</div><span class="pt3-cd"><b id="np-in" class="cd" data-at="${targetOf(np)}">${cdText(targetOf(np) - Date.now())}</b><span>avant l’adhan</span></span></div></div>`; };
   const band = (i) => { const [f, a] = label(i); const past = !!np && (np.tomorrow || i < np.i); const time = timeOf(i), q = iqOf(i);
     if (np && !np.tomorrow && i === np.i) return block(i, time, q ? `<span class="small b">Iqama ${q}</span>` : '');
     if (past) return `<div class="pt3 past" style="--rot:${ROT[i]}deg"><span class="pt3-chk">${ic('check', 15)}</span><span class="grow b">${f} ${isAr ? '' : `<span data-notr lang="ar" class="small">${a}</span>`}</span><span class="pt3-t">${time}</span></div>`;
