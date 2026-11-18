@@ -113,10 +113,20 @@ export async function seed() {
     f.status = i % 4 === 1 ? 'unpaid' : i % 4 === 2 ? 'partial' : 'paid';
     if (f.status === 'partial') f.paid = 75;
   });
+  const m1 = daysAgo(new Date().getDate() + 25);
   db.finance = { rate: 10, overrides: {}, incomes: [
-    { id: uid(), label: 'Don anonyme', amount: 500, date: daysAgo(20), monthly: false },
+    { id: uid(), cat: 'jumua', label: 'Quête du vendredi', amount: 420, date: daysAgo(13), monthly: false },
+    { id: uid(), cat: 'jumua', label: 'Quête du vendredi', amount: 385, date: daysAgo(6), monthly: false },
+    { id: uid(), cat: 'jumua', label: 'Quête du vendredi', amount: 410, date: m1, monthly: false },
+    { id: uid(), cat: 'dons', label: 'Don anonyme', amount: 500, date: daysAgo(20), monthly: false },
+    { id: uid(), cat: 'membres', label: 'Cotisations mensuelles des membres', amount: 300, date: m1, monthly: true },
   ], expenses: [
-    { id: uid(), label: 'Fournitures scolaires (cahiers, stylos)', amount: 85, date: daysAgo(3) },
+    { id: uid(), cat: 'loyer', label: 'Loyer du bâtiment', amount: 950, date: m1, monthly: true },
+    { id: uid(), cat: 'electricite', label: 'Électricité', amount: 180, date: m1, monthly: true },
+    { id: uid(), cat: 'chauffage', label: 'Gaz', amount: 140, date: m1, monthly: true },
+    { id: uid(), cat: 'assurance', label: 'Assurance incendie', amount: 45, date: m1, monthly: true },
+    { id: uid(), cat: 'nettoyage', label: 'Produits d’entretien', amount: 62, date: daysAgo(4) },
+    { id: uid(), cat: 'fournitures', label: 'Cahiers et stylos (école)', amount: 85, date: daysAgo(3) },
   ] };
 
   db.announcements.push({ id: uid(), text: 'Bienvenue sur la nouvelle application de suivi ! Vous y retrouverez l’avancement de votre enfant, ses présences et les notes de l’imam.', audioId: null, from: daysAgo(1), to: daysAgo(-14), at: stamp(1, 9), authorId: admin.id });

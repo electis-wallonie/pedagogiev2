@@ -341,6 +341,28 @@ export function incomeTotal(month = null) {
   }
   return t;
 }
+// catégories habituelles d'une association qui gère une mosquée
+export const INCOME_CATS = [
+  ['jumua', 'Quête du vendredi (jumu’a)'], ['dons', 'Dons'], ['ramadan', 'Dons Ramadan'], ['zakat-fitr', 'Zakat al-Fitr'], ['zakat-mal', 'Zakat al-Mal'],
+  ['sadaqa', 'Sadaqa / aide sociale'], ['membres', 'Cotisations des membres'], ['location', 'Location de salle'], ['subvention', 'Subventions'],
+  ['evenement', 'Événements (iftar, Aïd, conférences…)'], ['autre', 'Autres recettes'],
+];
+export const EXPENSE_CATS = [
+  ['loyer', 'Loyer / remboursement de prêt'], ['electricite', 'Électricité'], ['chauffage', 'Gaz / chauffage'], ['eau', 'Eau'],
+  ['assurance', 'Assurances'], ['entretien', 'Entretien et réparations'], ['nettoyage', 'Nettoyage et produits'], ['internet', 'Internet / téléphone'],
+  ['imam', 'Imam / personnel'], ['fournitures', 'Fournitures (bureau, école)'], ['evenement', 'Événements (iftar, Aïd, conférences…)'],
+  ['social', 'Aide sociale (zakat, sadaqa redistribuées)'], ['banque', 'Frais bancaires'], ['taxes', 'Taxes et impôts'], ['autre', 'Autres dépenses'],
+];
+export const catLabel = (list, k) => (list.find((c) => c[0] === k) || list[list.length - 1])[1];
+// une ligne « mensuelle » compte chaque mois depuis sa date
+const inMonth = (x, month) => (x.monthly ? monthOf(x.date) <= month : monthOf(x.date) === month);
+export const incomesOf = (month) => db.finance.incomes.filter((i) => inMonth(i, month));
+export const expensesOf = (month) => db.finance.expenses.filter((e) => inMonth(e, month));
+export function byCat(items, list) {
+  const t = {};
+  for (const x of items) { const k = list.some((c) => c[0] === x.cat) ? x.cat : 'autre'; t[k] = (t[k] || 0) + (+x.amount || 0); }
+  return list.filter((c) => t[c[0]]).map(([k, l]) => ({ k, l, total: t[k] }));
+}
 export function profCost(p, month) {
   const o = (db.finance.overrides[month] || {})[p.id];
   if (o != null && o !== '') return +o;
@@ -348,12 +370,12 @@ export function profCost(p, month) {
 }
 export function monthExpenses(month) {
   const profsT = staff(month).reduce((t, p) => t + profCost(p, month), 0);
-  const other = db.finance.expenses.filter((e) => monthOf(e.date) === month).reduce((t, e) => t + (+e.amount || 0), 0);
+  const other = expensesOf(month).reduce((t, e) => t + (+e.amount || 0), 0);
   return { profs: profsT, other, total: profsT + other };
 }
 // mois ayant des données (appels, dépenses) jusqu'au mois en cours
 export function financeMonths() {
-  const all = [...db.attendance.map((a) => monthOf(a.date)), ...db.finance.expenses.map((e) => monthOf(e.date)), curMonth()].filter(Boolean).sort();
+  const all = [...db.attendance.map((a) => monthOf(a.date)), ...db.finance.expenses.map((e) => monthOf(e.date)), ...db.finance.incomes.map((e) => monthOf(e.date)), curMonth()].filter(Boolean).sort();
   const out = []; let m = all[0];
   while (m <= curMonth()) { out.push(m); const [y, mm] = m.split('-').map(Number); m = mm === 12 ? `${y + 1}-01` : `${y}-${String(mm + 1).padStart(2, '0')}`; }
   return out.reverse();
