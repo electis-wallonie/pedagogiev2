@@ -244,16 +244,16 @@ CHANGE['file-add'] = async (el) => {
   el.value = '';
   paintFiles(zone);
 };
-export async function takeFiles(zone) {
+export async function takeFiles(zone, untilIso = null) {
   const l = pendingFiles[zone] || [];
-  const until = new Date(Date.now() + FILE_DAYS * 864e5).toISOString();
+  const until = untilIso || new Date(Date.now() + FILE_DAYS * 864e5).toISOString();
   const out = [];
   for (const f of l) { const id = uid(); await putAudio(id, f.blob); out.push({ id, name: f.name, type: f.type, size: f.size, until }); }
   delete pendingFiles[zone];
   return out;
 }
-export function composer(form, zone, attrs = '', placeholder = 'Écrire une note…', withFiles = false) {
-  return `<form class="composer" data-form="${form}" ${attrs}>
+export function composer(form, zone, attrs = '', placeholder = 'Écrire une note…', withFiles = false, pre = '') {
+  return `<form class="composer" data-form="${form}" ${attrs}>${pre}
   <label class="sr" for="${zone}-t">Note</label>
   <textarea id="${zone}-t" name="text" class="inp" placeholder="${esc(placeholder)}"></textarea>
   <div id="${zone}">${zoneHtml(zone)}</div>
@@ -261,6 +261,7 @@ export function composer(form, zone, attrs = '', placeholder = 'Écrire une note
   <div class="row wrap"><button type="button" class="btn2 sm mic" data-act="rec" data-zone="${zone}">${ic('mic', 20)}Vocal</button>${withFiles ? `<button type="button" class="btn2 sm" data-act="file-pick" data-zone="${zone}">${ic('clip', 20)}Photo / fichier</button>` : ''}<span class="grow"></span><button class="btn sm">${ic('send', 18)}Envoyer</button></div>
   </form>`;
 }
+export const devoirTag = (m) => (m.kind === 'devoir' ? pill(`${ic('book', 14)} Devoirs pour le ${fdate(m.due, { weekday: 'long', day: 'numeric', month: 'long' })}`, 'var(--mint)') : '');
 export function msgHtml(m, delAct) {
   const audio = m.audioId ? `<audio controls preload="none" data-audio="${m.audioId}"></audio>` : '';
   const del = delAct ? `<button type="button" class="ib sm" data-act="${delAct}" data-id="${m.id}" aria-label="Supprimer la note">${ic('trash', 16)}</button>` : '';

@@ -1,6 +1,6 @@
 // Blocs de la fiche élève, partagés entre la vue parent (lecture seule) et la vue prof (édition)
 import * as d from './data.js';
-import { esc, ic, pill, fdate, fshort, STATUS, SST, msgHtml, composer, daysSince } from './ui.js';
+import { esc, ic, pill, fdate, fshort, STATUS, SST, msgHtml, composer, daysSince , devoirTag } from './ui.js';
 
 export function parentBadge(st) {
   return `<div class="ck flat row" style="background:var(--yellow);padding:10px 14px;gap:10px">${ic('users', 22)}<span style="font-size:18px"><span class="b">Parent :</span> <bdi class="b" style="font-size:20px">${esc(st.parent)}</bdi></span><span class="grow"></span><span class="pill" style="background:var(--surface)">${d.ageOf(st) ?? '—'} ans</span></div>`;
@@ -108,7 +108,7 @@ export function presence(st, limit = 50) {
 export function notes(st, edit) {
   const list = d.notesForStudent(st);
   const items = list.map((n) => {
-    const tag = n.scope === 'class' ? pill('Toute la classe', 'var(--yellow)') : pill('Personnelle', 'var(--blue2)');
+    const tag = n.kind === 'devoir' ? devoirTag(n) : n.scope === 'class' ? pill('Toute la classe', 'var(--yellow)') : pill('Personnelle', 'var(--blue2)');
     return `<div class="col" style="gap:6px">${tag}${msgHtml(n, edit && n.scope === 'student' ? 'note-del' : null)}</div>`;
   }).join('');
   return `<div class="row between"><h2>Notes &amp; appréciations</h2></div>

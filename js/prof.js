@@ -1,7 +1,7 @@
 // Espace professeur : classes, élèves, appel, Coran, objectifs, notes, réglages
 import * as d from './data.js';
 import { ACT, FORMS, CHANGE, esc, ic, av, pill, fdate, flong, fshort, toast, openModal, closeModal, refreshModal, copyText, todayISO, daysSince,
-  STATUS, COLORS, COLOR_NAMES, ACC, DAYS, schedLabel, nextLabel, initials, fullName, takePending, msgHtml, composer, hydrateAudio , ask, askText, takeFiles, pending, pendingFiles } from './ui.js';
+  STATUS, COLORS, COLOR_NAMES, ACC, DAYS, schedLabel, nextLabel, initials, fullName, takePending, msgHtml, composer, hydrateAudio , ask, askText, takeFiles, pending, pendingFiles , devoirTag } from './ui.js';
 import * as F from './fiche.js';
 import { annoncesHtml } from './annonces.js';
 import { seed } from './seed.js';
@@ -185,7 +185,7 @@ export function classe(u, id) {
   ctx = { cls: c };
   const sts = d.studentsOf(id);
   const notes = d.D().notes.filter((n) => n.scope === 'class' && n.classId === id).sort((a, b) => b.at.localeCompare(a.at));
-  const acts = [[`#/prof/classe/${id}/appel`, 'check', 'Faire l’appel', 'var(--primary)', '#fff'], [`#/prof/eleve/new?c=${id}`, 'plus', 'Élève', 'var(--surface)', 'var(--ink)'], [`#/prof/classe/${id}/historique`, 'clock', 'Historique', 'var(--surface)', 'var(--ink)'], ['#notes-classe', 'note', 'Note classe', 'var(--surface)', 'var(--ink)'], [`#/prof/classe/${id}/objectifs`, 'star', 'Objectifs classe', 'var(--yellow)', 'var(--ink)']];
+  const acts = [[`#/prof/classe/${id}/appel`, 'check', 'Faire l’appel', 'var(--primary)', '#fff'], [`#/prof/eleve/new?c=${id}`, 'plus', 'Élève', 'var(--surface)', 'var(--ink)'], [`#/prof/classe/${id}/historique`, 'clock', 'Historique', 'var(--surface)', 'var(--ink)'], ['#notes-devoirs', 'book', 'Devoirs', 'var(--mint)', 'var(--ink)'], ['#notes-classe', 'note', 'Note classe', 'var(--surface)', 'var(--ink)'], [`#/prof/classe/${id}/objectifs`, 'star', 'Objectifs classe', 'var(--yellow)', 'var(--ink)']];
   const body = `<div class="page">${top(esc(c.name), `${sts.length} élève(s) · ${lastAppel(c)}`, '#/prof/classes', `<button class="ib" data-act="class-edit" data-id="${id}" aria-label="Modifier la classe">${ic('edit', 18)}</button>`)}
   ${courseCard(c)}
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:10px">${acts.map(([h, i, l, bg, fg]) => `<a href="${h}" class="ck col" style="gap:6px;align-items:center;padding:12px 4px;text-decoration:none;background:${bg};color:${fg};font-weight:800;font-size:13px;text-align:center">${ic(i, 24)}${l}</a>`).join('')}</div>
@@ -193,12 +193,49 @@ export function classe(u, id) {
     const p = d.presence(s); const kk = d.coranStats(s);
     return `<div class="li" style="position:relative">${av(initials(s), 42, ACC[k % 4], 14)}<a href="#/prof/eleve/${s.id}" class="grow" style="text-decoration:none;color:var(--ink)"><span class="b" style="display:block">${esc(s.prenoms)} ${esc(s.nom)}</span><span class="small mut b" style="font-weight:600">${kk.v} sourates · ${p.rate === null ? '—' : p.rate + ' %'} présence</span></a>${callBtn(s)}${ic('chev', 18)}</div>`;
   }).join('') || `<div class="col" style="padding:14px 0"><p class="mut small">Pas encore d’élève dans cette classe.</p><a class="btn" href="#/prof/eleve/new?c=${id}">${ic('plus', 20)}Ajouter un élève</a></div>`}</div></div>
+  ${devoirsCard(c, sts)}
   <div class="ck pad col" id="notes-classe"><h2>Notes pour toute la classe</h2><p class="small mut b" style="font-weight:600">Visibles sur la fiche de chaque élève de ${esc(c.name)}.</p>
-  ${composer('note-class', 'zc', '', 'Ex : pas de cours samedi prochain… ou les devoirs en photo', true)}
+  ${composer('note-class', 'zc', '', 'Ex : pas de cours samedi prochain…', true)}
   <p class="tiny mut b">Photos et fichiers : visibles par les parents pendant 7 jours, puis supprimés automatiquement.</p>
-  <div class="col">${notes.map((n) => msgHtml(n, 'note-del')).join('')}</div></div></div>`;
+  <div class="col">${notes.map((n) => `<div class="col" style="gap:6px">${devoirTag(n)}${msgHtml(n, 'note-del')}</div>`).join('')}</div></div></div>`;
   return shell(u, 1, body);
 }
+// ---------- devoirs : enregistrés sur la fiche de chaque élève + e-mail prêt pour tous les parents de la classe ----------
+const localISO = (dt) => { const x = new Date(dt); x.setMinutes(x.getMinutes() - x.getTimezoneOffset()); return x.toISOString().slice(0, 10); };
+const okMail = (m) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(m || '').trim());
+const parentMails = (classId) => [...new Set(d.studentsOf(classId).map((s) => (s.email || '').trim().toLowerCase()).filter(okMail))];
+function devoirsCard(c, sts) {
+  const nx = d.nextCourse(c);
+  const due = nx ? localISO(nx.when) : todayISO();
+  const n = parentMails(c.id).length;
+  const pre = `<div class="field"><label class="lbl" for="zd-due">Devoirs pour le cours du</label><input id="zd-due" name="due" type="date" class="inp" value="${due}" min="${todayISO()}" required style="max-width:220px"></div>`;
+  return `<div class="ck pad col" id="notes-devoirs" style="background:var(--hi)"><h2>${ic('book', 22)} Devoirs</h2>
+  <p class="small b" style="font-weight:600">La date du prochain cours est remplie toute seule. En envoyant, les devoirs s’affichent sur la fiche de chaque élève, et votre e-mail s’ouvre avec ${n ? `les ${n} parent(s) de la classe en destinataires` : 'les parents de la classe en destinataires'} : il ne reste qu’à envoyer.</p>
+  ${composer('devoir', 'zd', '', 'Ex : apprendre les versets 1 à 5 d’Al-Layl, exercice page 12…', true, pre)}
+  <p class="tiny mut b">Les pièces jointes ne peuvent pas partir dans l’e-mail : elles sont visibles sur la fiche de l’élève jusqu’au jour du cours (7 jours minimum). L’e-mail l’indique aux parents.${sts.length > n ? ` ${sts.length - n} élève(s) sans e-mail de parent.` : ''}</p></div>`;
+}
+FORMS.devoir = async (f, fd) => {
+  const c = ctx.cls, u = d.me();
+  const text = (fd.get('text') || '').trim();
+  const due = fd.get('due') || todayISO();
+  const nFiles = (pendingFiles['zd'] || []).length;
+  if (!text && !pending['zd'] && !nFiles) { toast('Écrivez les devoirs, ajoutez une photo ou un vocal'); return; }
+  const audioId = await takePending('zd');
+  if (audioId === false) return;
+  const until = new Date(Math.max(Date.now() + 7 * 864e5, new Date(due + 'T23:59:00').getTime() + 864e5)).toISOString();
+  const files = await takeFiles('zd', until);
+  d.D().notes.push({ id: d.uid(), profId: c.profId, authorId: u.id, scope: 'class', kind: 'devoir', due, classId: c.id, studentId: null, at: new Date().toISOString(), text, audioId, files });
+  d.save();
+  const mails = parentMails(c.id);
+  const dueLabel = fdate(due, { weekday: 'long', day: 'numeric', month: 'long' });
+  const subject = `Devoirs pour le ${dueLabel} · ${c.name}`;
+  const extra = [audioId ? 'un message vocal' : '', files.length ? `${files.length} pièce(s) jointe(s)` : ''].filter(Boolean).join(' et ');
+  const body = `As-salamu alaykum,\n\nDevoirs pour le cours du ${dueLabel} (${c.name}) :\n\n${text || '(voir sur la fiche)'}\n${extra ? `\nÀ voir aussi sur la fiche de votre enfant, rubrique Notes : ${extra}.\n` : ''}\nFiche de l’élève : ${location.origin}${location.pathname}#/cours\n\n${u.name}`;
+  rerender();
+  if (!mails.length) { toast('Devoirs enregistrés sur les fiches · aucun e-mail de parent dans cette classe'); return; }
+  toast(`Devoirs enregistrés · e-mail prêt pour ${mails.length} parent(s)`);
+  location.href = `mailto:${okMail(u.email) ? u.email : ''}?bcc=${mails.join(',')}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+};
 FORMS['note-class'] = async (f, fd) => {
   const text = (fd.get('text') || '').trim();
   if (!text && !pending['zc'] && !(pendingFiles['zc'] || []).length) { toast('Écrivez une note, ajoutez une photo ou un vocal'); return; }

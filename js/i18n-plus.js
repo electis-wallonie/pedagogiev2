@@ -143,10 +143,18 @@ export const AR2 = {
   'Prénom': 'الاسم', 'Âge': 'العمر', 'Parent': 'وليّ الأمر', 'Classe': 'القسم', 'Nom': 'اللقب',
   'Vocal de': 'رسالة صوتية مدتها', 'supprimé automatiquement au bout de 30 jours': 'تُحذف تلقائياً بعد 30 يوماً', '1 minute maximum : enregistrement arrêté': 'دقيقة واحدة كحد أقصى : توقف التسجيل',
   'gardé jusqu’à la validation de la sourate': 'تبقى حتى حفظ السورة', 'Visible par l’élève et ses parents. Ces notes, vocaux compris, restent tant que la sourate est en cours (même pendant les vacances) et s’effacent quand elle est validée.': 'يراها التلميذ ووالداه. تبقى هذه الملاحظات، بما فيها الصوتية، ما دامت السورة قيد الحفظ (حتى في العطلة) وتُحذف عند حفظها.',
+  'Devoirs': 'الواجبات', 'DEVOIRS': 'الواجبات', '+ pièce jointe ou vocal dans Notes': '+ مرفق أو رسالة صوتية في الملاحظات', 'Devoirs pour le cours du': 'الواجبات لحصة يوم', 'Ex : apprendre les versets 1 à 5 d’Al-Layl, exercice page 12…': 'مثال : حفظ الآيات 1 إلى 5 من سورة الليل، تمرين الصفحة 12…',
+  'Écrivez les devoirs, ajoutez une photo ou un vocal': 'اكتب الواجبات أو أضف صورة أو رسالة صوتية', 'Ex : pas de cours samedi prochain…': 'مثال : لا درس يوم السبت القادم…',
   'Coordonnées': 'معلومات الاتصال', 'Validée': 'محفوظة', 'Non connue': 'غير معروفة', 'En cours': 'قيد الحفظ',
 };
 const D = (h, m) => (m ? `${h} س ${m} د` : `${h} س`);
 export const RULES2 = [
+  [/^Devoirs pour le (.+)$/, (m) => `الواجبات ليوم ${m[1]}`],
+  [/^Pour le (.+)$/, (m) => `ليوم ${m[1]}`],
+  [/^Devoirs enregistrés · e-mail prêt pour (\d+) parent\(s\)$/, (m) => `تم حفظ الواجبات · البريد جاهز لـ ${m[1]} وليّ أمر`],
+  [/^Devoirs enregistrés sur les fiches · aucun e-mail de parent dans cette classe$/, () => 'تم حفظ الواجبات في البطاقات · لا يوجد بريد للأولياء في هذا القسم'],
+  [/^La date du prochain cours est remplie toute seule\.[\s\S]*$/, (m) => `يُملأ تاريخ الحصة القادمة تلقائياً. عند الإرسال تظهر الواجبات في بطاقة كل تلميذ، ويفتح بريدك وأولياء القسم كمرسَل إليهم : ما عليك إلا الإرسال.`],
+  [/^Les pièces jointes ne peuvent pas partir dans l’e-mail[\s\S]*$/, () => 'لا يمكن إرسال المرفقات في البريد : تظهر في بطاقة التلميذ حتى يوم الحصة (7 أيام على الأقل). ويشير البريد إلى ذلك للأولياء.'],
   [/^Iqama (\d\d:\d\d)$/i, (m) => `الإقامة ${m[1]}`],
   [/^iq\. (\d\d:\d\d)$/, (m) => `الإقامة ${m[1]}`],
   [/^dans (\d+) min$/, (m) => `بعد ${m[1]} دقيقة`],
