@@ -61,7 +61,6 @@ export function annuaire(u) {
 
 // ---------- page Contact (publique, pour tout le monde) ----------
 import { pubShell } from './mosquee.js';
-const SUJETS = ['Question générale', 'Prière / vie de la mosquée', 'Question religieuse', 'Cours / école', 'Absence ou retard à un cours', 'Inscription', 'Don / zakat', 'Location de salle', 'Événement', 'Bénévolat', 'Autre'];
 function recipients() {
   const g1 = (d.D().contacts || []).filter((c) => okMail(c.email)).map((c) => ({ id: 'c:' + c.id, label: c.label, email: c.email, icon: 'shield' }));
   const g2 = d.profs().filter((p) => okMail(p.email) && p.showContact !== false).map((p) => { const cl = d.classesOf(p.id).map((c) => c.name).join(', '); return { id: 'u:' + p.id, label: p.name, sub: cl ? 'Enseignant · ' + cl : 'Enseignant', email: p.email, icon: 'book' }; });
@@ -71,7 +70,7 @@ export function contactPage(q) {
   const [g1, g2] = recipients();
   const want = q && q.get('to');
   const pre = want && want !== 'profs' && want !== 'don' ? want : (g1[0] || g2[0] || {}).id;
-  const subj0 = want === 'don' ? 'Don / zakat' : want === 'profs' ? 'Cours / école' : '';
+  const subj0 = want === 'don' ? 'Don' : want === 'profs' ? 'Cours' : '';
   const radio = (r) => `<label class="ck flat row" style="gap:10px;padding:10px 12px;cursor:pointer"><input type="radio" name="to" value="${r.id}" ${r.id === pre ? 'checked' : ''} required style="width:22px;height:22px">${ic(r.icon, 20)}<span class="grow"><span class="b" style="display:block">${esc(r.label)}</span>${r.sub ? `<span class="small mut b" style="font-weight:600">${esc(r.sub)}</span>` : ''}</span></label>`;
   return pubShell(-1, `<h1 style="font-size:clamp(30px,5vw,46px);line-height:1.05">Contact</h1>
   <p class="mut b" style="font-weight:600">Une question, une demande, un message ? Choisissez qui vous voulez contacter. En appuyant sur « Écrire le message », votre application e-mail s’ouvre avec le destinataire, le sujet et le message déjà remplis : il ne reste plus qu’à envoyer.</p>
@@ -79,9 +78,8 @@ export function contactPage(q) {
     <fieldset style="border:0;padding:0;margin:0"><legend class="lbl">1. Qui voulez-vous contacter ?</legend><div class="col" style="gap:8px">
     ${g1.length ? `<span class="tiny b mut">LA MOSQUÉE</span>${g1.map(radio).join('')}` : ''}
     ${g2.length ? `<span class="tiny b mut" style="margin-top:6px">LES ENSEIGNANTS</span>${g2.map(radio).join('')}` : ''}</div></fieldset>
-    <div class="field"><label class="lbl" for="cs">2. Sujet</label><select id="cs" name="sujet" class="inp" required>${SUJETS.map((x) => `<option ${x === subj0 ? 'selected' : ''}>${x}</option>`).join('')}</select></div>
-    <div class="field"><label class="lbl" for="co">3. Objet</label><input id="co" name="objet" class="inp" required placeholder="ex. Demande de renseignements"></div>
-    <div class="field"><label class="lbl" for="cm">4. Votre message</label><textarea id="cm" name="message" class="inp" rows="6" required placeholder="As-salamu alaykum, …"></textarea></div>
+    <div class="field"><label class="lbl" for="cs">2. Sujet</label><input id="cs" name="sujet" class="inp" required value="${esc(subj0)}" placeholder="ex. Inscription de mon fils, don, horaires…"></div>
+    <div class="field"><label class="lbl" for="cm">3. Votre message</label><textarea id="cm" name="message" class="inp" rows="6" required placeholder="As-salamu alaykum, …"></textarea></div>
     <div class="grid2 stack"><div class="field"><label class="lbl" for="cn">Votre nom</label><input id="cn" name="nom" class="inp" required></div>
     <div class="field"><label class="lbl" for="ctl">Votre téléphone (facultatif)</label><input id="ctl" name="tel" type="tel" class="inp" placeholder="Pour être rappelé"></div></div>
     <button class="btn full">${ic('mail', 20)}Écrire le message</button>
@@ -92,7 +90,7 @@ FORMS.contact = (f, fd) => {
   const r = recipients().flat().find((x) => x.id === fd.get('to'));
   if (!r) { toast('Choisissez un destinataire'); return; }
   const tel = (fd.get('tel') || '').trim();
-  const subject = `[${fd.get('sujet')}] ${(fd.get('objet') || '').trim()}`;
+  const subject = (fd.get('sujet') || '').trim();
   const body = `${(fd.get('message') || '').trim()}\n\n${(fd.get('nom') || '').trim()}${tel ? `\nTél. : ${tel}` : ''}`;
   location.href = `mailto:${r.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 };
