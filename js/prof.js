@@ -46,7 +46,7 @@ function callBtn(s, small = true) {
 function contactCard(s) {
   if (!s.tel && !s.email) return `<div class="ck flat pad row wrap" style="gap:10px">${ic('phone', 20)}<span class="grow b small">Ni téléphone ni e-mail pour ce parent.</span><a class="btn2 sm" href="#/prof/eleve/${s.id}/edit">${ic('plus', 16)}Compléter</a></div>`;
   const wa = waNum(s.tel);
-  return `<div class="ck pad col" style="gap:10px"><div class="row between wrap"><span class="b">${ic('phone', 18)} Contact du parent</span><span class="small mut b" style="font-weight:600">Visible seulement par les profs et l’admin</span></div>
+  return `<div class="ck pad col" style="gap:10px"><div class="row between wrap"><span class="b">${ic('phone', 18)} <span>Contact du parent</span>${s.parent ? ` · <bdi>${esc(s.parent)}</bdi>` : ''}</span><span class="small mut b" style="font-weight:600">Visible seulement par les profs et l’admin</span></div>
   <div class="row wrap" style="gap:8px 16px">${s.tel ? `<span class="code" style="font-size:20px">${esc(s.tel)}</span>` : ''}${s.email ? `<span class="b" style="word-break:break-all">${esc(s.email)}</span>` : ''}</div>
   <div class="row wrap" style="gap:8px">${s.tel ? `<a class="btn" href="${telHref(s.tel)}" style="background:var(--mint);color:var(--ink)">${ic('phone', 20)}Appeler ${esc(s.parent)}</a>
   <a class="btn2" href="sms:${String(s.tel).replace(/[^\d+]/g, '')}">${ic('chat', 20)}SMS</a>
@@ -489,9 +489,8 @@ export function eleve(u, id, tab = 'coran', q = null) {
   else if (tab === 'presence') body = F.presence(s);
   else body = F.notes(s, true);
   return shell(u, 2, `<div class="page">
-  <div class="top"><a href="#/prof/classe/${c.id}" class="ib" aria-label="Retour">${ic('back', 20)}</a>${av(initials(s), 56, 'var(--yellow)', 19)}<div class="grow"><h1 style="font-size:24px">${esc(s.prenoms)} ${esc(s.nom)}</h1><div class="row wrap" style="gap:8px;margin-top:4px">${pill(esc(c.name), colorOf(c))}${d.nextCourse(c) ? `<span class="small b">Prochain cours : ${nextLabel(d.nextCourse(c))}</span>` : ''}</div></div>
+  <div class="top"><a href="#/prof/classe/${c.id}" class="ib" aria-label="Retour">${ic('back', 20)}</a>${av(initials(s), 56, 'var(--yellow)', 19)}<div class="grow"><h1 style="font-size:24px">${esc(s.prenoms)} ${esc(s.nom)}</h1><div class="row wrap" style="gap:8px;margin-top:4px">${pill(esc(c.name), colorOf(c))}${d.ageOf(s) != null ? pill(`${d.ageOf(s)} ans`, 'var(--surface)') : ''}${d.nextCourse(c) ? `<span class="small b">Prochain cours : ${nextLabel(d.nextCourse(c))}</span>` : ''}</div></div>
   <a class="ib" href="#/prof/eleve/${id}/edit" aria-label="Modifier l’élève">${ic('edit', 18)}</a></div>
-  ${F.parentBadge(s)}
   ${contactCard(s)}
   <div class="ck flat row" style="padding:8px 8px 8px 14px"><span class="grow code small">${esc(s.code)}</span><button class="ib sm" data-act="copy" data-t="${esc(s.code)}" aria-label="Copier le code">${ic('copy', 16)}</button><button class="ib sm" data-act="share" data-id="${s.id}" aria-label="Partager le lien de la fiche">${ic('share', 16)}</button><a class="ib sm" href="#/f/${encodeURIComponent(s.code)}" aria-label="Voir comme un parent">${ic('users', 16)}</a></div>
   <div class="seg" role="navigation" aria-label="Sections" style="overflow-x:auto">${ETABS.map(([k, l]) => `<a href="#/prof/eleve/${id}/${k}" class="${k === tab ? 'on' : ''}">${l}</a>`).join('')}</div>
