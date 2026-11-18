@@ -3,7 +3,7 @@ import * as d from './data.js';
 import { esc, ic, pill, fdate, fshort, STATUS, SST, msgHtml, composer, daysSince , devoirTag } from './ui.js';
 
 export function parentBadge(st) {
-  return `<span class="row small b par-l" style="gap:6px">${ic('users', 16)}<span>Parent :</span> <bdi>${esc(st.parent)}</bdi></span>`;
+  return `<div class="ck flat row" style="background:var(--yellow);padding:10px 14px;gap:10px">${ic('users', 22)}<span style="font-size:18px"><span class="b">Parent :</span> <bdi class="b" style="font-size:20px">${esc(st.parent)}</bdi></span><span class="grow"></span><span class="pill" style="background:var(--surface)">${d.ageOf(st) ?? '—'} ans</span></div>`;
 }
 export function legend() {
   return `<div class="legend"><span><i class="s-v"></i>Validée</span><span><i class="s-c" style="border:2px solid var(--ink)"></i>En cours</span><span><i class="s-n" style="border:1px solid var(--muted)"></i>Non connue</span></div>`;
