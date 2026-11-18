@@ -1,7 +1,7 @@
 // Point d'entrée : chargement des données, routes, délégation des événements
 import * as d from './data.js';
 import { ACT, FORMS, CHANGE, hydrateAudio, closeModal, ic } from './ui.js';
-import { seed } from './seed.js';
+import { seed, SEED_VERSION } from './seed.js';
 import * as pub from './public.js';
 import * as adm from './admin.js';
 import * as prof from './prof.js';
@@ -131,11 +131,19 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal
 (async function start() {
   startAutoTranslate();
   await mosq.loadConfig();
-  if (!d.load() || !d.D().users) await seed();
+  // Démo : si les données de démonstration de cet appareil datent d'une ancienne version, on les recharge
+  // (seulement en mode démo : de vraies données ne sont jamais effacées).
+  if (!d.load() || !d.D().users || (d.D().demo && d.D().seedV !== SEED_VERSION)) { d.logout(); await seed(); }
   d.load();
   await d.purgeExpired();
   render();
   // vérifie aussi les pièces jointes expirées quand on revient sur l'app
   document.addEventListener('visibilitychange', async () => { if (!document.hidden && (await d.purgeExpired())) render(true); });
-  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('./sw.js').catch(() => {});
+  // Mise à jour immédiate : le navigateur vérifie la nouvelle version à chaque ouverture et recharge une fois quand elle est prête.
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    const hadSW = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then((r) => r.update()).catch(() => {});
+    let reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadSW && !reloaded) { reloaded = true; location.reload(); } });
+  }
 })();

@@ -13,6 +13,8 @@ function lastDays(dow, count) {
 const daysAgo = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return iso(d); };
 const stamp = (n, h = 14) => { const d = new Date(); d.setDate(d.getDate() - n); d.setHours(h, 10, 0, 0); return d.toISOString(); };
 
+// À augmenter à chaque nouvelle version des données de démo : les appareils qui ont une ancienne démo la rechargent tout seuls.
+export const SEED_VERSION = 7;
 export async function seed() {
   await clearAudio().catch(() => {});
   const admin = await makeUser('admin', 'admin', 'Administrateur', 'admin1234', false);
@@ -23,7 +25,7 @@ export async function seed() {
   const tresorier = await makeUser('compta', 'tresorier', 'Trésorier', 'compta1234', false);
   Object.assign(tresorier, { tel: '+32 470 00 00 04', email: 'tresorier@exemple.be' });
   Object.assign(prof, { tel: '+32 470 00 00 02', email: 'rahman@exemple.be' });
-  setDb({ v: 1, demo: true, users: [admin, direction, tresorier, prof], classes: [], students: [], attendance: [], objectives: [], notes: [], snotes: [], announcements: [] });
+  setDb({ v: 1, demo: true, seedV: SEED_VERSION, users: [admin, direction, tresorier, prof], classes: [], students: [], attendance: [], objectives: [], notes: [], snotes: [], announcements: [] });
   const db = D();
 
   const C = [
