@@ -284,6 +284,7 @@ function migrateGestion(x) {
   // vraie mosquée : la direction crée ses salles elle-même (la démo a ses salles d'exemple)
   if (!Array.isArray(x.locaux)) x.locaux = x.demo ? DEFAULT_LOCAUX.map((name) => ({ id: uid(), name })) : [];
   if (!Array.isArray(x.families)) x.families = [];
+  if (!Array.isArray(x.demandes)) x.demandes = [];
   if (!x.finance) x.finance = {};
   const f = x.finance;
   if (f.rate == null) f.rate = 10;

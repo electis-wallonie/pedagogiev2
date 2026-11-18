@@ -10,6 +10,7 @@ import * as gest from './gestion.js';
 import * as contact from './contact.js';
 import * as mosq from './mosquee.js';
 import * as compta from './compta.js';
+import * as dem from './demandes.js';
 import { startAutoTranslate, setLang, isAr } from './i18n.js';
 
 const app = document.getElementById('app');
@@ -27,6 +28,8 @@ const R = [
   [/^\/mosquee$/, () => { location.replace('#/'); return ''; }],
   [/^\/imam$/, (m, q) => mosq.imam(q)],
   [/^\/cours$/, () => pub.home()],
+  [/^\/inscription$/, (m, q) => dem.inscription(q)],
+  [/^\/admin\/demandes$/, (m, q) => { const u = guard('admin'); return u && dem.demandesView(u, q); }],
   [/^\/installer$/, () => pub.install()],
   [/^\/contact$/, (m, q) => contact.contactPage(q)],
   [/^\/prof\/annuaire$/, () => { const u = guard('team'); return u && contact.annuaire(u); }],

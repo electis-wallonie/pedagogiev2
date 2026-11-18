@@ -6,6 +6,7 @@ import { langBtn } from './public.js';
 import { locauxTile, financeTile, hoursPill } from './gestion.js';
 import { contactFields, readContact } from './contact.js';
 import { publicTile, teamHost, mosqueName, loadMawaqit, mawaqitData } from './mosquee.js';
+import { demandesTile } from './demandes.js';
 
 const go = (h) => { if (location.hash === h) window.dispatchEvent(new Event('hashchange')); else location.hash = h; };
 let loginErr = false;
@@ -86,7 +87,7 @@ export function adminView(u) {
   const roles = creatable(u);
   return shell(u, 4, `<div class="page">
   <div class="top"><span class="logo">${ic('shield', 22, 2.6)}</span><div class="grow"><div class="small mut b">${d.roleLabel(u)}</div><h1>Direction</h1></div></div>
-  <div class="gridauto">${publicTile()}${locauxTile()}${financeTile()}</div>
+  <div class="gridauto">${demandesTile()}${publicTile()}${locauxTile()}${financeTile()}</div>
   <div class="ck pad col" id="messages"><h2>${ic('mega', 22)} Message de la direction</h2>
   <p class="small mut b" style="font-weight:600">Affiché en haut de toutes les fiches élèves et des tableaux de bord de l’équipe, entre les deux dates choisies.</p>
   <form class="col" data-form="ann">

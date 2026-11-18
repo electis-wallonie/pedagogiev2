@@ -5,6 +5,7 @@ import { locale } from './i18n.js';
 import { ACT, esc, ic, av, pill, fdate, toast, openModal, todayISO } from './ui.js';
 import { eur, monthLabel, entryForm, entryList, teacherRows, PAY } from './gestion.js';
 import { myContactCard } from './contact.js';
+import { comptaPending } from './demandes.js';
 
 const NAV = [['bord', 'pie', 'Tableau de bord'], ['journal', 'list', 'Journal'], ['recettes', 'plus', 'Recettes'], ['depenses', 'note', 'Dépenses'], ['cotisations', 'users', 'Cotisations'], ['enseignants', 'clock', 'Enseignants'], ['rapports', 'sheet', 'Rapports'], ['compte', 'gear', 'Mon compte']];
 const MOB = ['bord', 'journal', 'recettes', 'depenses', 'plus'];
@@ -85,6 +86,7 @@ function bord(u, m, months) {
   return `${top('Tableau de bord', `Bonjour ${esc(u.name)}`, `<div class="row wrap" style="gap:8px">${addBtns(m)}</div>`)}
   ${monthNav('bord', m, months)}
   <div class="kpis">${kpi('Solde de l’association', sign(s.solde), s.solde >= 0 ? 'var(--mint)' : 'var(--pink)', 'depuis le début des comptes')}${kpi(`Recettes · ${monthLabel(m).split(' ')[0]}`, eur(r), 'var(--surface)')}${kpi(`Dépenses · ${monthLabel(m).split(' ')[0]}`, eur(e.total), 'var(--surface)')}${kpi('Résultat du mois', sign(r - e.total), r - e.total >= 0 ? 'var(--hi)' : 'var(--pink)')}</div>
+  ${comptaPending()}
   <div class="ck pad col"><div class="row between wrap"><h2>${ic('pie', 20)} 12 derniers mois</h2><button class="btn2 sm" data-act="compta-csv" data-m="${m}">${ic('dl', 16)}Exporter le mois (Excel)</button></div>${chart(lastMonths(12))}</div>
   <div class="grid2 stack" style="align-items:start">
     <div class="ck pad col"><div class="row between"><h2>Dépenses du mois</h2><a class="small b" href="#/compta/depenses?m=${m}">Détail</a></div>${bars(expCats, '#FF5A5F')}</div>
@@ -142,6 +144,7 @@ function cotisations(u, m, months, q) {
   return `${top('Cotisations de l’école', `${F.length} famille(s)`)}
   <div class="kpis">${kpi('Prévu', eur(c.theo), 'var(--blue2)')}${kpi('Encaissé', eur(c.real), 'var(--mint)', pct + ' %')}${kpi('Reste à encaisser', eur(c.rest), 'var(--pink)')}</div>
   <div class="prog"><span style="width:${pct}%"></span></div>
+  ${comptaPending(true)}
   <div class="seg" style="overflow-x:auto">${[['all', 'Toutes'], ['todo', 'À relancer'], ['unpaid', 'Pas payé'], ['partial', 'Partiel'], ['paid', 'Payé']].map(([k, l]) => `<a href="#/compta/cotisations?s=${k}" class="${s === k ? 'on' : ''}">${l}</a>`).join('')}</div>
   <div class="field"><label class="sr" for="cq">Rechercher</label><input id="cq" class="inp" placeholder="Rechercher une famille…" data-filter=".fr"></div>
   <div class="ck pad"><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Famille</th><th>Élèves</th><th style="text-align:end">Cotisation</th><th style="text-align:end">Payé</th><th style="text-align:end">Reste</th><th>État</th></tr></thead><tbody>

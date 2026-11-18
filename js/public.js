@@ -29,7 +29,7 @@ export function home() {
   const COL = { mint: 'var(--mint)', jaune: 'var(--yellow)', rose: 'var(--pink)', bleu: 'var(--blue2)' };
   const cours = (config().cours || []).filter((c) => c && c.public);
   const list = cours.length ? `<div class="col" style="gap:10px"><h2 style="margin-top:6px">Nos cours</h2>${cours.map((c, k) => `<div class="w1-c"><span class="w1-ic" style="background:${COL[c.couleur] || ['var(--mint)', 'var(--yellow)', 'var(--pink)'][k % 3]}">${ic(c.icone || ['users', 'book', 'hands'][k % 3], 20)}</span><span class="col grow" style="gap:1px;min-width:0"><span class="b" style="font-size:16px" dir="auto">${esc(c.public)}</span>${c.detail ? `<span class="small mut" style="font-weight:600" dir="auto">${esc(c.detail)}</span>` : ''}${c.horaires ? `<span class="small b" dir="auto">${esc(c.horaires)}</span>` : ''}</span></div>`).join('')}
-    <a href="#/contact" class="small b row" style="gap:6px">${ic('mail', 16)}S’inscrire : écrire à la direction</a></div>` : '';
+    <a href="#/inscription" class="btn2 full" style="margin-top:2px">${ic('edit', 18)}Faire une demande d’inscription</a></div>` : '';
   return pubShell(2, `<div class="home-grid w1-grid">
   <div class="col" style="gap:16px">
     <form class="w1-card" data-form="code" novalidate>

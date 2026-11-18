@@ -344,3 +344,15 @@ div.cal-ev{cursor:default}
 .w1-ic{width:44px;height:44px;flex:none;border-radius:12px;border:var(--bw) solid var(--ink);display:flex;align-items:center;justify-content:center;box-sizing:border-box}
 @media(min-width:960px){.w1-h{font-size:30px}}
 .cd{font-variant-numeric:tabular-nums;letter-spacing:.5px}
+
+/* Demandes d’inscription */
+.dm-set{border:var(--bw) solid var(--ink);margin:0;gap:10px}
+.dm-set legend{padding:0 6px;font-size:16px}
+.dm-opts{display:flex;flex-direction:column;gap:8px}
+.dm-opts.two{flex-direction:row}.dm-opts.two .dm-opt{flex:1}
+.dm-opt{display:flex;align-items:center;gap:10px;border:2.5px solid var(--ink);border-radius:12px;padding:10px 12px;background:var(--surface);cursor:pointer;min-height:44px;box-sizing:border-box}
+.dm-opt input{width:20px;height:20px;accent-color:var(--primary);flex:none}
+.dm-opt:has(input:checked){background:var(--yellow);box-shadow:3px 3px 0 var(--ink)}
+.dm-ok{align-items:center;text-align:center;gap:12px}
+.dm-okic{width:64px;height:64px;border-radius:999px;background:var(--mint);border:var(--bw) solid var(--ink);display:flex;align-items:center;justify-content:center;box-shadow:4px 4px 0 var(--ink)}
+@media(min-width:760px){.dm-form{max-width:640px}}

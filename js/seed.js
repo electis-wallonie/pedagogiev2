@@ -14,7 +14,7 @@ const daysAgo = (n) => { const d = new Date(); d.setDate(d.getDate() - n); retur
 const stamp = (n, h = 14) => { const d = new Date(); d.setDate(d.getDate() - n); d.setHours(h, 10, 0, 0); return d.toISOString(); };
 
 // À augmenter à chaque nouvelle version des données de démo : les appareils qui ont une ancienne démo la rechargent tout seuls.
-export const SEED_VERSION = 8;
+export const SEED_VERSION = 9;
 export async function seed() {
   await clearAudio().catch(() => {});
   const admin = await makeUser('admin', 'admin', 'Administrateur', 'admin1234', false);
@@ -142,6 +142,12 @@ export async function seed() {
     { id: uid(), label: 'Le trésorier', email: 'tresorier@exemple.be' },
     { id: uid(), label: 'Le directeur de l’école', email: 'ecole@exemple.be' },
   ];
+  { const t = new Date(), y = t.getMonth() >= 7 ? t.getFullYear() : t.getFullYear() - 1, Y0 = `${y}–${y + 1}`, Y1 = `${y + 1}–${y + 2}`;
+    db.demandes = [
+      { id: uid(), at: stamp(1, 18), status: 'new', cours: 'Enfants', annee: Y0, prenoms: 'Inès', nom: 'Haddad', age: 8, parent: 'Samira Haddad', tel: '06 12 34 56 78', email: 'samira.haddad@gmail.com', message: 'Inès lit déjà un peu l’arabe.' },
+      { id: uid(), at: stamp(3, 20), status: 'new', cours: 'Adultes', annee: Y0, prenoms: 'Youssef', nom: 'Benali', age: 34, parent: 'Youssef Benali', tel: '07 98 76 54 32', email: 'y.benali@outlook.fr', message: '' },
+      { id: uid(), at: stamp(6, 11), status: 'new', cours: 'Enfants', annee: Y1, prenoms: 'Adam', nom: 'Karimi', age: 5, parent: 'Nadia Karimi', tel: '06 55 44 33 22', email: 'nadia.karimi@gmail.com', message: 'Pour la rentrée prochaine, il aura 6 ans.' },
+    ]; }
   db.faq = [
     { id: uid(), at: stamp(10), freq: true, theme: 'Prière', q: 'Peut-on rattraper une prière manquée ?', r: 'Oui. La prière manquée (qada) se rattrape dès qu’on s’en souvient, dans l’ordre, de préférence avant la prière suivante. Pour toute situation particulière, venez en parler à l’imam après une prière.' },
     { id: uid(), at: stamp(40), freq: true, theme: 'Jeûne / Ramadan', q: 'Peut-on jeûner en voyage ?', r: 'Le voyageur peut rompre le jeûne et rattraper les jours plus tard. S’il jeûne malgré tout, son jeûne est valable.' },

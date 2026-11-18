@@ -17,6 +17,7 @@ Une application web installable (PWA), **la même pour toutes les mosquées**. C
 | Nom à afficher (laisser vide = nom Mawaqit) ? | `nom` | `Mosquée Al-Mouhsinine` |
 | Quel **style** ? (voir `css/styles/`) | `style` | `pastille` ou `sobre` |
 | Couleur de la barre du téléphone ? | `couleurTheme` | `#1F4FFF` |
+| Où envoyer les demandes d’inscription ? (serveur Cloudflare de la mosquée) | `api` | ex. `/api` : le site envoie chaque demande en `POST /api/demandes` (JSON : cours, annee, prenoms, nom, age, parent, tel, email, message). Vide = démo, la demande reste sur l’appareil. |
 | Quels cours la mosquée propose-t-elle ? (affichés dans l’onglet Cours) | `cours` | liste de `{"public": "Adultes", "detail": "Coran, tajwid", "horaires": "Mar. 19h–21h", "couleur": "jaune", "icone": "book"}` ; couleurs : mint, jaune, rose, bleu ; icônes : users, book, hands |
 | (Tant qu’il n’y a pas de nom de domaine, l’équipe se connecte par l’adresse du site suivie de `/connexion/`, ex. `https://electis-wallonie.github.io/pedagogiev2/connexion/` : aucun lien public n’y mène.) | | |
 | Adresse de connexion de l’équipe ? (le public ne voit alors aucun bouton de connexion) | `domaineEquipe` | `connexion.ma-mosquee.fr` |
