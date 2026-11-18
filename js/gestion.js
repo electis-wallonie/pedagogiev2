@@ -1,5 +1,6 @@
 // Gestion de l'association (admin) : locaux, heures des professeurs, familles & cotisations, finances
 import * as d from './data.js';
+import { locale } from './i18n.js';
 import { ACT, FORMS, CHANGE, esc, ic, av, pill, fdate, toast, openModal, closeModal, refreshModal, todayISO, ask, askText, DAYS, ACC, initials, fullName } from './ui.js';
 import { shell } from './prof.js';
 
@@ -9,8 +10,8 @@ const softRender = () => window.dispatchEvent(new CustomEvent('soft-render'));
 const top = (title, sub, back, right = '') => `<div class="top">${back ? `<a href="${back}" class="ib" aria-label="Retour">${ic('back', 20)}</a>` : ''}<div class="grow">${sub ? `<div class="small mut b">${sub}</div>` : ''}<h1>${title}</h1></div>${right}</div>`;
 const ORDER = [1, 2, 3, 4, 5, 6, 0];
 const hh = (t) => (t || '').replace(/^0(\d)/, '$1').replace(':', 'h').replace(/h00$/, 'h');
-export const eur = (n) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(+n || 0);
-export const monthLabel = (m) => { const s = new Date(m + '-15T12:00:00').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }); return s[0].toUpperCase() + s.slice(1); };
+export const eur = (n) => new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(+n || 0);
+export const monthLabel = (m) => { const s = new Date(m + '-15T12:00:00').toLocaleDateString(locale, { month: 'long', year: 'numeric' }); return s[0].toUpperCase() + s.slice(1); };
 const num = (v) => { const x = parseFloat(String(v ?? '').replace(',', '.')); return isNaN(x) ? 0 : Math.round(x * 100) / 100; };
 
 // =====================================================================

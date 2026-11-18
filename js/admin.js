@@ -5,15 +5,16 @@ import { shell } from './prof.js';
 import { langBtn } from './public.js';
 import { locauxTile, financeTile, hoursPill } from './gestion.js';
 import { contactFields, readContact } from './contact.js';
-import { publicTile } from './mosquee.js';
+import { publicTile, teamHost, mosqueName, loadMawaqit, mawaqitData } from './mosquee.js';
 
 const go = (h) => { if (location.hash === h) window.dispatchEvent(new Event('hashchange')); else location.hash = h; };
 let loginErr = false;
 
 export function loginView() {
   const err = loginErr; loginErr = false;
+  if (!mawaqitData()) loadMawaqit();
   return `<div class="page narrow" style="padding-top:30px">
-  <div class="row"><a href="#/" class="ib" aria-label="Retour">${ic('back', 20)}</a><span class="logo">${ic('book', 22, 2.6)}</span><span class="b grow" style="font-size:18px">Espace équipe</span>${langBtn()}</div>
+  <div class="row">${teamHost() ? '' : `<a href="#/" class="ib" aria-label="Retour">${ic('back', 20)}</a>`}<span class="logo">${ic('moon', 22, 2.6)}</span><span class="grow col" style="gap:0"><span class="b" style="font-size:18px">Espace équipe</span><span class="small mut b" data-notr dir="auto">${esc(mosqueName())}</span></span>${langBtn()}</div>
   <h1>Connexion</h1>
   <form class="ck pad col" data-form="login">
     <div class="field"><label class="lbl" for="lg">Identifiant</label><input id="lg" name="login" class="inp" autocomplete="username" autocapitalize="none" required></div>

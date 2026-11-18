@@ -3,6 +3,7 @@
 // avec ce dictionnaire (et quelques règles pour les textes qui contiennent des nombres ou des noms).
 // Les contenus saisis par les utilisateurs (notes, noms…) ne sont pas traduits.
 
+import { AR2, RULES2 } from './i18n-plus.js';
 const LKEY = 'suivi-lang';
 export const lang = (() => { try { return localStorage.getItem(LKEY) === 'ar' ? 'ar' : 'fr'; } catch { return 'fr'; } })();
 export const isAr = lang === 'ar';
@@ -243,6 +244,10 @@ const RULES = [
   [/^(\d+) (.+) \((\d+) j\)$/, () => null],
   [/^(.+) (\d+)$/, (m) => (AR[m[1]] ? `${AR[m[1]]} ${m[2]}` : null)],
 ];
+
+// modules ajoutés : dictionnaire et règles complémentaires (sans écraser l'existant)
+for (const k in AR2) if (!(k in AR)) AR[k] = AR2[k];
+RULES.unshift(...RULES2);
 
 function trCore(t) {
   if (!t) return t;

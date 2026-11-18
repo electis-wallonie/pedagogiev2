@@ -241,3 +241,4 @@ input:focus-visible + .swatch{outline:3px solid var(--primary);outline-offset:3p
 .tbl td:first-child{white-space:normal}
 
 @media(max-width:420px){.seg.roles{flex-direction:column}.hide-sm{display:none}}
+.btn2.on-pill{background:var(--yellow)}

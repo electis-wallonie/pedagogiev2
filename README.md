@@ -2,7 +2,8 @@
 
 Une application web installable (PWA), **la même pour toutes les mosquées**. Chaque mosquée reçoit sa propre copie de ce dépôt, configurée par un seul fichier : `mosquee.json`.
 
-- **Côté public, sans compte :** Prières (reliées à Mawaqit), Questions à l’imam, Cours (fiche d’un élève, enfant ou adulte, avec son code), Contact.
+- **Côté public, sans compte :** barre du bas Prières (reliées à Mawaqit) · Questions à l’imam · Cours (fiche d’un élève, enfant ou adulte) · Mosquée (infos, itinéraire, dons, contacts) ; bouton Contact en haut de chaque page.
+- **Bilingue français / arabe** partout (bouton langue), avec mise en page de droite à gauche en arabe.
 - **Côté équipe, avec identifiant :** méga administrateur, administrateurs, comptabilité, professeurs.
 
 ## Déployer l’app pour une nouvelle mosquée (procédure pour Claude)
@@ -16,9 +17,10 @@ Une application web installable (PWA), **la même pour toutes les mosquées**. C
 | Nom à afficher (laisser vide = nom Mawaqit) ? | `nom` | `Mosquée Al-Mouhsinine` |
 | Quel **style** ? (voir `css/styles/`) | `style` | `pastille` ou `sobre` |
 | Couleur de la barre du téléphone ? | `couleurTheme` | `#1F4FFF` |
+| Adresse de connexion de l’équipe ? (le public ne voit alors aucun bouton de connexion) | `domaineEquipe` | `connexion.ma-mosquee.fr` |
 
 3. **Lancer la synchronisation Mawaqit :** onglet *Actions* → « Horaires Mawaqit » → *Run workflow*. Elle crée `data/mawaqit.json`, puis tourne seule chaque nuit.
-4. **Déployer sur Cloudflare Pages :** relier le dépôt, sans commande de build, dossier de sortie `/`. Chaque mise à jour des horaires redéploie automatiquement. GitHub Pages fonctionne aussi.
+4. **Déployer sur Cloudflare Pages** (relier aussi le sous-domaine de `domaineEquipe` au même projet) : relier le dépôt, sans commande de build, dossier de sortie `/`. Chaque mise à jour des horaires redéploie automatiquement. GitHub Pages fonctionne aussi.
 5. **Première connexion :** compte `admin` (méga administrateur). Il crée ensuite les administrateurs, la comptabilité et les professeurs, avec téléphone et e-mail obligatoires. Dans Direction → *Mosquée & espace public*, il ajoute les destinataires de la page Contact (direction, imam, trésorier…).
 
 ## Horaires de prière : reliés à Mawaqit, sans serveur

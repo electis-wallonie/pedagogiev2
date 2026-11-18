@@ -23,7 +23,8 @@ function guard(role) {
   return u;
 }
 const R = [
-  [/^\/?$/, (m, q) => mosq.prieres(q)],
+  [/^\/?$/, (m, q) => { if (mosq.teamHost()) { const u = d.me(); location.hash = u ? d.homeOf(u) : '#/login'; return null; } return mosq.prieres(q); }],
+  [/^\/mosquee$/, () => mosq.mosquee()],
   [/^\/imam$/, (m, q) => mosq.imam(q)],
   [/^\/cours$/, () => pub.home()],
   [/^\/installer$/, () => pub.install()],
@@ -56,11 +57,14 @@ const R = [
 ];
 
 function demoBar() {
-  return d.D().demo ? `<div class="demo" role="note">${ic('alert', 14)}<span>Démo · les données restent sur cet appareil</span><a href="#/login">Comptes de test</a></div>` : '';
+  return d.D().demo ? `<div class="demo" role="note">${ic('alert', 14)}<span>Démo · les données restent sur cet appareil</span>${mosq.publicOnly() ? '' : '<a href="#/login">Comptes de test</a>'}</div>` : '';
 }
 let lastPath = null;
+// Sur l'adresse publique (quand un domaine d'équipe est configuré), aucune page de l'équipe n'est servie : on renvoie vers le domaine d'équipe.
+const TEAM = /^\/(login|mdp|prof|admin|compta)/;
 function render(keep) {
   const raw = (location.hash || '#/').slice(1);
+  if (mosq.publicOnly() && TEAM.test(raw.split('?')[0])) { location.href = mosq.teamUrl(); return; }
   const [path, qs] = raw.split('?');
   const q = new URLSearchParams(qs || '');
   let html = null;

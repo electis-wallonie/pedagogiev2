@@ -1,6 +1,7 @@
 // Espace comptabilité : une application à part, pensée pour le trésorier / comptable de l'association.
 // Accessible au compte « Comptabilité » et aux administrateurs. Pas de classes ni d'élèves ici : que la trésorerie.
 import * as d from './data.js';
+import { locale } from './i18n.js';
 import { ACT, esc, ic, av, pill, fdate, toast, openModal, todayISO } from './ui.js';
 import { eur, monthLabel, entryForm, entryList, teacherRows, PAY } from './gestion.js';
 import { myContactCard } from './contact.js';
@@ -35,7 +36,7 @@ function chart(months) {
   const max = Math.max(1, ...data.flatMap((x) => [x.r, x.e]));
   const W = 640, H = 200, bw = W / data.length;
   const bar = (x, v, c) => { const h = (v / max) * (H - 30); return `<rect x="${x}" y="${H - 20 - h}" width="${bw * 0.32}" height="${h}" rx="3" fill="${c}"><title>${eur(v)}</title></rect>`; };
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Recettes et dépenses des derniers mois" style="width:100%;height:auto">${data.map((x, i) => `${bar(i * bw + bw * 0.14, x.r, '#2BB673')}${bar(i * bw + bw * 0.5, x.e, '#FF5A5F')}<text x="${i * bw + bw / 2}" y="${H - 4}" text-anchor="middle" font-size="12" font-weight="700" fill="#3D4E85">${new Date(x.m + '-15').toLocaleDateString('fr-FR', { month: 'short' })}</text>`).join('')}</svg>
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Recettes et dépenses des derniers mois" style="width:100%;height:auto">${data.map((x, i) => `${bar(i * bw + bw * 0.14, x.r, '#2BB673')}${bar(i * bw + bw * 0.5, x.e, '#FF5A5F')}<text x="${i * bw + bw / 2}" y="${H - 4}" text-anchor="middle" font-size="12" font-weight="700" fill="#3D4E85">${new Date(x.m + '-15').toLocaleDateString(locale, { month: 'short' })}</text>`).join('')}</svg>
   <div class="row small b" style="gap:16px"><span><span class="dot" style="background:#2BB673"></span> Recettes</span><span><span class="dot" style="background:#FF5A5F"></span> Dépenses</span></div>`;
 }
 function lastMonths(n) { const out = []; let [y, mm] = d.curMonth().split('-').map(Number); for (let i = 0; i < n; i++) { out.unshift(`${y}-${String(mm).padStart(2, '0')}`); mm--; if (!mm) { mm = 12; y--; } } return out; }

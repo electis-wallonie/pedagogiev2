@@ -2,7 +2,7 @@
 // + réglages côté direction : nom de la mosquée, lien Mawaqit, destinataires de Contact, questions à l'imam
 import * as d from './data.js';
 import { ACT, FORMS, esc, ic, pill, toast, openModal, closeModal, ask } from './ui.js';
-import { isAr } from './i18n.js';
+import { isAr, locale } from './i18n.js';
 import { shell } from './prof.js';
 
 const rerender = () => window.dispatchEvent(new Event('hashchange'));
@@ -11,12 +11,16 @@ const logo = (s = 40) => `<span class="logo" style="width:${s}px;height:${s}px">
 const langBtn = () => `<button class="btn2 sm" data-act="lang" lang="${isAr ? 'fr' : 'ar'}" aria-label="${isAr ? 'Français' : 'العربية'}">${ic('globe', 18)}<span class="hide-sm" data-notr dir="auto">${isAr ? 'Français' : 'العربية'}</span></button>`;
 
 // ---------- navigation publique : 4 rubriques ----------
-const PUB = [['#/', 'clock', 'Prières'], ['#/imam', 'chat', 'Questions'], ['#/cours', 'book', 'Cours'], ['#/contact', 'mail', 'Contact']];
+const PUB = [['#/', 'clock', 'Prières'], ['#/imam', 'chat', 'Questions'], ['#/cours', 'book', 'Cours'], ['#/mosquee', 'home', 'Mosquée']];
+// Connexion séparée : l'équipe se connecte sur « domaineEquipe » (ex. connexion.ma-mosquee.fr), le public ne voit jamais de bouton de connexion.
+export const teamHost = () => { const h = location.hostname; const c = (CFG && CFG.domaineEquipe) || ''; return (c && h === c) || /^connexion\./.test(h); };
+export const publicOnly = () => !!(CFG && CFG.domaineEquipe) && !teamHost();
+export const teamUrl = () => `${location.protocol}//${CFG.domaineEquipe}${location.pathname}#/login`;
 export const mosqueName = () => { const m = d.D().mosque || {}; return m.name || (CFG && CFG.nom) || (MW && (MW.label || MW.name)) || 'Notre mosquée'; };
 export function pubShell(active, body) {
   if (!MW && !MW_ERR) loadMawaqit();
   return `<div class="page pub">
-  <div class="row" style="gap:8px"><a href="#/" class="row" style="text-decoration:none;color:var(--ink);gap:10px;flex:1;min-width:0">${logo(44)}<span class="b" style="font-size:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" data-notr dir="auto">${esc(mosqueName())}</span></a>${langBtn()}<a href="#/login" class="btn2 sm" aria-label="Espace équipe">${ic('lock', 16)}<span class="hide-sm">Espace équipe</span></a></div>
+  <div class="row" style="gap:8px"><a href="#/" class="row" style="text-decoration:none;color:var(--ink);gap:10px;flex:1;min-width:0">${logo(44)}<span class="b" style="font-size:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" data-notr dir="auto">${esc(mosqueName())}</span></a>${langBtn()}<a href="#/contact" class="btn2 sm ${active === -1 ? 'on-pill' : ''}" aria-label="Contact">${ic('mail', 18)}<span class="hide-sm">Contact</span></a></div>
   <nav class="seg desk" aria-label="Rubriques">${PUB.map(([h, i, l], k) => `<a href="${h}" class="${k === active ? 'on' : ''}">${ic(i, 18)}&nbsp;${l}</a>`).join('')}</nav>
   ${body}</div>
   <nav class="tabbar" aria-label="Rubriques">${PUB.map(([h, i, l], k) => `<a href="${h}" class="${k === active ? 'on' : ''}"><span>${ic(i, 22)}</span>${l}</a>`).join('')}</nav>`;
@@ -84,7 +88,7 @@ const SERVICES = [['womenSpace', 'Espace femmes'], ['ablutions', 'Salle d’ablu
 setInterval(() => { const el = document.getElementById('np-in'); if (el) { const n = nextPrayer(); if (n) el.textContent = 'dans ' + inLabel(n.at); } }, 30000);
 export function prieres(q) {
   if (!MW && !MW_ERR) { loadMawaqit(); return pubShell(0, `<h1>Horaires de prière</h1><div class="ck pad"><p class="b">Chargement des horaires…</p></div>`); }
-  const tiles = [['#/imam', 'chat', 'Poser une question à l’imam', 'var(--mint)'], ['#/cours', 'book', 'Suivi des cours (code de l’élève)', 'var(--blue2)'], ['#/contact', 'mail', 'Contacter la mosquée', 'var(--pink)']];
+  const tiles = [['#/imam', 'chat', 'Poser une question à l’imam', 'var(--mint)'], ['#/cours', 'book', 'Suivi des cours (code de l’élève)', 'var(--blue2)'], ['#/mosquee', 'home', 'La mosquée : contacts, itinéraire, dons', 'var(--pink)']];
   const tilesHtml = `<div class="gridauto">${tiles.map(([h, i, l, bg]) => `<a href="${h}" class="ck pad col" style="gap:10px;text-decoration:none;color:var(--ink);background:${bg}">${ic(i, 28)}<span class="b" style="font-size:18px">${l}</span></a>`).join('')}</div>`;
   const now = new Date();
   const t = MW && dayTimes(now);
@@ -99,23 +103,46 @@ export function prieres(q) {
   if (showMonth) {
     const y = now.getFullYear(), mo = now.getMonth(), days = new Date(y, mo + 1, 0).getDate();
     const rows = [];
-    for (let k = 1; k <= days; k++) { const dd = new Date(y, mo, k); const tt = dayTimes(dd); if (tt) rows.push(`<tr style="border-top:2px solid var(--neutral);${k === now.getDate() ? 'background:var(--hi);font-weight:800' : ''}"><td style="padding:6px 8px">${dd.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' })}</td>${tt.map((x) => `<td style="padding:6px 8px;text-align:center">${x}</td>`).join('')}</tr>`); }
-    month = `<div class="ck pad col"><div class="row between"><h2>${now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</h2><a href="#/" class="small b">Fermer</a></div><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="background:var(--neutral)"><th style="padding:6px 8px;text-align:start">Jour</th>${PR.map(([f]) => `<th style="padding:6px 8px">${f}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div></div>`;
+    for (let k = 1; k <= days; k++) { const dd = new Date(y, mo, k); const tt = dayTimes(dd); if (tt) rows.push(`<tr style="border-top:2px solid var(--neutral);${k === now.getDate() ? 'background:var(--hi);font-weight:800' : ''}"><td style="padding:6px 8px">${dd.toLocaleDateString(locale, { weekday: 'short', day: 'numeric' })}</td>${tt.map((x) => `<td style="padding:6px 8px;text-align:center">${x}</td>`).join('')}</tr>`); }
+    month = `<div class="ck pad col"><div class="row between"><h2>${now.toLocaleDateString(locale, { month: 'long', year: 'numeric' })}</h2><a href="#/" class="small b">Fermer</a></div><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="background:var(--neutral)"><th style="padding:6px 8px;text-align:start">Jour</th>${PR.map(([f]) => `<th style="padding:6px 8px">${f}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div></div>`;
   }
   return pubShell(0, `
   <div class="ck col" style="padding:0;overflow:hidden;background:var(--ink);color:#fff">
     ${MW.image ? `<div style="height:140px;background:url('${esc(MW.image)}') center/cover"></div>` : ''}
     <div class="pad col" style="gap:6px">
-      <div class="row between wrap"><span class="b" data-notr dir="auto" style="font-size:20px">${esc(name)}</span><span class="small b" style="color:var(--yellow)">${esc(now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }))} · <span data-notr>${esc(hijri(now))}</span></span></div>
+      <div class="row between wrap"><span class="b" data-notr dir="auto" style="font-size:20px">${esc(name)}</span><span class="small b" style="color:var(--yellow)">${esc(now.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' }))} · <span data-notr>${esc(hijri(now))}</span></span></div>
       ${np ? `<div class="row wrap" style="gap:10px;align-items:baseline"><span class="tiny b" style="color:var(--yellow)">PROCHAINE PRIÈRE</span><span style="font-size:34px;font-weight:800">${PR[np.i][0]} · ${np.time}</span><span class="b" id="np-in">dans ${inLabel(np.at)}</span>${np.tomorrow ? '<span class="small">(demain)</span>' : ''}</div>` : ''}
     </div></div>
-  <div class="prayers">${PR.map(([f, a], i) => { const qi = i === 0 ? 0 : i >= 2 ? i - 1 : -1; const on = np && !np.tomorrow && np.i === i; return `<div class="ck pr ${on ? 'on' : ''} ${i === 1 ? 'sun' : ''}"><span class="b">${i === 2 && fri && jum.length ? 'Jumu’a' : f}</span><span class="small" data-notr lang="ar">${a}</span><span class="pt">${i === 2 && fri && jum.length ? jum[0] : t[i]}</span>${iq && qi >= 0 ? `<span class="tiny b">Iqama ${iq[qi]}</span>` : '<span class="tiny">&nbsp;</span>'}</div>`; }).join('')}</div>
+  <div class="prayers">${PR.map(([f, a], i) => { const qi = i === 0 ? 0 : i >= 2 ? i - 1 : -1; const on = np && !np.tomorrow && np.i === i; return `<div class="ck pr ${on ? 'on' : ''} ${i === 1 ? 'sun' : ''}"><span class="b">${i === 2 && fri && jum.length ? 'Jumu’a' : f}</span>${isAr ? '' : `<span class="small" data-notr lang="ar">${a}</span>`}<span class="pt">${i === 2 && fri && jum.length ? jum[0] : t[i]}</span>${iq && qi >= 0 ? `<span class="tiny b">Iqama ${iq[qi]}</span>` : '<span class="tiny">&nbsp;</span>'}</div>`; }).join('')}</div>
   <div class="row wrap" style="gap:8px">${jum.length ? pill(`${ic('star', 14)} Jumu’a (vendredi) : ${jum.join(' · ')}`, 'var(--yellow)') : ''}${[MW.aidPrayerTime, MW.aidPrayerTime2, MW.aidPrayerTime3].filter(Boolean).length ? pill(`Prière de l’Aïd : ${[MW.aidPrayerTime, MW.aidPrayerTime2, MW.aidPrayerTime3].filter(Boolean).join(' · ')}`, 'var(--mint)') : ''}<a class="pill" href="#/?mois=1" style="background:var(--surface);text-decoration:none">${ic('cal', 14)} Horaires du mois</a></div>
   ${month}
   ${(MW.announcements || []).length ? `<div class="ck pad col"><h2>${ic('mega', 20)} Annonces de la mosquée</h2>${MW.announcements.map((a) => `<div class="col" style="gap:4px"><span class="b" data-notr dir="auto">${esc(a.title || '')}</span><span style="white-space:pre-wrap" data-notr dir="auto">${esc(a.content || '')}</span></div>`).join('<hr style="border:0;border-top:2px solid var(--neutral);width:100%">')}</div>` : ''}
   ${tilesHtml}
   ${SERVICES.some(([k]) => MW[k]) ? `<div class="ck pad col"><h2>Services de la mosquée</h2><div class="row wrap" style="gap:8px">${SERVICES.filter(([k]) => MW[k]).map(([, l]) => pill(`${ic('check', 14)} ${l}`, 'var(--neutral)')).join('')}</div>${MW.association ? `<p class="small mut b">${esc(MW.association)}</p>` : ''}${MW.latitude ? `<a class="btn2 sm" style="align-self:flex-start" href="https://www.google.com/maps/dir/?api=1&destination=${MW.latitude},${MW.longitude}" target="_blank" rel="noopener">${ic('arrow', 16)}Itinéraire</a>` : ''}</div>` : ''}
-  <p class="tiny mut b">Horaires repris de la page Mawaqit officielle de la mosquée${MW.updatedAt ? ` · mis à jour le ${new Date(MW.updatedAt).toLocaleDateString('fr-FR')}` : ''}. <a href="${esc(MW.source || MW.url || 'https://mawaqit.net')}" target="_blank" rel="noopener">Voir sur Mawaqit</a></p>`);
+  <p class="tiny mut b">Horaires repris de la page Mawaqit officielle de la mosquée${MW.updatedAt ? ` · mis à jour le ${new Date(MW.updatedAt).toLocaleDateString(locale)}` : ''}. <a href="${esc(MW.source || MW.url || 'https://mawaqit.net')}" target="_blank" rel="noopener">Voir sur Mawaqit</a></p>`);
+}
+
+// ---------- Mosquée : la fiche de la mosquée (infos Mawaqit, itinéraire, don, contacts, services) ----------
+export function mosquee() {
+  if (!MW && !MW_ERR) loadMawaqit();
+  const m = MW || {};
+  const C = (d.D().contacts || []).filter((c) => okMail(c.email));
+  const profsN = d.profs().filter((p) => okMail(p.email) && p.showContact !== false).length;
+  const services = SERVICES.filter(([k]) => m[k]);
+  const jum = [m.jumua, m.jumua2, m.jumua3].filter(Boolean);
+  return pubShell(3, `<div class="ck col" style="padding:0;overflow:hidden">
+    ${m.image ? `<div style="height:170px;background:var(--neutral) url('${esc(m.image)}') center/cover;border-bottom:var(--bw) solid var(--ink)"></div>` : ''}
+    <div class="pad col" style="gap:4px"><span class="b" style="font-size:24px" data-notr dir="auto">${esc(mosqueName())}</span>${m.association ? `<span class="small mut b" data-notr dir="auto">${esc(m.association)}</span>` : ''}</div></div>
+  <div class="grid2">${m.latitude ? `<a class="btn" href="https://www.google.com/maps/dir/?api=1&destination=${m.latitude},${m.longitude}" target="_blank" rel="noopener">${ic('arrow', 18)}Itinéraire</a>` : ''}${m.paymentWebsite ? `<a class="btn y" href="${esc(m.paymentWebsite)}" target="_blank" rel="noopener">${ic('star', 18)}Faire un don</a>` : `<a class="btn y" href="#/contact?to=don">${ic('star', 18)}Faire un don</a>`}</div>
+  ${jum.length ? `<div class="ck flat pad row between" style="background:var(--pink)"><span class="b">Jumu’a (vendredi)</span><span class="b" style="font-size:20px">${jum.join(' · ')}</span></div>` : ''}
+  <h2>Nous contacter</h2>
+  <div class="ck pad" style="padding-top:2px;padding-bottom:2px"><div class="list">
+    ${C.map((c, i) => `<a class="li" href="#/contact?to=c:${c.id}" style="text-decoration:none;color:var(--ink)">${'<span class="av" style="width:42px;height:42px;background:' + ['var(--yellow)', 'var(--mint)', 'var(--blue2)', 'var(--pink)'][i % 4] + '">' + ic('mail', 18) + '</span>'}<span class="grow b">${esc(c.label)}</span>${ic('chev', 18)}</a>`).join('')}
+    ${profsN ? `<a class="li" href="#/contact?to=profs" style="text-decoration:none;color:var(--ink)"><span class="av" style="width:42px;height:42px;background:var(--neutral)">${ic('book', 18)}</span><span class="grow b">Les enseignants</span>${ic('chev', 18)}</a>` : ''}
+    ${!C.length && !profsN ? '<p class="small mut">Aucun contact pour le moment.</p>' : ''}</div></div>
+  ${services.length ? `<h2>Services</h2><div class="row wrap" style="gap:8px">${services.map(([, l]) => pill(`${ic('check', 14)} ${l}`, 'var(--surface)')).join('')}</div>` : ''}
+  ${(m.announcements || []).length ? `<div class="ck pad col"><h2>${ic('mega', 20)} Annonces</h2>${m.announcements.map((a) => `<div class="col" style="gap:4px"><span class="b" data-notr dir="auto">${esc(a.title || '')}</span><span style="white-space:pre-wrap" data-notr dir="auto">${esc(a.content || '')}</span></div>`).join('')}</div>` : ''}
+  ${publicOnly() ? '' : `<a href="#/login" class="small b" style="align-self:center;margin-top:10px">${ic('lock', 14)} Espace équipe</a>`}`);
 }
 
 // ---------- Imam : poser une question + questions/réponses publiées ----------
@@ -170,7 +197,7 @@ export function adminPublic(u) {
   <p class="mut b" style="font-weight:600">Ce que voient les fidèles sans compte : Prières · Imam · Cours · Contact.</p>
   <form class="ck pad col" data-form="mosque"><h2>${ic('moon', 20)} La mosquée</h2>
     <div class="field"><label class="lbl" for="mn">Nom affiché</label><input id="mn" name="name" class="inp" value="${esc(m.name || '')}" placeholder="${esc(mosqueName())}"><span class="hint">Laissez vide pour reprendre le nom de la configuration ou de Mawaqit.</span></div>
-    <div class="ck flat pad col" style="gap:4px"><span class="b">${ic('clock', 16)} Horaires de prière : reliés à Mawaqit</span><span class="small b" style="font-weight:600">${MW ? `${esc(MW.label || MW.name || '')} · mis à jour le ${MW.updatedAt ? new Date(MW.updatedAt).toLocaleDateString('fr-FR') : '—'}` : 'Synchronisation en attente'}</span><span class="tiny mut b">Le lien de la page Mawaqit est réglé une fois pour toutes par l’équipe technique (fichier mosquee.json) ; les horaires se mettent à jour tout seuls chaque nuit.</span></div>
+    <div class="ck flat pad col" style="gap:4px"><span class="b">${ic('clock', 16)} Horaires de prière : reliés à Mawaqit</span><span class="small b" style="font-weight:600">${MW ? `${esc(MW.label || MW.name || '')} · mis à jour le ${MW.updatedAt ? new Date(MW.updatedAt).toLocaleDateString(locale) : '—'}` : 'Synchronisation en attente'}</span><span class="tiny mut b">Le lien de la page Mawaqit est réglé une fois pour toutes par l’équipe technique (fichier mosquee.json) ; les horaires se mettent à jour tout seuls chaque nuit.</span></div>
     <button class="btn sm" style="align-self:flex-start">Enregistrer</button></form>
   <div class="ck pad col"><h2>${ic('mail', 20)} Page Contact</h2>
     <p class="small mut b" style="font-weight:600">Les personnes et services que le public peut contacter (direction, imam, trésorier, secrétariat, directeur de l’école…). Les adresses ne sont jamais affichées : le message s’ouvre directement dans l’application e-mail. Les enseignants qui ont un e-mail apparaissent aussi automatiquement.</p>

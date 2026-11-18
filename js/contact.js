@@ -69,14 +69,17 @@ function recipients() {
 }
 export function contactPage(q) {
   const [g1, g2] = recipients();
-  const radio = (r, first) => `<label class="ck flat row" style="gap:10px;padding:10px 12px;cursor:pointer"><input type="radio" name="to" value="${r.id}" ${first ? 'checked' : ''} required style="width:22px;height:22px">${ic(r.icon, 20)}<span class="grow"><span class="b" style="display:block">${esc(r.label)}</span>${r.sub ? `<span class="small mut b" style="font-weight:600">${esc(r.sub)}</span>` : ''}</span></label>`;
-  return pubShell(3, `<h1 style="font-size:clamp(30px,5vw,46px);line-height:1.05">Contact</h1>
+  const want = q && q.get('to');
+  const pre = want && want !== 'profs' && want !== 'don' ? want : (g1[0] || g2[0] || {}).id;
+  const subj0 = want === 'don' ? 'Don / zakat' : want === 'profs' ? 'Cours / école' : '';
+  const radio = (r) => `<label class="ck flat row" style="gap:10px;padding:10px 12px;cursor:pointer"><input type="radio" name="to" value="${r.id}" ${r.id === pre ? 'checked' : ''} required style="width:22px;height:22px">${ic(r.icon, 20)}<span class="grow"><span class="b" style="display:block">${esc(r.label)}</span>${r.sub ? `<span class="small mut b" style="font-weight:600">${esc(r.sub)}</span>` : ''}</span></label>`;
+  return pubShell(-1, `<h1 style="font-size:clamp(30px,5vw,46px);line-height:1.05">Contact</h1>
   <p class="mut b" style="font-weight:600">Une question, une demande, un message ? Choisissez qui vous voulez contacter. En appuyant sur « Écrire le message », votre application e-mail s’ouvre avec le destinataire, le sujet et le message déjà remplis : il ne reste plus qu’à envoyer.</p>
   ${g1.length || g2.length ? `<form class="ck pad col" data-form="contact">
     <fieldset style="border:0;padding:0;margin:0"><legend class="lbl">1. Qui voulez-vous contacter ?</legend><div class="col" style="gap:8px">
-    ${g1.length ? `<span class="tiny b mut">LA MOSQUÉE</span>${g1.map((r, i) => radio(r, i === 0)).join('')}` : ''}
-    ${g2.length ? `<span class="tiny b mut" style="margin-top:6px">LES ENSEIGNANTS</span>${g2.map((r, i) => radio(r, !g1.length && i === 0)).join('')}` : ''}</div></fieldset>
-    <div class="field"><label class="lbl" for="cs">2. Sujet</label><select id="cs" name="sujet" class="inp" required>${SUJETS.map((x) => `<option>${x}</option>`).join('')}</select></div>
+    ${g1.length ? `<span class="tiny b mut">LA MOSQUÉE</span>${g1.map(radio).join('')}` : ''}
+    ${g2.length ? `<span class="tiny b mut" style="margin-top:6px">LES ENSEIGNANTS</span>${g2.map(radio).join('')}` : ''}</div></fieldset>
+    <div class="field"><label class="lbl" for="cs">2. Sujet</label><select id="cs" name="sujet" class="inp" required>${SUJETS.map((x) => `<option ${x === subj0 ? 'selected' : ''}>${x}</option>`).join('')}</select></div>
     <div class="field"><label class="lbl" for="co">3. Objet</label><input id="co" name="objet" class="inp" required placeholder="ex. Demande de renseignements"></div>
     <div class="field"><label class="lbl" for="cm">4. Votre message</label><textarea id="cm" name="message" class="inp" rows="6" required placeholder="As-salamu alaykum, …"></textarea></div>
     <div class="grid2 stack"><div class="field"><label class="lbl" for="cn">Votre nom</label><input id="cn" name="nom" class="inp" required></div>
