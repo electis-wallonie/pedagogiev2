@@ -291,17 +291,28 @@ export function recSlot(a) {
 export const recDone = (a) => a.done !== false;
 export const monthOf = (iso) => (iso || '').slice(0, 7);
 export const curMonth = () => { const t = new Date(); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}`; };
-export function profHours(profId, month = curMonth()) {
-  const ids = classesOf(profId).map((c) => c.id);
+// Les heures vont à la personne qui a fait l'appel (prof ou admin qui remplace).
+// Anciens appels sans auteur : au prof titulaire de la classe.
+export const recBy = (a) => a.byId || (cls(a.classId) || {}).profId;
+export function profHours(userId, month = curMonth()) {
   let min = 0, n = 0, missing = 0;
+  const list = [];
   for (const a of db.attendance) {
-    if (!ids.includes(a.classId) || monthOf(a.date) !== month || !recDone(a)) continue;
+    if (recBy(a) !== userId || monthOf(a.date) !== month || !recDone(a)) continue;
     n++;
     const m = slotMin(recSlot(a));
     if (!m) missing++;
     min += m;
+    list.push({ a, min: m });
   }
-  return { min, n, missing };
+  list.sort((x, y) => (x.a.date + (x.a.at || '')).localeCompare(y.a.date + (y.a.at || '')));
+  return { min, n, missing, list };
+}
+// personnes à payer pour un mois : tous les profs + les admins qui ont fait des appels ce mois-là
+export function staff(month = curMonth()) {
+  const ov = (db.finance.overrides[month] || {});
+  return db.users.filter((u) => u.role === 'prof' || profHours(u.id, month).n || ov[u.id] != null)
+    .sort((a, b) => (a.role === b.role ? a.name.localeCompare(b.name) : a.role === 'prof' ? -1 : 1));
 }
 export const fmtH = (min) => { const h = Math.floor(min / 60), m = min % 60; return m ? `${h} h ${String(m).padStart(2, '0')}` : `${h} h`; };
 export const profRate = (p) => (p && p.rate != null && p.rate !== '' ? +p.rate : +db.finance.rate || 0);
@@ -336,7 +347,7 @@ export function profCost(p, month) {
   return Math.round((profHours(p.id, month).min / 60) * profRate(p) * 100) / 100;
 }
 export function monthExpenses(month) {
-  const profsT = profs().reduce((t, p) => t + profCost(p, month), 0);
+  const profsT = staff(month).reduce((t, p) => t + profCost(p, month), 0);
   const other = db.finance.expenses.filter((e) => monthOf(e.date) === month).reduce((t, e) => t + (+e.amount || 0), 0);
   return { profs: profsT, other, total: profsT + other };
 }

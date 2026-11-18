@@ -214,6 +214,16 @@ FORMS['note-class'] = async (f, fd) => {
 const nowHM = () => { const t = new Date(); return `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`; };
 const recById = (id) => d.D().attendance.find((a) => a.id === id);
 export const whenLabel = (a) => { const n = d.courseNo(a); return `${fdate(a.date, { weekday: 'long', day: 'numeric', month: 'long' })}${n ? ' · ' + (n === 1 ? '1er cours' : n + 'e cours') : ''}`; };
+// qui a fait l'appel (et touche les heures) ; l'admin peut corriger
+function byLine(rec) {
+  const by = d.user(d.recBy(rec));
+  const c = d.cls(rec.classId);
+  const repl = by && c && by.id !== c.profId;
+  if (!d.isAdmin(d.me())) return `<span class="small b">${ic('users', 14)} Appel fait par ${esc(by ? by.name : '—')}${repl ? ' (remplacement)' : ''}</span>`;
+  const people = d.D().users.slice().sort((a, b) => a.name.localeCompare(b.name));
+  return `<div class="row wrap" style="gap:8px"><label class="small b" for="aby">${ic('users', 14)} Cours donné par (les heures lui sont comptées) :</label><select id="aby" class="inp" data-change="ap-by" style="max-width:260px;min-height:40px;padding:6px 10px">${people.map((p) => `<option value="${p.id}" ${by && by.id === p.id ? 'selected' : ''}>${esc(p.name)}${p.role === 'admin' ? ' (admin)' : ''}${c && p.id === c.profId ? ' · titulaire' : ''}</option>`).join('')}</select></div>`;
+}
+CHANGE['ap-by'] = (el) => { ctx.rec.byId = el.value; d.save(); toast('Heures attribuées à ' + d.user(el.value).name); softRender(); };
 export function appel(u, id, recId, q) {
   const c = d.cls(id);
   if (!d.canSeeClass(u, c)) return shell(u, 1, '');
@@ -229,6 +239,7 @@ export function appel(u, id, recId, q) {
   ${['P', 'A', 'E'].map((k) => `<button type="button" class="st-btn ${r[s.id] === k ? 'on-' + k : ''}" data-act="ap" data-sid="${s.id}" data-s="${k}" aria-pressed="${r[s.id] === k}" aria-label="${STATUS[k].l} : ${esc(s.prenoms.split(' ')[0])}">${ic(STATUS[k].icon, 20, 2.8)}<span class="lab">${k === 'E' ? 'Prévenu' : STATUS[k].l}</span></button>`).join('')}</div>`).join('');
   const body = `<div class="page">${top('L’appel', esc(c.name), `#/prof/classe/${id}`)}
   <div class="ck pad col" style="gap:8px;background:var(--yellow)"><span class="b" style="font-size:20px">Cours du ${whenLabel(rec)}</span>
+  ${byLine(rec)}
   <details><summary class="small b" style="cursor:pointer">Corriger la date</summary><div class="row wrap" style="margin-top:8px"><label class="sr" for="ad">Date du cours</label><input id="ad" type="date" class="inp" value="${rec.date}" max="${todayISO()}" data-change="ap-when" data-k="date" style="max-width:200px"></div></details></div>
   <div class="row wrap" style="gap:8px">${pill(cnt('P') + ' présent(s)', 'var(--present)', 'var(--onpresent)')}${pill(cnt('A') + ' absent(s)', 'var(--absent)', 'var(--onabsent)')}${pill(cnt('E') + ' prévenu(s)', 'var(--prev)')}${rest ? pill(rest + ' à marquer', 'var(--neutral)') : ''}</div>
   ${rest ? `<button class="btn2 sm" data-act="ap-all" style="align-self:flex-start">${ic('check', 18)}Marquer les ${rest} restant(s) présents</button>` : ''}
@@ -241,7 +252,7 @@ export function appel(u, id, recId, q) {
 // « Faire l'appel » : l'appel est créé tout de suite avec la date du jour (pas d'heure).
 // Si un appel existe déjà aujourd'hui, on demande : le modifier, ou faire un 2e appel (2e cours).
 function newRec(c) {
-  const rec = { id: d.uid(), classId: c.id, date: todayISO(), at: new Date().toISOString(), records: {}, done: false };
+  const rec = { id: d.uid(), classId: c.id, date: todayISO(), at: new Date().toISOString(), records: {}, done: false, byId: d.me().id };
   d.D().attendance.push(rec); d.save();
   return rec;
 }
@@ -278,7 +289,7 @@ export function appelOk(u, id, recId) {
   const rest = sts.filter((s) => !r[s.id]);
   const body = `<div class="page narrow"><div class="col center" style="align-items:center;padding-top:20px">
   <span class="av" style="width:76px;height:76px;background:var(--mint)">${ic('check', 38, 3.4)}</span><h1>Appel enregistré</h1>
-  <p class="mut b">${esc(c.name)} · ${whenLabel(rec)}</p></div>
+  <p class="mut b">${esc(c.name)} · ${whenLabel(rec)}</p><p class="small b">${ic('clock', 14)} ${(() => { const by = d.user(d.recBy(rec)); const m = d.slotMin(d.recSlot(rec)); return `${m ? d.fmtH(m) + ' ajoutée(s)' : 'Cours compté'} au compteur de ${esc(by ? by.name : '—')}`; })()}</p></div>
   <div class="grid3"><div class="ck stat" style="background:var(--present);color:var(--onpresent)"><div class="v">${cnt('P')}</div><div class="l">présents</div></div><div class="ck stat" style="background:var(--absent);color:var(--onabsent)"><div class="v">${cnt('A')}</div><div class="l">absents</div></div><div class="ck stat" style="background:var(--prev)"><div class="v">${cnt('E')}</div><div class="l">prévenus</div></div></div>
   ${rest.length ? `<div class="err">${rest.length} élève(s) pas encore marqué(s) : ${rest.map((s) => esc(s.prenoms.split(' ')[0])).join(', ')}</div>` : ''}
   ${abs.length ? `<div class="ck pad col"><h2>Absents ce jour</h2>${abs.map((s) => `<div class="row between"><span class="b grow">${esc(fullName(s))}</span>${pill(r[s.id] === 'A' ? 'Absent' : 'Prévenu', STATUS[r[s.id]].bg, STATUS[r[s.id]].fg)}${callBtn(s)}</div>`).join('')}<p class="small mut b" style="font-weight:600">C’est déjà visible sur leur fiche.</p></div>` : ''}
@@ -292,7 +303,8 @@ export function historique(u, id) {
   <div class="ck pad" style="padding-top:4px;padding-bottom:4px"><div class="list">${list.map((a) => {
     const v = Object.values(a.records);
     const k = (s) => v.filter((x) => x === s).length;
-    return `<a class="li" href="#/prof/classe/${id}/appel/${a.id}"><span class="grow b">${whenLabel(a)}</span>${pill(k('P'), 'var(--present)', 'var(--onpresent)')}${pill(k('A'), 'var(--absent)', 'var(--onabsent)')}${pill(k('E'), 'var(--prev)')}${ic('chev', 18)}</a>`;
+    const by = d.user(d.recBy(a));
+    return `<a class="li" href="#/prof/classe/${id}/appel/${a.id}"><span class="grow"><span class="b" style="display:block">${whenLabel(a)}</span><span class="small mut b" style="font-weight:600">Appel fait par ${esc(by ? by.name : '—')}${by && by.id !== c.profId ? ' (remplacement)' : ''}${d.recDone(a) ? '' : ' · pas terminé'}</span></span>${pill(k('P'), 'var(--present)', 'var(--onpresent)')}${pill(k('A'), 'var(--absent)', 'var(--onabsent)')}${pill(k('E'), 'var(--prev)')}${ic('chev', 18)}</a>`;
   }).join('') || '<p class="mut small" style="padding:12px 0">Aucun appel pour le moment.</p>'}</div></div>
   <p class="tiny mut b">Vert : présents · Rouge : absents · Jaune : absents prévenus. Touchez une date pour corriger l’appel.</p></div>`;
   return shell(u, 1, body);

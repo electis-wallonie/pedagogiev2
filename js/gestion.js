@@ -180,13 +180,20 @@ export function hoursPill(p) {
   return pill(`${ic('clock', 13)} ${d.fmtH(h.min)} ce mois`, 'var(--mint)');
 }
 export function hoursCard() {
-  const P = d.profs();
-  if (!P.length) return '';
   const m = d.curMonth();
-  return `<div class="ck pad col"><div class="row between wrap"><h2>${ic('clock', 20)} Heures des professeurs</h2>${pill(monthLabel(m), 'var(--neutral)')}</div>
-  <p class="small mut b" style="font-weight:600">Chaque appel terminé ajoute la durée du cours au compteur du professeur. Le compteur repart à zéro le 1er de chaque mois.</p>
-  <div class="list">${P.map((p) => { const h = d.profHours(p.id, m); return `<div class="li">${av(p.name.split(' ').map((w) => w[0]).join('').slice(0, 2), 40, 'var(--blue2)', 13)}<div class="grow"><div class="b">${esc(p.name)}</div><div class="small mut b" style="font-weight:600">${h.n} cours validé(s)${h.missing ? ` · ${h.missing} sans heure de fin` : ''}</div></div><span class="b" style="font-size:22px">${d.fmtH(h.min)}</span></div>`; }).join('')}</div></div>`;
+  const P = d.staff(m);
+  if (!P.length) return '';
+  return `<div class="ck pad col"><div class="row between wrap"><h2>${ic('clock', 20)} Heures de cours</h2>${pill(monthLabel(m), 'var(--neutral)')}</div>
+  <p class="small mut b" style="font-weight:600">Chaque appel terminé ajoute la durée du cours au compteur de <b>la personne qui a fait l’appel</b> (le prof, ou l’admin qui le remplace). Le compteur repart à zéro le 1er de chaque mois.</p>
+  <div class="list">${P.map((p) => { const h = d.profHours(p.id, m); return `<button type="button" class="li" data-act="hours-detail" data-id="${p.id}" data-m="${m}" style="background:none;border:0;border-bottom:2px solid var(--neutral);width:100%;text-align:start;cursor:pointer;font:inherit;color:var(--ink)">${av(p.name.split(' ').map((w) => w[0]).join('').slice(0, 2), 40, p.role === 'admin' ? 'var(--yellow)' : 'var(--blue2)', 13)}<div class="grow"><div class="b">${esc(p.name)}${p.role === 'admin' ? ' · admin' : ''}</div><div class="small mut b" style="font-weight:600">${h.n} cours${h.missing ? ` · ${h.missing} sans heure de fin` : ''} · voir le détail</div></div><span class="b" style="font-size:22px">${d.fmtH(h.min)}</span>${ic('chev', 18)}</button>`; }).join('')}</div></div>`;
 }
+// détail : quels appels, quand, quelle classe, quelle durée
+ACT['hours-detail'] = (el) => {
+  const p = d.user(el.dataset.id), m = el.dataset.m, h = d.profHours(p.id, m);
+  openModal(() => `<div class="row between"><h2>${esc(p.name)} · ${monthLabel(m)}</h2><button class="ib" data-act="close-modal" aria-label="Fermer">${ic('x', 20)}</button></div>
+  <div class="ck flat pad row between" style="background:var(--mint)"><span class="b">${h.n} cours</span><span class="b" style="font-size:22px">${d.fmtH(h.min)}</span></div>
+  <div class="list">${h.list.map(({ a, min }) => { const c = d.cls(a.classId) || {}; const own = c.profId === p.id; const t = a.at ? new Date(a.at) : null; return `<a class="li" href="#/prof/classe/${a.classId}/appel/${a.id}" style="text-decoration:none;color:var(--ink)"><div class="grow"><div class="b">${fdate(a.date, { weekday: 'long', day: 'numeric', month: 'long' })}</div><div class="small mut b" style="font-weight:600">${esc(c.name || '')}${t && !isNaN(t) ? ` · appel à ${hh(String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0'))}` : ''}${own ? '' : ` · remplacement (titulaire : ${esc((d.user(c.profId) || {}).name || '—')})`}</div></div><span class="b">${min ? d.fmtH(min) : 'durée ?'}</span></a>`; }).join('') || '<p class="small mut">Aucun appel ce mois-ci.</p>'}</div>`);
+};
 
 // =====================================================================
 // FAMILLES & COTISATIONS
@@ -356,17 +363,17 @@ function depenses(q) {
   const tot = d.monthExpenses(m);
   const ex = fin.expenses.filter((e) => d.monthOf(e.date) === m).sort((a, b) => b.date.localeCompare(a.date));
   const nav = `<div class="row between"><a class="ib ${i < months.length - 1 ? '' : 'hide'}" href="#/admin/finances?t=dep&m=${months[i + 1]}" aria-label="Mois précédent">${ic('back', 20)}</a><span class="b" style="font-size:20px">${monthLabel(m)}${m === d.curMonth() ? ' · en cours' : ''}</span><a class="ib ${i > 0 ? '' : 'hide'}" href="#/admin/finances?t=dep&m=${months[i - 1]}" aria-label="Mois suivant">${ic('chev', 20)}</a></div>`;
-  const rows = d.profs().map((p) => {
+  const rows = d.staff(m).map((p) => {
     const h = d.profHours(p.id, m);
     const auto = Math.round((h.min / 60) * d.profRate(p) * 100) / 100;
-    return `<div class="ck flat pad col" style="gap:8px"><div class="row between wrap"><span class="b">Fourniture · ${esc(p.name)}</span><span class="b" style="font-size:20px">${eur(d.profCost(p, m))}</span></div>
+    return `<div class="ck flat pad col" style="gap:8px"><div class="row between wrap"><span class="b">Fourniture · ${esc(p.name)}${p.role === 'admin' ? ' (admin)' : ''}</span><span class="b" style="font-size:20px">${eur(d.profCost(p, m))}</span></div>
     <div class="small b" style="font-weight:600">${ic('clock', 14)} ${d.fmtH(h.min)} (${h.n} cours)${h.missing ? ` · ${h.missing} cours sans heure de fin` : ''} × ${eur(d.profRate(p))}/h = ${eur(auto)}</div>
     <div class="grid2"><div class="field"><label class="lbl" for="pr-${p.id}">Taux horaire de ${esc(p.name)} (€)</label><input id="pr-${p.id}" class="inp" inputmode="decimal" value="${p.rate ?? ''}" placeholder="${fin.rate} (par défaut)" data-change="fin-prate" data-id="${p.id}"></div>
     <div class="field"><label class="lbl" for="po-${p.id}">Montant retenu (€)</label><input id="po-${p.id}" class="inp" inputmode="decimal" value="${ov[p.id] ?? ''}" placeholder="${auto} (calcul auto)" data-change="fin-ov" data-id="${p.id}" data-m="${m}"></div></div></div>`;
   }).join('');
   return `${nav}
   <div class="ck pad col"><div class="row between wrap"><h2>${ic('users', 20)} Professeurs</h2><span class="b">${eur(tot.profs)}</span></div>
-  <p class="small mut b" style="font-weight:600">Calcul automatique : heures du compteur (appels terminés) × taux horaire. Laissez « Montant retenu » vide pour garder le calcul, ou tapez un autre montant.</p>
+  <p class="small mut b" style="font-weight:600">Calcul automatique : heures du compteur (appels terminés par chaque personne, remplacements compris) × taux horaire. Laissez « Montant retenu » vide pour garder le calcul, ou tapez un autre montant.</p>
   <div class="field" style="max-width:260px"><label class="lbl" for="fr">Taux horaire par défaut (€)</label><input id="fr" class="inp" inputmode="decimal" value="${fin.rate}" data-change="fin-rate"></div>
   <div class="col" style="gap:10px">${rows || '<p class="small mut">Aucun professeur.</p>'}</div></div>
   <div class="ck pad col"><div class="row between wrap"><h2>${ic('note', 20)} Autres dépenses</h2><span class="b">${eur(tot.other)}</span></div>
