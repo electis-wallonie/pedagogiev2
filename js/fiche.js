@@ -53,7 +53,7 @@ export function sourateSheet(st, n, edit) {
   if (x.s === 'c') {
     thread = `<div class="col"><h3>Notes de l’imam</h3>
       ${notes.length ? `<div class="thread">${notes.map((m) => msgHtml(m, edit ? 'snote-del' : null)).join('')}</div>` : '<p class="small mut">Pas encore de note sur cette sourate.</p>'}
-      ${edit ? composer('snote', 'zs' + n, `data-n="${n}"`, 'Ex : réviser versets 1 à 14 pour samedi…') + '<p class="tiny mut">Visible par l’élève et ses parents. Ces notes s’effacent quand la sourate est validée.</p>' : ''}
+      ${edit ? composer('snote', 'zs' + n, `data-n="${n}"`, 'Ex : réviser versets 1 à 14 pour samedi…') + '<p class="tiny mut">Visible par l’élève et ses parents. Ces notes, vocaux compris, restent tant que la sourate est en cours (même pendant les vacances) et s’effacent quand elle est validée.</p>' : ''}
     </div>`;
   }
   return `<div class="row between"><div class="row"><span class="av s-${x.s}" style="width:52px;height:52px;font-size:17px">${n}</span><div><h2>${esc(d.sName(n))}</h2><span class="small mut b">Sourate n° ${n}</span></div></div>

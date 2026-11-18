@@ -238,12 +238,13 @@ export async function purgeExpired() {
       n.files = keep;
     }
   }
-  for (const list of [db.notes, db.snotes, db.announcements || []]) {
+  // Les notes de sourate (cahier de l'imam), même vocales, ne sont PAS concernées : elles restent tant que la
+  // sourate est en cours (vacances comprises) et ne s'effacent qu'à sa validation.
+  for (const list of [db.notes, db.announcements || []]) {
     for (const x of list) if (x.audioId && (x.at || '') < voiceLimit) { await delAudio(x.audioId).catch(() => {}); x.audioId = null; x.audioGone = true; changed = true; }
   }
   if (changed) {
     db.notes = db.notes.filter((n) => n.text || n.audioId || (n.files && n.files.length));
-    db.snotes = db.snotes.filter((n) => n.text || n.audioId);
     db.announcements = (db.announcements || []).filter((a) => a.text || a.audioId);
     save();
   }

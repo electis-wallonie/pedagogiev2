@@ -142,6 +142,7 @@ export const AR2 = {
   'E-mail du parent.': 'بريد وليّ الأمر.', 'Toutes les colonnes sont obligatoires. Une ligne incomplète est signalée et n’est pas importée : complétez-la dans le fichier puis importez à nouveau (les élèves déjà importés sont ignorés).': 'كل الأعمدة إجبارية. السطر الناقص يُشار إليه ولا يُستورد : أكمله في الملف ثم أعد الاستيراد (التلاميذ المستوردون سابقاً يُتجاهلون).',
   'Prénom': 'الاسم', 'Âge': 'العمر', 'Parent': 'وليّ الأمر', 'Classe': 'القسم', 'Nom': 'اللقب',
   'Vocal de': 'رسالة صوتية مدتها', 'supprimé automatiquement au bout de 30 jours': 'تُحذف تلقائياً بعد 30 يوماً', '1 minute maximum : enregistrement arrêté': 'دقيقة واحدة كحد أقصى : توقف التسجيل',
+  'gardé jusqu’à la validation de la sourate': 'تبقى حتى حفظ السورة', 'Visible par l’élève et ses parents. Ces notes, vocaux compris, restent tant que la sourate est en cours (même pendant les vacances) et s’effacent quand elle est validée.': 'يراها التلميذ ووالداه. تبقى هذه الملاحظات، بما فيها الصوتية، ما دامت السورة قيد الحفظ (حتى في العطلة) وتُحذف عند حفظها.',
   'Coordonnées': 'معلومات الاتصال', 'Validée': 'محفوظة', 'Non connue': 'غير معروفة', 'En cours': 'قيد الحفظ',
 };
 const D = (h, m) => (m ? `${h} س ${m} د` : `${h} س`);

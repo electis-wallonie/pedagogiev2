@@ -150,7 +150,7 @@ function fmtDur(s) { s = Math.round(s); return `${Math.floor(s / 60)}:${String(s
 function zoneHtml(zone) {
   const p = pending[zone];
   if (rec && rec.zone === zone) return `<div class="rec"><span class="dot"></span>Enregistrement… <span data-timer>${fmtDur((Date.now() - rec.t0) / 1000)}</span> / ${fmtDur(VOICE_MAX_S)}</div>`;
-  if (p) return `<div class="tiny mut b">Vocal de ${fmtDur(Math.min(p.dur, VOICE_MAX_S))} · supprimé automatiquement au bout de ${VOICE_DAYS} jours</div><div class="row"><audio controls src="${p.url}" style="flex:1;min-width:0;height:40px"></audio><button type="button" class="ib sm" data-act="rec-del" data-zone="${zone}" aria-label="Supprimer le message vocal">${ic('trash', 18)}</button></div>`;
+  if (p) return `<div class="tiny mut b">Vocal de ${fmtDur(Math.min(p.dur, VOICE_MAX_S))} · ${zone.startsWith('zs') ? 'gardé jusqu’à la validation de la sourate' : `supprimé automatiquement au bout de ${VOICE_DAYS} jours`}</div><div class="row"><audio controls src="${p.url}" style="flex:1;min-width:0;height:40px"></audio><button type="button" class="ib sm" data-act="rec-del" data-zone="${zone}" aria-label="Supprimer le message vocal">${ic('trash', 18)}</button></div>`;
   return '';
 }
 function paintZone(zone) {
