@@ -7,6 +7,7 @@ import * as adm from './admin.js';
 import * as prof from './prof.js';
 import { importView } from './import.js';
 import * as gest from './gestion.js';
+import * as contact from './contact.js';
 import { startAutoTranslate, setLang, isAr } from './i18n.js';
 
 const app = document.getElementById('app');
@@ -21,6 +22,8 @@ function guard(role) {
 const R = [
   [/^\/?$/, () => pub.home()],
   [/^\/installer$/, () => pub.install()],
+  [/^\/contact$/, (m, q) => contact.contactPage(q)],
+  [/^\/prof\/annuaire$/, () => { const u = guard('prof'); return u && contact.annuaire(u); }],
   [/^\/f\/([^/]+)(?:\/(\w+))?$/, (m, q) => pub.fiche(m[1], m[2], q)],
   [/^\/login$/, () => { const u = d.me(); if (u && !u.mustChange) { location.hash = '#/prof'; return null; } return adm.loginView(); }],
   [/^\/mdp$/, () => { const u = d.me(); if (!u) { location.hash = '#/login'; return null; } return adm.pwView(u); }],

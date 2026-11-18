@@ -85,12 +85,6 @@ const key = (s) => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, 
 const HEAD = [
   ['email', /^(email|mail|courriel|adressemail|adresseemail|adressee?mail)/],
   ['tel', /^(tel|telephone|portable|gsm|mobile|phone|numero|contact)/],
-  ['adresse', /^(adresse|address|rue|domicile)/],
-  ['remarques', /^(remarque|sante|allergie|info|observation|commentaire)/],
-  ['paid', /(montantverse|verse|dejapaye|montantpaye)/],
-  ['status', /^(paiement|statut|etat)/],
-  ['cotisation', /^(cotisation|montant)/],
-  ['famille', /^famille/],
   ['classe', /^(classe|class|groupe)/],
   ['naissance', /(naissance|nele|birth|datede)/],
   ['parent', /(parent|pere|mere|responsable|tuteur)/],
@@ -100,20 +94,13 @@ const HEAD = [
 ];
 // Colonnes du modèle, dans l'ordre conseillé : [titre, obligatoire, exemple, explication]
 export const COLS = [
-  ['Classe', false, 'Classe 1', 'Nom exact de la classe. Si elle n’existe pas, elle peut être créée. Vide : vous choisirez la classe à l’import.'],
+  ['Classe', true, 'Classe 1', 'Nom exact de la classe. Si elle n’existe pas encore, elle peut être créée à l’import.'],
   ['Nom', true, 'Benali', 'Nom de famille de l’élève.'],
-  ['Prénom(s)', true, 'Yasmine Inès', 'Tous les prénoms, séparés par un espace.'],
-  ['Âge', true, '10', 'Âge en années (se met à jour tout seul). Peut être laissé vide si la date de naissance est remplie.'],
-  ['Date de naissance', false, '03/05/2016', 'Facultatif, format JJ/MM/AAAA. Remplace l’âge si elle est remplie.'],
-  ['Parent', true, 'Karim', 'Prénom d’un parent (sert aussi au code de suivi).'],
+  ['Prénom', true, 'Yasmine', 'Prénom(s) de l’élève.'],
+  ['Âge', true, '10', 'Âge en années (il se met à jour tout seul chaque année).'],
+  ['Parent', true, 'Karim', 'Prénom d’un parent.'],
   ['Téléphone', true, '+32 470 12 34 56', 'Téléphone du parent, avec l’indicatif (+32, +33…) pour avoir le bouton WhatsApp.'],
   ['E-mail', true, 'karim.benali@gmail.com', 'E-mail du parent.'],
-  ['Adresse', false, 'Rue de la Station 12, 4000 Liège', 'Facultatif.'],
-  ['Santé / remarques', false, 'Allergie aux arachides', 'Facultatif : allergies, santé, autorisation de sortie… Visible seulement par les profs et l’admin.'],
-  ['Famille', false, 'Famille Benali', 'Facultatif : même nom pour les frères et sœurs, ils seront regroupés dans la même famille.'],
-  ['Cotisation (€)', false, '250', 'Facultatif : montant total que la famille doit payer (à écrire sur une seule ligne de la famille suffit).'],
-  ['Paiement', false, 'Partiel', 'Facultatif : Payé, Partiel ou Pas payé.'],
-  ['Montant versé (€)', false, '100', 'Facultatif : seulement si le paiement est partiel.'],
 ];
 function mapHeader(row) {
   const m = {};
@@ -137,8 +124,6 @@ function parseDate(v) {
 const parseAge = (v) => { const n = parseInt(String(v ?? '').replace(/[^\d]/g, ''), 10); return n > 1 && n < 100 ? n : null; };
 const parseTel = (v) => { if (v === '' || v == null) return ''; let t = String(v).trim(); if (typeof v === 'number' && /^\d{9}$/.test(t)) t = '0' + t; return t; };
 const cap = (s) => String(s ?? '').trim().replace(/\s+/g, ' ');
-const money = (v) => { if (v === '' || v == null) return null; const n = parseFloat(String(v).replace(/[^\d,.-]/g, '').replace(',', '.')); return isNaN(n) ? null : n; };
-const payStatus = (v) => { const k = key(v); if (!k) return null; if (/^(paye|paid|oui|ok|regle|100)/.test(k)) return 'paid'; if (/^(partiel|partial|encours|moitie)/.test(k)) return 'partial'; return 'unpaid'; };
 
 let imp = null; // { name, rows:[{...}], missingCols }
 function analyse(rows, u) {
@@ -158,12 +143,6 @@ function analyse(rows, u) {
       age: m.age != null ? parseAge(r[m.age]) : null,
       tel: m.tel != null ? parseTel(r[m.tel]) : '',
       email: m.email != null ? cap(r[m.email]).toLowerCase() : '',
-      adresse: m.adresse != null ? cap(r[m.adresse]) : '',
-      remarques: m.remarques != null ? cap(r[m.remarques]) : '',
-      famille: m.famille != null ? cap(r[m.famille]) : '',
-      cotisation: m.cotisation != null ? money(r[m.cotisation]) : null,
-      status: m.status != null ? payStatus(r[m.status]) : null,
-      paid: m.paid != null ? money(r[m.paid]) : null,
     };
     const errs = [];
     if (!x.nom) errs.push('nom');
@@ -201,8 +180,8 @@ export function importView(u) {
     ${noCls ? `<div class="field"><label class="lbl" for="impc">Classe pour les ${noCls} élève(s) sans classe</label><select id="impc" name="defaultClass" form="impf" class="inp">${cls.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}${cls.length ? '' : '<option value="">(créez d’abord une classe)</option>'}</select></div>` : ''}
     ${newCls.length ? `<div class="ck flat pad col" style="background:var(--hi)"><span class="b">Classes qui seront créées : ${newCls.map(esc).join(', ')}</span>${admin ? `<div class="field"><label class="lbl" for="impp">Professeur de ces nouvelles classes</label><select id="impp" name="prof" form="impf" class="inp">${d.profs().map((p) => `<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></div>` : ''}</div>` : ''}
     </div>
-    <div class="ck" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="background:var(--neutral);text-align:start">${['Classe', 'Nom', 'Prénom(s)', 'Âge', 'Parent', 'Téléphone', 'E-mail', 'Famille', 'État'].map((h) => `<th style="padding:10px;text-align:start">${h}</th>`).join('')}</tr></thead><tbody>
-    ${imp.rows.map((r) => `<tr style="border-top:2px solid var(--neutral)"><td style="padding:8px 10px">${esc(r.classe || '—')}${r.classe && !r.classId ? ' ' + pill('nouvelle', 'var(--hi)') : ''}</td><td style="padding:8px 10px" class="b">${esc(r.nom)}</td><td style="padding:8px 10px">${esc(r.prenoms)}</td><td style="padding:8px 10px">${r.naissance ? d.ageOf({ naissance: r.naissance }) : r.age ?? '—'}</td><td style="padding:8px 10px">${esc(r.parent)}</td><td style="padding:8px 10px" class="code">${esc(r.tel || '—')}</td><td style="padding:8px 10px">${esc(r.email || '—')}</td><td style="padding:8px 10px">${esc(r.famille || '—')}</td><td style="padding:8px 10px">${r.err ? pill(esc(r.err), 'var(--absent)', 'var(--onabsent)') : r.dup ? pill('Déjà présent', 'var(--prev)') : pill('OK', 'var(--mint)')}</td></tr>`).join('')}
+    <div class="ck" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="background:var(--neutral);text-align:start">${['Classe', 'Nom', 'Prénom(s)', 'Âge', 'Parent', 'Téléphone', 'E-mail', 'État'].map((h) => `<th style="padding:10px;text-align:start">${h}</th>`).join('')}</tr></thead><tbody>
+    ${imp.rows.map((r) => `<tr style="border-top:2px solid var(--neutral)"><td style="padding:8px 10px">${esc(r.classe || '—')}${r.classe && !r.classId ? ' ' + pill('nouvelle', 'var(--hi)') : ''}</td><td style="padding:8px 10px" class="b">${esc(r.nom)}</td><td style="padding:8px 10px">${esc(r.prenoms)}</td><td style="padding:8px 10px">${r.naissance ? d.ageOf({ naissance: r.naissance }) : r.age ?? '—'}</td><td style="padding:8px 10px">${esc(r.parent)}</td><td style="padding:8px 10px" class="code">${esc(r.tel || '—')}</td><td style="padding:8px 10px">${esc(r.email || '—')}</td><td style="padding:8px 10px">${r.err ? pill(esc(r.err), 'var(--absent)', 'var(--onabsent)') : r.dup ? pill('Déjà présent', 'var(--prev)') : pill('OK', 'var(--mint)')}</td></tr>`).join('')}
     </tbody></table></div>
     <form id="impf" data-form="imp-go" class="row wrap"><button type="button" class="btn2" data-act="imp-reset">Annuler</button><span class="grow"></span><button class="btn" ${ok.length ? '' : 'disabled'}>${ic('upload', 20)}Importer ${ok.length} élève(s)</button></form>`;
   } else {
@@ -212,7 +191,7 @@ export function importView(u) {
     <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="background:var(--neutral)">${['#', 'Colonne', '', 'Exemple', 'À savoir'].map((h) => `<th style="padding:8px 10px;text-align:start">${h}</th>`).join('')}</tr></thead><tbody>
     ${COLS.map(([h, req, ex, help], i) => `<tr style="border-top:2px solid var(--neutral)"><td style="padding:8px 10px" class="b">${String.fromCharCode(65 + i)}</td><td style="padding:8px 10px;white-space:nowrap" class="b">${esc(h)}</td><td style="padding:8px 10px">${req ? pill('Obligatoire', 'var(--absent)', 'var(--onabsent)') : pill('Facultatif', 'var(--neutral)')}</td><td style="padding:8px 10px;white-space:nowrap">${esc(ex)}</td><td style="padding:8px 10px" class="small">${esc(help)}</td></tr>`).join('')}
     </tbody></table></div>
-    <p class="small mut b" style="font-weight:600">Une ligne sans téléphone ou sans e-mail est signalée « incomplète » et n’est pas importée : complétez-la dans le fichier puis importez à nouveau (les élèves déjà importés sont ignorés).</p></div>
+    <p class="small mut b" style="font-weight:600">Toutes les colonnes sont obligatoires. Une ligne incomplète est signalée et n’est pas importée : complétez-la dans le fichier puis importez à nouveau (les élèves déjà importés sont ignorés).</p></div>
     <div class="ck pad col"><h2>2. Choisissez le fichier</h2>
     <label class="btn" for="impfile" style="cursor:pointer">${ic('upload', 20)}Choisir un fichier Excel ou CSV</label>
     <input id="impfile" type="file" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="sr" data-change="imp-file">
@@ -237,17 +216,6 @@ CHANGE['imp-file'] = async (el) => {
   rerender();
 };
 ACT['imp-reset'] = () => { imp = null; rerender(); };
-// famille trouvée par son nom (ou créée), avec cotisation et paiement si renseignés
-function famFor(r) {
-  const F = d.D().families;
-  let f = F.find((x) => key(x.name) === key(r.famille));
-  if (!f) { f = { id: d.uid(), name: r.famille, cotisation: 0, status: 'unpaid', paid: 0 }; F.push(f); }
-  if (r.cotisation != null) f.cotisation = r.cotisation;
-  if (r.paid != null) f.paid = r.paid;
-  if (r.status) f.status = r.status;
-  else if (r.paid != null && r.paid > 0) f.status = f.cotisation && r.paid >= f.cotisation ? 'paid' : 'partial';
-  return f.id;
-}
 FORMS['imp-go'] = (f, fd) => {
   const u = d.me();
   const def = fd.get('defaultClass');
@@ -263,9 +231,8 @@ FORMS['imp-go'] = (f, fd) => {
     }
     const c = d.cls(cid);
     if (!c) continue;
-    const s = { id: d.uid(), classId: cid, nom: r.nom, prenoms: r.prenoms, parent: r.parent, tel: r.tel || '', email: r.email || '', adresse: r.adresse || '', remarques: r.remarques || '', naissance: r.naissance, age: r.naissance ? null : r.age, ageAt: r.naissance ? null : todayISO(), level: c.level || 1, coran: {}, acquired: {}, createdAt: new Date().toISOString() };
+    const s = { id: d.uid(), classId: cid, nom: r.nom, prenoms: r.prenoms, parent: r.parent, tel: r.tel || '', email: r.email || '', naissance: r.naissance, age: r.naissance ? null : r.age, ageAt: r.naissance ? null : todayISO(), level: c.level || 1, coran: {}, acquired: {}, createdAt: new Date().toISOString() };
     s.code = d.genCode(s, c);
-    if (r.famille) s.familyId = famFor(r);
     d.D().students.push(s);
     done.push(s);
   }
@@ -282,10 +249,9 @@ function download(name, text) {
 const csvLine = (arr) => arr.map((x) => `"${String(x ?? '').replace(/"/g, '""')}"`).join(';');
 ACT['imp-template'] = () => {
   const rows = [COLS.map((c) => c[0]),
-    ['Classe 1', 'Benali', 'Yasmine Inès', 10, '03/05/2016', 'Karim', '+32 470 12 34 56', 'karim.benali@gmail.com', 'Rue de la Station 12, 4000 Liège', 'Allergie aux arachides', 'Famille Benali', 250, 'Partiel', 100],
-    ['Classe 2', 'Benali', 'Ilyes', 8, '', 'Karim', '+32 470 12 34 56', 'karim.benali@gmail.com', 'Rue de la Station 12, 4000 Liège', '', 'Famille Benali', '', '', ''],
-    ['Classe 1', 'Haddad', 'Adam', 11, '', 'Nadia', '+32 471 98 76 54', 'nadia.haddad@hotmail.com', '', '', 'Famille Haddad', 150, 'Payé', ''],
-    ['Classe 3', 'Toumi', 'Bilal', 13, '', 'Rachid', '+33 6 12 34 56 78', 'rachid.toumi@yahoo.fr', '', 'Rentre seul à la maison', 'Famille Toumi', 150, 'Pas payé', '']];
+    ['Classe 1', 'Benali', 'Yasmine', 10, 'Karim', '+32 470 12 34 56', 'karim.benali@gmail.com'],
+    ['Classe 2', 'Benali', 'Ilyes', 8, 'Karim', '+32 470 12 34 56', 'karim.benali@gmail.com'],
+    ['Classe 1', 'Haddad', 'Adam', 11, 'Nadia', '+32 471 98 76 54', 'nadia.haddad@hotmail.com']];
   const a = document.createElement('a');
   a.href = URL.createObjectURL(xlsxBlob(rows, 'Élèves'));
   a.download = 'modele-import-eleves.xlsx'; a.click();

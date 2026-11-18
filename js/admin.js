@@ -4,6 +4,7 @@ import { ACT, FORMS, esc, ic, av, pill, fdate, toast, openModal, closeModal, cop
 import { shell } from './prof.js';
 import { langBtn } from './public.js';
 import { locauxTile, financeTile, hoursPill } from './gestion.js';
+import { contactFields, readContact, directionContactCard } from './contact.js';
 
 const go = (h) => { if (location.hash === h) window.dispatchEvent(new Event('hashchange')); else location.hash = h; };
 let loginErr = false;
@@ -63,7 +64,8 @@ export function adminView(u) {
   const rows = profs.map((p) => {
     const nc = d.classesOf(p.id).length, ns = d.studentsOfProf(p.id).length;
     return `<div class="li">${av(p.name.split(' ').map((w) => w[0]).join('').slice(0, 2), 44, 'var(--blue2)', 14)}
-    <div class="grow"><div class="b">${esc(p.name)}</div><div class="small mut b" style="font-weight:600">Identifiant : <b>${esc(p.login)}</b> · ${nc} classe(s) · ${ns} élève(s) ${hoursPill(p)}${p.mustChange ? ' · ' + pill('Mot de passe temporaire', 'var(--yellow)') : ''}</div></div>
+    <div class="grow"><div class="b">${esc(p.name)}</div><div class="small mut b" style="font-weight:600">Identifiant : <b>${esc(p.login)}</b> · ${nc} classe(s) · ${ns} élève(s) ${hoursPill(p)}${p.mustChange ? ' · ' + pill('Mot de passe temporaire', 'var(--yellow)') : ''}</div><div class="small b" style="font-weight:600;word-break:break-all">${p.tel || p.email ? `${esc(p.tel || '')}${p.tel && p.email ? ' · ' : ''}${esc(p.email || '')}` : '<span style="color:var(--absent)">Téléphone et e-mail à compléter</span>'}</div></div>
+    <button class="ib sm" data-act="user-contact" data-id="${p.id}" aria-label="Coordonnées de ${esc(p.name)}">${ic('phone', 18)}</button>
     <button class="ib sm" data-act="prof-reset" data-id="${p.id}" aria-label="Réinitialiser le mot de passe de ${esc(p.name)}">${ic('key', 18)}</button>
     <button class="ib sm" data-act="prof-del" data-id="${p.id}" aria-label="Supprimer ${esc(p.name)}">${ic('trash', 18)}</button></div>`;
   }).join('');
@@ -78,6 +80,7 @@ export function adminView(u) {
   <div class="top"><span class="logo">${ic('shield', 22, 2.6)}</span><div class="grow"><div class="small mut b">Administration</div><h1>Direction</h1></div></div>
   <p class="mut b" style="font-weight:600">En tant qu’administrateur, vous voyez et gérez tout : toutes les classes, tous les élèves, l’appel, le Coran, les objectifs et les notes, comme un professeur. Ici : les locaux, les finances, les comptes des professeurs et les messages de la direction.</p>
   <div class="grid2">${locauxTile()}${financeTile()}</div>
+  ${directionContactCard()}
   <div class="ck pad col" id="messages"><h2>${ic('mega', 22)} Message de la direction</h2>
   <p class="small mut b" style="font-weight:600">Affiché en haut de toutes les fiches élèves (parents) et des tableaux de bord (professeurs), entre les deux dates choisies.</p>
   <form class="col" data-form="ann">
@@ -91,6 +94,7 @@ export function adminView(u) {
   <form class="ck pad col" data-form="new-prof">
     <h2>Nouveau professeur</h2>
     <div class="field"><label class="lbl" for="np-n">Nom affiché aux parents</label><input id="np-n" name="name" class="inp" placeholder="ex. Imam Youssef" required></div>
+    ${contactFields({}, 'np')}
     <div class="field"><label class="lbl" for="np-l">Identifiant de connexion</label><input id="np-l" name="login" class="inp" autocapitalize="none" placeholder="ex. youssef" pattern="[a-zA-Z0-9._\\-]{3,30}" required><span class="hint">Lettres, chiffres, point ou tiret, 3 caractères minimum</span></div>
     <div class="field"><label class="lbl" for="np-p">Mot de passe temporaire</label><div class="row"><input id="np-p" name="pw" class="inp" value="${d.randomPw()}" required minlength="8"><button type="button" class="ib" data-act="gen-pw" aria-label="Générer un autre mot de passe">${ic('refresh', 18)}</button></div><span class="hint">Le professeur devra le changer à sa première connexion.</span></div>
     <button class="btn full">${ic('plus', 20)}Créer le compte</button>
@@ -132,7 +136,9 @@ FORMS['new-prof'] = async (f, fd) => {
   if (!/^[a-z0-9._-]{3,30}$/.test(login)) { toast('Identifiant invalide'); return; }
   if (d.D().users.some((u) => u.login === login)) { toast('Cet identifiant existe déjà'); return; }
   if (pw.length < 8) { toast('Mot de passe : 8 caractères minimum'); return; }
+  const ct = readContact(fd); if (!ct) return;
   const u = await d.makeUser('prof', login, name, pw, true);
+  Object.assign(u, ct);
   d.D().users.push(u); d.D().objectives.push(...d.defaultObjectives(u.id)); d.save();
   go('#/admin');
   credsModal('Compte créé', name, login, pw);

@@ -17,6 +17,8 @@ export async function seed() {
   await clearAudio().catch(() => {});
   const admin = await makeUser('admin', 'admin', 'Administrateur', 'admin1234', false);
   const prof = await makeUser('prof', 'rahman', 'M. Rahman', 'prof1234', false);
+  Object.assign(admin, { tel: '+32 470 00 00 01', email: 'direction@exemple.be' });
+  Object.assign(prof, { tel: '+32 470 00 00 02', email: 'rahman@exemple.be' });
   setDb({ v: 1, demo: true, users: [admin, prof], classes: [], students: [], attendance: [], objectives: [], notes: [], snotes: [], announcements: [] });
   const db = D();
 

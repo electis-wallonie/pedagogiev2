@@ -6,6 +6,7 @@ import * as F from './fiche.js';
 import { annoncesHtml } from './annonces.js';
 import { seed } from './seed.js';
 import { localLine, hoursCard, elevesSeg, famPill } from './gestion.js';
+import { myContactCard } from './contact.js';
 
 const go = (h) => { if (location.hash === h) window.dispatchEvent(new Event('hashchange')); else location.hash = h; };
 const rerender = () => window.dispatchEvent(new Event('hashchange'));
@@ -51,8 +52,7 @@ function contactCard(s) {
   ${wa ? `<a class="btn2" href="https://wa.me/${wa}" target="_blank" rel="noopener">${ic('chat', 20)}WhatsApp</a>` : ''}` : ''}
   ${s.email ? `<a class="btn2" href="mailto:${esc(s.email)}">${ic('mail', 20)}E-mail</a>` : ''}</div>
   ${!s.tel || !s.email ? `<a class="small b" href="#/prof/eleve/${s.id}/edit">${ic('plus', 14)} Ajouter ${!s.tel ? 'le téléphone' : 'l’e-mail'}</a>` : ''}
-  ${s.adresse ? `<div class="small b" style="font-weight:600">${ic('home', 14)} ${esc(s.adresse)}</div>` : ''}
-  ${s.remarques ? `<div class="ck flat pad small b" style="background:var(--hi);font-weight:600;white-space:pre-wrap">${ic('alert', 14)} ${esc(s.remarques)}</div>` : ''}</div>`;
+</div>`;
 }
 
 // ---------- tableau de bord ----------
@@ -77,6 +77,7 @@ export function dashboard(u) {
   const body = `<div class="page">
   ${top(d.isAdmin(u) ? 'Vue d’ensemble' : `Bonjour ${esc(u.name)}`, fdate(todayISO(), { weekday: 'long', day: 'numeric', month: 'long' }), null)}
   ${annoncesHtml()}
+  ${!u.tel || !u.email ? `<a class="ck pad row wrap" href="#/prof/reglages" style="background:var(--hi);text-decoration:none;color:var(--ink);gap:10px">${ic('phone', 20)}<span class="grow b">Complétez votre téléphone et votre e-mail pour que l’équipe et les parents puissent vous contacter.</span>${ic('chev', 18)}</a>` : ''}
   ${(() => { const nx = cl.map((c) => ({ c, n: d.nextCourse(c) })).filter((x) => x.n).sort((a, b) => a.n.when - b.n.when)[0]; return nx ? `<div class="ck pad row between wrap" style="background:var(--ink);color:#fff"><div><div class="tiny b" style="color:var(--yellow)">PROCHAIN COURS</div><div class="b" style="font-size:22px;margin-top:4px">${esc(nx.c.name)} · ${nextLabel(nx.n)}</div></div><a class="btn y" href="#/prof/classe/${nx.c.id}/appel">${ic('check', 20)}Faire l’appel</a></div>` : ''; })()}
   ${d.isAdmin(u) ? `<div class="grid3"><div class="ck stat" style="background:var(--pink)"><div class="v">${d.profs().length}</div><div class="l">professeurs</div></div><div class="ck stat" style="background:var(--blue2)"><div class="v">${cl.length}</div><div class="l">classes</div></div><div class="ck stat" style="background:var(--mint)"><div class="v">${sts.length}</div><div class="l">élèves</div></div></div>` : ''}
   ${cl.length ? '' : `<div class="ck pad col" style="background:var(--hi)"><h2>Bienvenue !</h2><p class="b" style="font-weight:600">Commencez par créer votre première classe, puis ajoutez vos élèves.</p><a class="btn" href="#/prof/classes?new=1">${ic('plus', 20)}Créer une classe</a></div>`}
@@ -374,9 +375,6 @@ function studentForm(u, s, classId) {
   <div class="grid2 stack"><div class="field"><label class="lbl" for="stl">Téléphone du parent</label><input id="stl" name="tel" type="tel" inputmode="tel" class="inp code" required value="${esc(s ? s.tel || '' : '')}" autocomplete="off" placeholder="ex. +32 470 12 34 56"><span class="hint">Avec l’indicatif (+32, +33…), le bouton WhatsApp apparaît aussi.</span></div>
   <div class="field"><label class="lbl" for="sml">E-mail du parent</label><input id="sml" name="email" type="email" inputmode="email" class="inp" required value="${esc(s ? s.email || '' : '')}" autocomplete="off" autocapitalize="none" placeholder="ex. karim.benali@gmail.com"></div></div>
   <span class="hint" style="margin-top:-6px">Téléphone et e-mail : visibles seulement par les profs et l’admin, jamais sur la fiche des parents.</span>
-  <details ${s && (s.adresse || s.remarques) ? 'open' : ''}><summary class="small b" style="cursor:pointer">Infos complémentaires (facultatif) : adresse, santé, remarques</summary>
-  <div class="field" style="margin-top:8px"><label class="lbl" for="sad">Adresse</label><input id="sad" name="adresse" class="inp" value="${esc(s ? s.adresse || '' : '')}" autocomplete="off" placeholder="ex. Rue de la Station 12, 4000 Liège"></div>
-  <div class="field"><label class="lbl" for="srq">Santé / remarques</label><textarea id="srq" name="remarques" class="inp" placeholder="ex. allergie aux arachides, asthme, autorisé à rentrer seul…">${esc(s ? s.remarques || '' : '')}</textarea></div></details>
   <details ${s && s.naissance ? 'open' : ''}><summary class="small b" style="cursor:pointer">Date de naissance précise (facultatif)</summary><div class="field" style="margin-top:8px"><label class="lbl" for="sb">Date de naissance</label><input id="sb" name="naissance" type="date" class="inp" value="${s && s.naissance ? s.naissance : ''}"><span class="hint">Si elle est remplie, l’âge est calculé à partir d’elle.</span></div></details>
   ${s ? '' : '<div class="ck flat pad small b" style="background:var(--yellow);font-weight:600">Le code de suivi est créé automatiquement : classe, initiales, prénom du parent, âge, + 4 caractères de sécurité.</div>'}
   <button class="btn full">${s ? 'Enregistrer' : 'Ajouter l’élève'}</button></form>`;
@@ -387,7 +385,7 @@ export function eleveNew(u, q) {
 FORMS.student = (f, fd) => {
   const u = d.me();
   const id = f.dataset.id;
-  const v = { classId: fd.get('classId'), nom: (fd.get('nom') || '').trim(), prenoms: (fd.get('prenoms') || '').trim().replace(/\s+/g, ' '), naissance: fd.get('naissance') || null, parent: (fd.get('parent') || '').trim(), tel: (fd.get('tel') || '').trim(), email: (fd.get('email') || '').trim().toLowerCase(), adresse: (fd.get('adresse') || '').trim(), remarques: (fd.get('remarques') || '').trim() };
+  const v = { classId: fd.get('classId'), nom: (fd.get('nom') || '').trim(), prenoms: (fd.get('prenoms') || '').trim().replace(/\s+/g, ' '), naissance: fd.get('naissance') || null, parent: (fd.get('parent') || '').trim(), tel: (fd.get('tel') || '').trim(), email: (fd.get('email') || '').trim().toLowerCase() };
   const age = parseInt(fd.get('age'), 10);
   if (!v.nom || !v.prenoms || !v.parent || (!v.naissance && !(age > 0))) { toast('Merci de remplir tous les champs'); return; }
   if (v.tel.replace(/[^\d]/g, '').length < 8) { toast('Indiquez le numéro de téléphone du parent'); return; }
@@ -541,7 +539,8 @@ export function reglages(u) {
   const items = (arr) => arr.map(([h, i, l, act]) => act ? `<button class="li" data-act="${act}" style="background:none;border:0;border-bottom:2px solid var(--neutral);width:100%;text-align:left;cursor:pointer;font:inherit;font-weight:600">${ic(i, 20)}<span class="grow">${l}</span>${ic('chev', 18)}</button>` : `<a class="li" href="${h}" style="font-weight:600">${ic(i, 20)}<span class="grow">${l}</span>${ic('chev', 18)}</a>`).join('');
   return shell(u, 3, `<div class="page narrow">${top('Réglages', '', null)}
   <div class="ck pad row">${av(u.name.split(' ').map((w) => w[0]).join('').slice(0, 2), 52, 'var(--yellow)', 17)}<div><div class="b" style="font-size:18px">${esc(u.name)}</div><div class="small mut b">Identifiant : ${esc(u.login)}</div></div></div>
-  <div class="ck pad" style="padding-top:2px;padding-bottom:2px"><div class="list">${items([['#/prof/import', 'sheet', 'Importer des élèves (Excel)'], ['#/prof/objectifs', 'star', 'Objectifs Langue &amp; Religion par niveau'], ['', 'globe', 'Langue : français / العربية', 'lang'], ['#/prof/classes', 'grid', 'Mes classes'], ['#/mdp', 'key', 'Changer mon mot de passe']])}</div></div>
+  ${myContactCard(u)}
+  <div class="ck pad" style="padding-top:2px;padding-bottom:2px"><div class="list">${items([['#/prof/annuaire', 'users', 'Annuaire de l’équipe (téléphones, e-mails)'], ['#/prof/import', 'sheet', 'Importer des élèves (Excel)'], ['#/prof/objectifs', 'star', 'Objectifs Langue &amp; Religion par niveau'], ['', 'globe', 'Langue : français / العربية', 'lang'], ['#/prof/classes', 'grid', 'Mes classes'], ['#/mdp', 'key', 'Changer mon mot de passe']])}</div></div>
   <div class="ck pad" style="padding-top:2px;padding-bottom:2px"><div class="tiny mut b" style="padding-top:10px">DONNÉES &amp; CONFIDENTIALITÉ</div><div class="list">${items([['', 'dl', 'Exporter mes données (fichier)', 'export'], ...(d.D().demo ? [['', 'refresh', 'Réinitialiser la démo', 'reset-demo']] : [])])}</div></div>
   <button class="btn2 full" data-act="logout">${ic('out', 20)}Se déconnecter</button></div>`);
 }
