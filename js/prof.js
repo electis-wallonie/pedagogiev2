@@ -206,7 +206,7 @@ export function classe(u, id) {
     return `<div class="li" style="position:relative">${av(initials(s), 42, ACC[k % 4], 14)}<a href="#/prof/eleve/${s.id}" class="grow" style="text-decoration:none;color:var(--ink)"><span class="b" style="display:block">${esc(s.prenoms)} ${esc(s.nom)}</span><span class="small mut b" style="font-weight:600">${kk.v} sourates · ${p.rate === null ? '—' : p.rate + ' %'} présence</span></a>${callBtn(s)}${ic('chev', 18)}</div>`;
   }).join('') || `<div class="col" style="padding:14px 0"><p class="mut small">Pas encore d’élève dans cette classe.</p><a class="btn" href="#/prof/eleve/new?c=${id}">${ic('plus', 20)}Ajouter un élève</a></div>`}</div></div>
   ${devoirsCard(c, sts)}
-  <div class="ck pad col" id="notes-classe"><h2>Notes pour toute la classe</h2><p class="small mut b" style="font-weight:600">Visibles sur la fiche de chaque élève de ${esc(c.name)}.</p>
+  <div class="ck pad col" id="notes-classe" style="box-shadow:5px 5px 0 var(--pink)"><h2 class="sec-t" style="margin:0">${ic('note', 24)} Notes pour la classe</h2><p class="small mut b" style="font-weight:600">Visibles sur la fiche de chaque élève de ${esc(c.name)}.</p>
   ${composer('note-class', 'zc', '', 'Ex : pas de cours samedi prochain…', true)}
   <p class="tiny mut b">Photos et fichiers : visibles par les parents pendant 7 jours, puis supprimés automatiquement.</p>
   <div class="col">${notes.map((n) => `<div class="col" style="gap:6px">${devoirTag(n)}${msgHtml(n, 'note-del')}</div>`).join('')}</div></div></div>`;
@@ -221,7 +221,7 @@ function devoirsCard(c, sts) {
   const due = nx ? localISO(nx.when) : todayISO();
   const n = parentMails(c.id).length;
   const pre = `<div class="field"><label class="lbl" for="zd-due">Devoirs pour le cours du</label><input id="zd-due" name="due" type="date" class="inp" value="${due}" min="${todayISO()}" required style="max-width:220px"></div>`;
-  return `<div class="ck pad col" id="notes-devoirs" style="background:var(--hi)"><h2>${ic('book', 22)} Devoirs</h2>
+  return `<div class="ck pad col" id="notes-devoirs" style="box-shadow:5px 5px 0 var(--mint)"><h2 class="sec-t" style="margin:0">${ic('book', 24)} Devoirs</h2>
   <p class="small b" style="font-weight:600">La date du prochain cours est remplie toute seule. En envoyant, les devoirs s’affichent sur la fiche de chaque élève, et votre e-mail s’ouvre avec ${n ? `les ${n} parent(s) de la classe en destinataires` : 'les parents de la classe en destinataires'} : il ne reste qu’à envoyer.</p>
   ${composer('devoir', 'zd', '', 'Ex : apprendre les versets 1 à 5 d’Al-Layl, exercice page 12…', true, pre)}
   <p class="tiny mut b">Les pièces jointes ne peuvent pas partir dans l’e-mail : elles sont visibles sur la fiche de l’élève jusqu’au jour du cours (7 jours minimum). L’e-mail l’indique aux parents.${sts.length > n ? ` ${sts.length - n} élève(s) sans e-mail de parent.` : ''}</p></div>`;
@@ -381,6 +381,7 @@ export function classeObjectifs(u, id, q) {
     }).join('')}</div></details></div>`;
   }).join('')}</div>`).join('');
   return shell(u, 1, `<div class="page narrow">${top('Objectifs de la classe', `${esc(c.name)} · ${sts.length} élève(s)`, `#/prof/classe/${id}`)}
+  ${(() => { const done = objs.filter(allOk).length; const pct = objs.length ? Math.round(done / objs.length * 100) : 0; return hero(`Niveau ${lv} · ${esc(c.name)}`, `${done} / ${objs.length} acquis`, { sub: 'Objectifs validés par toute la classe', chip: pct + ' %', shadow: 'var(--yellow)', extra: `<div class="hero-bar"><span style="width:${pct}%"></span></div>` }); })()}
   <p class="small mut b" style="font-weight:600">Validez un objectif pour toute la classe en une fois (par exemple après une interrogation commune). Vous pouvez ensuite retirer un élève dans « Détail par élève ».</p>
   <div class="seg" role="navigation" aria-label="Niveaux">${levels.map((l) => `<a href="#/prof/classe/${id}/objectifs?n=${l}" class="${l === lv ? 'on' : ''}">Niveau ${l}</a>`).join('')}</div>
   ${objs.length && sts.length ? `<button class="btn y full" data-act="cobj-level">${ic('star', 20)}Valider tout le niveau ${lv} pour toute la classe</button>` : ''}
@@ -592,12 +593,17 @@ ACT['student-del'] = async () => {
 
 // ---------- réglages ----------
 export function reglages(u) {
-  const items = (arr) => arr.map(([h, i, l, act]) => act ? `<button class="li" data-act="${act}" style="background:none;border:0;border-bottom:2px solid var(--neutral);width:100%;text-align:left;cursor:pointer;font:inherit;font-weight:600">${ic(i, 20)}<span class="grow">${l}</span>${ic('chev', 18)}</button>` : `<a class="li" href="${h}" style="font-weight:600">${ic(i, 20)}<span class="grow">${l}</span>${ic('chev', 18)}</a>`).join('');
+  const BG = ['var(--mint)', 'var(--blue2)', 'var(--yellow)', 'var(--pink)', 'var(--mint)', 'var(--blue2)'];
+  const menu = (arr) => bands(arr.map(([h, i, l, act], k) => act
+    ? `<button type="button" class="bd" data-act="${act}" style="--rot:0deg;background:${BG[k % 6]};width:100%;font:inherit;text-align:start;cursor:pointer;color:var(--ink)"><span class="bd-ic">${ic(i, 18)}</span><span class="bd-t grow">${l}</span>${ic('chev', 18)}</button>`
+    : `<a class="bd" href="${h}" style="--rot:0deg;background:${BG[k % 6]}"><span class="bd-ic">${ic(i, 18)}</span><span class="bd-t grow">${l}</span>${ic('chev', 18)}</a>`));
   return shell(u, 3, `<div class="page narrow">${top('Réglages', '', null)}
-  <div class="ck pad row">${av(u.name.split(' ').map((w) => w[0]).join('').slice(0, 2), 52, 'var(--yellow)', 17)}<div><div class="b" style="font-size:18px">${esc(u.name)}</div><div class="small mut b">Identifiant : ${esc(u.login)}</div></div></div>
+  ${hero(d.roleLabel(u), esc(u.name), { sub: `Identifiant : ${esc(u.login)}`, chip: esc(u.name.split(' ').map((w) => w[0]).join('').slice(0, 2)), shadow: 'var(--yellow)' })}
   ${myContactCard(u)}
-  <div class="ck pad" style="padding-top:2px;padding-bottom:2px"><div class="list">${items([['#/prof/annuaire', 'users', 'Annuaire de l’équipe (téléphones, e-mails)'], ['#/prof/import', 'sheet', 'Importer des élèves (Excel)'], ['#/prof/objectifs', 'star', 'Objectifs Langue &amp; Religion par niveau'], ['', 'globe', 'Langue : français / العربية', 'lang'], ['#/prof/classes', 'grid', 'Mes classes'], ['#/mdp', 'key', 'Changer mon mot de passe']])}</div></div>
-  <div class="ck pad" style="padding-top:2px;padding-bottom:2px"><div class="tiny mut b" style="padding-top:10px">DONNÉES &amp; CONFIDENTIALITÉ</div><div class="list">${items([['', 'dl', 'Exporter mes données (fichier)', 'export'], ...(d.D().demo ? [['', 'refresh', 'Réinitialiser la démo', 'reset-demo']] : [])])}</div></div>
+  <h2 class="sec-t">Outils</h2>
+  ${menu([['#/prof/annuaire', 'users', 'Annuaire de l’équipe'], ['#/prof/import', 'sheet', 'Importer des élèves (Excel)'], ['#/prof/objectifs', 'star', 'Objectifs Langue &amp; Religion'], ['#/prof/classes', 'grid', 'Mes classes']])}
+  <h2 class="sec-t">Compte</h2>
+  ${menu([['', 'globe', 'Langue : français / العربية', 'lang'], ['#/mdp', 'key', 'Changer mon mot de passe'], ['', 'dl', 'Exporter mes données (fichier)', 'export'], ...(d.D().demo ? [['', 'refresh', 'Réinitialiser la démo', 'reset-demo']] : [])])}
   <button class="btn2 full" data-act="logout">${ic('out', 20)}Se déconnecter</button></div>`);
 }
 ACT.export = () => {
@@ -624,10 +630,11 @@ export function objectifs(u, q) {
   const groups = [...new Set([...objs.map((o) => o.group), 'Langue arabe', 'Religion'])];
   ctx = { level: lv, pid };
   return shell(u, 3, `<div class="page narrow">${top('Objectifs par niveau', 'Langue &amp; Religion · communs à toutes vos classes', '#/prof/reglages')}
+  ${hero(`Niveau ${lv}`, `${objs.length} objectif(s)`, { sub: 'Cochés sur la fiche de chaque élève', shadow: 'var(--yellow)' })}
   ${profPick}
   <div class="seg" role="navigation" aria-label="Niveaux">${levels.map((l) => `<a href="#/prof/objectifs?n=${l}${pq}" class="${l === lv ? 'on' : ''}">Niveau ${l}</a>`).join('')}<button type="button" data-act="level-add" aria-label="Ajouter un niveau">${ic('plus', 18)}</button></div>
   ${groups.filter((g) => objs.some((o) => o.group === g)).map((g) => `<div class="ck pad col"><h2>${esc(g)}</h2><div class="list">${objs.filter((o) => o.group === g).map((o) => `<div class="li"><span class="grow" style="font-weight:600">${esc(o.text)}</span><button class="ib sm" data-act="obj-edit" data-id="${o.id}" aria-label="Modifier">${ic('edit', 16)}</button><button class="ib sm" data-act="obj-del" data-id="${o.id}" aria-label="Supprimer">${ic('trash', 16)}</button></div>`).join('')}</div></div>`).join('') || '<p class="mut">Aucun objectif pour ce niveau.</p>'}
-  <form class="ck pad col" data-form="obj-add"><h2>Ajouter un objectif (niveau ${lv})</h2>
+  <form class="bcard col" data-form="obj-add"><h2>Ajouter un objectif · niveau ${lv}</h2>
   <div class="field"><label class="lbl" for="ot">Objectif</label><input id="ot" name="text" class="inp" placeholder="ex. Lire un mot avec soukoun" required></div>
   <div class="field"><label class="lbl" for="og">Catégorie</label><select id="og" name="group" class="inp">${groups.map((g) => `<option>${esc(g)}</option>`).join('')}</select></div>
   <button class="btn full">${ic('plus', 20)}Ajouter</button></form></div>`);

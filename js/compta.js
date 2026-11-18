@@ -2,7 +2,7 @@
 // Accessible au compte « Comptabilité » et aux administrateurs. Pas de classes ni d'élèves ici : que la trésorerie.
 import * as d from './data.js';
 import { locale } from './i18n.js';
-import { ACT, esc, ic, av, pill, fdate, toast, openModal, todayISO, hero } from './ui.js';
+import { ACT, esc, ic, av, pill, fdate, toast, openModal, todayISO, hero, band, bands } from './ui.js';
 import { eur, monthLabel, entryForm, entryList, teacherRows, PAY } from './gestion.js';
 import { myContactCard } from './contact.js';
 import { comptaPending } from './demandes.js';
@@ -124,17 +124,20 @@ function journal(u, m, months, q) {
 function recettes(u, m, months) {
   return `${top('Recettes', 'Dons, quêtes, zakat, cotisations…')}
   ${monthNav('recettes', m, months)}
-  <div class="ck pad col"><div class="row between wrap"><h2>${ic('plus', 20)} Recettes du mois</h2><span class="kpi" style="font-size:24px">${eur(d.incomeTotal(m))}</span></div>
-  ${entryForm('inc', m, d.INCOME_CATS)}<div class="col" style="gap:0">${entryList(d.incomesOf(m), d.INCOME_CATS, 'inc-del')}</div></div>`;
+  ${hero(`Recettes · ${monthLabel(m)}`, eur(d.incomeTotal(m)), { sub: `${d.incomesOf(m).length} opération(s)`, shadow: 'var(--mint)' })}
+  <div class="bcard col"><span class="w1-blob" aria-hidden="true"></span><h2>${ic('plus', 20)} Nouvelle recette</h2>${entryForm('inc', m, d.INCOME_CATS)}</div>
+  <h2 class="sec-t">Ce mois-ci</h2>
+  <div class="ck pad col" style="gap:0">${entryList(d.incomesOf(m), d.INCOME_CATS, 'inc-del')}</div>`;
 }
 function depenses(u, m, months) {
   const e = d.monthExpenses(m);
   return `${top('Dépenses', 'Loyer, énergie, entretien, personnel…')}
   ${monthNav('depenses', m, months)}
-  <div class="ck pad col"><div class="row between wrap"><h2>${ic('note', 20)} Dépenses du mois</h2><span class="kpi" style="font-size:24px">${eur(e.other)}</span></div>
-  ${entryForm('exp', m, d.EXPENSE_CATS)}<div class="col" style="gap:0">${entryList(d.expensesOf(m), d.EXPENSE_CATS, 'exp-del')}</div></div>
-  <a class="ck pad row between" href="#/compta/enseignants?m=${m}" style="text-decoration:none;color:var(--ink)"><span class="b">${ic('clock', 18)} Enseignants de l’école (heures × taux)</span><span class="b">${eur(e.profs)} ${ic('chev', 16)}</span></a>
-  <div class="ck pad row between" style="background:var(--yellow)"><span class="b" style="font-size:18px">Total des dépenses · ${monthLabel(m)}</span><span class="kpi" style="font-size:24px">${eur(e.total)}</span></div>`;
+  ${hero(`Total des dépenses · ${monthLabel(m)}`, eur(e.total), { sub: `${eur(e.other)} saisies · ${eur(e.profs)} enseignants`, shadow: 'var(--pink)' })}
+  <div class="bcard col"><span class="w1-blob" aria-hidden="true"></span><h2>${ic('plus', 20)} Nouvelle dépense</h2>${entryForm('exp', m, d.EXPENSE_CATS)}</div>
+  <h2 class="sec-t">Ce mois-ci</h2>
+  <div class="ck pad col" style="gap:0">${entryList(d.expensesOf(m), d.EXPENSE_CATS, 'exp-del')}</div>
+  ${bands([band('Enseignants de l’école', { sub: 'heures × taux', right: eur(e.profs), href: `#/compta/enseignants?m=${m}`, bg: 'var(--blue2)', icon: 'clock' })])}`;
 }
 function cotisations(u, m, months, q) {
   const s = q.get('s') || 'all';
@@ -179,7 +182,8 @@ function rapports(u, m, months, q) {
   const rows = (o) => Object.entries(o).sort((a, b) => b[1] - a[1]).map(([l, v]) => `<tr><td>${esc(l)}</td><td style="text-align:end">${eur(v)}</td></tr>`).join('');
   return `${top('Rapports', 'Compte de résultat simplifié', `<div class="row wrap" style="gap:8px"><button class="btn2 sm" data-act="compta-csv" data-y="${y}">${ic('dl', 16)}Journal ${y} (Excel)</button><button class="btn2 sm" data-act="print">${ic('note', 16)}Imprimer</button></div>`)}
   <div class="seg">${years.map((x) => `<a href="#/compta/rapports?y=${x}" class="${x === y ? 'on' : ''}">Année ${x}</a>`).join('')}</div>
-  <div class="kpis">${kpi('Total recettes', eur(ti), 'var(--mint)')}${kpi('Total dépenses', eur(te), 'var(--pink)')}${kpi('Résultat', sign(ti - te), 'var(--hi)')}</div>
+  ${hero(`Résultat ${y}`, sign(ti - te), { sub: `+ ${eur(ti)} de recettes · − ${eur(te)} de dépenses`, shadow: ti - te >= 0 ? 'var(--mint)' : 'var(--pink)' })}
+  <div class="kpis">${kpi('Total recettes', eur(ti), 'var(--mint)')}${kpi('Total dépenses', eur(te), 'var(--pink)')}</div>
   <div class="grid2 stack" style="align-items:start">
     <div class="ck pad col"><h2>Recettes ${y}</h2><table class="tbl"><tbody>${rows(inc) || '<tr><td class="mut">—</td></tr>'}<tr class="b"><td>Total</td><td style="text-align:end">${eur(ti)}</td></tr></tbody></table></div>
     <div class="ck pad col"><h2>Dépenses ${y}</h2><table class="tbl"><tbody>${rows(exp) || '<tr><td class="mut">—</td></tr>'}<tr class="b"><td>Total</td><td style="text-align:end">${eur(te)}</td></tr></tbody></table></div>
@@ -189,16 +193,18 @@ function rapports(u, m, months, q) {
   <p class="tiny mut b">Les cotisations de l’école sont annuelles : elles comptent dans le total, pas dans les mois. Document utile pour l’assemblée générale.</p>`;
 }
 ACT.print = () => window.print();
+const MBG = ['var(--mint)', 'var(--blue2)', 'var(--yellow)', 'var(--pink)', 'var(--mint)', 'var(--blue2)', 'var(--yellow)'];
+const menuBands = (arr) => bands(arr.map(([h, i, l, act], k) => act
+  ? `<button type="button" class="bd" data-act="${act}" style="--rot:0deg;background:${MBG[k % 7]};width:100%;font:inherit;text-align:start;cursor:pointer;color:var(--ink)"><span class="bd-ic">${ic(i, 18)}</span><span class="bd-t grow">${l}</span>${ic('chev', 18)}</button>`
+  : `<a class="bd" href="${h}" style="--rot:0deg;background:${MBG[k % 7]}"><span class="bd-ic">${ic(i, 18)}</span><span class="bd-t grow">${l}</span>${ic('chev', 18)}</a>`));
 function compte(u) {
-  return `${top('Mon compte', d.roleLabel(u))}
-  <div class="ck pad row">${av(u.name.split(' ').map((w) => w[0]).join('').slice(0, 2), 52, 'var(--mint)', 17)}<div><div class="b" style="font-size:18px">${esc(u.name)}</div><div class="small mut b">Identifiant : ${esc(u.login)}</div></div></div>
+  return `${top('Mon compte', '')}
+  ${hero(d.roleLabel(u), esc(u.name), { sub: `Identifiant : ${esc(u.login)}`, chip: esc(u.name.split(' ').map((w) => w[0]).join('').slice(0, 2)), shadow: 'var(--mint)' })}
   ${myContactCard(u)}
-  <div class="ck pad" style="padding-top:2px;padding-bottom:2px"><div class="list">
-  <a class="li" href="#/prof/annuaire" style="font-weight:600">${ic('users', 20)}<span class="grow">Annuaire de l’équipe</span>${ic('chev', 18)}</a>
-  <a class="li" href="#/mdp" style="font-weight:600">${ic('key', 20)}<span class="grow">Changer mon mot de passe</span>${ic('chev', 18)}</a>
-  <button class="li" data-act="lang" style="background:none;border:0;width:100%;text-align:start;cursor:pointer;font:inherit;font-weight:600">${ic('globe', 20)}<span class="grow">Langue : français / العربية</span>${ic('chev', 18)}</button></div></div>
+  <h2 class="sec-t">Compte</h2>
+  ${menuBands([['#/prof/annuaire', 'users', 'Annuaire de l’équipe'], ['#/mdp', 'key', 'Changer mon mot de passe'], ['', 'globe', 'Langue : français / العربية', 'lang']])}
   <button class="btn2 full" data-act="logout">${ic('out', 20)}Se déconnecter</button>`;
 }
 function plus(u) {
-  return `${top('Comptabilité', '')}<div class="ck pad" style="padding-top:2px;padding-bottom:2px"><div class="list">${NAV.filter(([k]) => !MOB.includes(k)).map(([k, i, l]) => `<a class="li" href="#/compta/${k}" style="font-weight:700">${ic(i, 20)}<span class="grow">${l}</span>${ic('chev', 18)}</a>`).join('')}${d.isAdmin(u) ? `<a class="li" href="#/admin" style="font-weight:700">${ic('back', 20)}<span class="grow">Retour à la direction</span>${ic('chev', 18)}</a>` : ''}</div></div>`;
+  return `${top('Comptabilité', '')}${menuBands([...NAV.filter(([k]) => !MOB.includes(k)).map(([k, i, l]) => [`#/compta/${k}`, i, l]), ...(d.isAdmin(u) ? [['#/admin', 'back', 'Retour à la direction']] : [])])}`;
 }

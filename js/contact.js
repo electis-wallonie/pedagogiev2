@@ -1,6 +1,6 @@
 // Coordonnées des comptes (admin, profs), annuaire de l'équipe, et page « Contact » publique
 import * as d from './data.js';
-import { ACT, FORMS, esc, ic, av, pill, toast, openModal, closeModal } from './ui.js';
+import { ACT, FORMS, esc, ic, av, pill, toast, openModal, closeModal, hero } from './ui.js';
 import { shell } from './prof.js';
 import { comptaShell } from './compta.js';
 
@@ -28,8 +28,8 @@ export function readContact(fd) {
 // ---------- mes coordonnées (Réglages) ----------
 export function myContactCard(u) {
   const missing = !u.tel || !u.email;
-  return `<form class="ck pad col" data-form="my-contact" ${missing ? 'style="background:var(--hi)"' : ''}><h2>${ic('phone', 20)} Mes coordonnées</h2>
-  <p class="small mut b" style="font-weight:600">${missing ? 'À compléter. ' : ''}Visibles par toute l’équipe (direction et professeurs) dans l’annuaire. Les parents ne voient jamais votre numéro ni votre e-mail : ils peuvent seulement vous écrire depuis la page Contact.</p>
+  return `<form class="bcard col" data-form="my-contact"><span class="w1-blob" aria-hidden="true"></span><h2>${ic('phone', 20)} Mes coordonnées</h2>
+  <p class="small b" style="font-weight:600;color:#DCE3FF">${missing ? 'À compléter. ' : ''}Visibles par toute l’équipe (direction et professeurs) dans l’annuaire. Les parents ne voient jamais votre numéro ni votre e-mail : ils peuvent seulement vous écrire depuis la page Contact.</p>
   ${contactFields(u, 'me')}<button class="btn sm" style="align-self:flex-start">Enregistrer</button></form>`;
 }
 FORMS['my-contact'] = (f, fd) => { const v = readContact(fd); if (!v) return; Object.assign(d.me(), v); d.save(); toast('Coordonnées enregistrées'); rerender(); };
@@ -49,12 +49,13 @@ export function annuaire(u) {
   const rows = team.map((p) => {
     const cl = d.classesOf(p.id).map((c) => c.name).join(', ');
     const wa = waNum(p.tel);
-    return `<div class="ck pad col" style="gap:10px" data-q="${esc((p.name + ' ' + (cl || '') + ' ' + d.roleLabel(p)).toLowerCase())}">
+    return `<div class="ck pad col" style="gap:10px;box-shadow:5px 5px 0 ${p.role === 'admin' ? 'var(--yellow)' : p.role === 'compta' ? 'var(--mint)' : 'var(--blue2)'}" data-q="${esc((p.name + ' ' + (cl || '') + ' ' + d.roleLabel(p)).toLowerCase())}">
     <div class="row">${av(initialsOf(p.name), 46, p.role === 'admin' ? 'var(--yellow)' : p.role === 'compta' ? 'var(--mint)' : 'var(--blue2)', 15)}<div class="grow"><div class="b" style="font-size:17px">${esc(p.name)}${p.id === u.id ? ' (moi)' : ''}</div><div class="small mut b" style="font-weight:600">${d.roleLabel(p)}${cl ? ' · ' + esc(cl) : ''}</div></div>${d.isAdmin(u) ? `<button class="ib sm" data-act="user-contact" data-id="${p.id}" aria-label="Modifier les coordonnées de ${esc(p.name)}">${ic('edit', 16)}</button>` : ''}</div>
     <div class="row wrap" style="gap:6px 16px">${p.tel ? `<span class="code">${esc(p.tel)}</span>` : ''}${p.email ? `<span class="b small" style="word-break:break-all">${esc(p.email)}</span>` : ''}${!p.tel && !p.email ? '<span class="small mut b">Coordonnées pas encore renseignées</span>' : ''}</div>
-    <div class="row wrap" style="gap:8px">${p.tel ? `<a class="btn2 sm" href="${telHref(p.tel)}">${ic('phone', 16)}Appeler</a>${wa ? `<a class="btn2 sm" href="https://wa.me/${wa}" target="_blank" rel="noopener">${ic('chat', 16)}WhatsApp</a>` : ''}` : ''}${p.email ? `<a class="btn2 sm" href="mailto:${esc(p.email)}">${ic('mail', 16)}E-mail</a>` : ''}</div></div>`;
+    <div class="row wrap" style="gap:8px">${p.tel ? `<a class="btn sm" href="${telHref(p.tel)}" style="background:var(--mint);color:var(--ink)">${ic('phone', 16)}Appeler</a>${wa ? `<a class="btn2 sm" href="https://wa.me/${wa}" target="_blank" rel="noopener">${ic('chat', 16)}WhatsApp</a>` : ''}` : ''}${p.email ? `<a class="btn2 sm" href="mailto:${esc(p.email)}">${ic('mail', 16)}E-mail</a>` : ''}</div></div>`;
   }).join('');
   return (d.isCompta(u) ? (b) => comptaShell(u, 'compte', b) : (b) => shell(u, 3, b))(`<div class="page narrow">${top('Annuaire de l’équipe', `${team.length} personne(s) · visible seulement par l’équipe`, d.isCompta(u) ? '#/compta/compte' : '#/prof/reglages')}
+  ${hero('Équipe', `${team.length} personne(s)`, { sub: `${team.filter((p) => p.tel || p.email).length} avec coordonnées · jamais visibles par les parents`, shadow: 'var(--blue2)' })}
   <div class="field"><label class="sr" for="aq">Rechercher</label><input id="aq" class="inp" placeholder="Rechercher un nom, une classe…" data-filter="[data-q]"></div>
   ${rows}</div>`);
 }

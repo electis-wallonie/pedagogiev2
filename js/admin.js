@@ -90,7 +90,7 @@ export function adminView(u) {
   <div class="top"><span class="logo">${ic('shield', 22, 2.6)}</span><div class="grow"><div class="small mut b">${d.roleLabel(u)}</div><h1>Direction</h1></div></div>
   ${(() => { const p = pending(); return hero('Demandes d’inscription', p.length ? `${p.length} en attente` : 'Aucune en attente', { sub: 'Envoyées depuis l’onglet Cours du site', shadow: 'var(--pink)', extra: `<a class="btn y full" href="#/admin/demandes">${ic('users', 18)}Voir les demandes</a>` }); })()}
   <div class="gridauto">${publicTile()}${locauxTile()}${financeTile()}</div>
-  <div class="ck pad col" id="messages"><h2>${ic('mega', 22)} Message de la direction</h2>
+  <div class="ck pad col" id="messages" style="box-shadow:5px 5px 0 var(--blue2)"><h2 class="sec-t" style="margin:0">${ic('mega', 24)} Message de la direction</h2>
   <p class="small mut b" style="font-weight:600">Affiché en haut de toutes les fiches élèves et des tableaux de bord de l’équipe, entre les deux dates choisies.</p>
   <form class="col composer bubble" data-form="ann">
     <div class="grid2"><div class="field"><label class="lbl" for="af">Visible du</label><input id="af" name="from" type="date" class="inp" value="${today}" required></div><div class="field"><label class="lbl" for="at">Jusqu’au</label><input id="at" name="to" type="date" class="inp" value="${in7}" required></div></div>
@@ -100,8 +100,8 @@ export function adminView(u) {
   </form>
   <div class="list">${annRows || '<p class="small mut">Aucun message pour le moment.</p>'}</div></div>
   <div class="grid2 stack" style="align-items:start">
-  <form class="ck pad col" data-form="new-prof">
-    <h2>Nouveau compte</h2>
+  <form class="bcard col" data-form="new-prof"><span class="w1-blob" aria-hidden="true"></span>
+    <h2>${ic('plus', 20)} Nouveau compte</h2>
     ${roles.length > 1 ? `<fieldset style="border:0;padding:0;margin:0"><legend class="lbl">Type de compte</legend><div class="seg roles">${roles.map(([k, l], i) => `<label style="flex:1"><input type="radio" name="role" value="${k}" class="sr" ${i === 0 ? 'checked' : ''}><span class="rolebtn">${l}</span></label>`).join('')}</div></fieldset>
     <p class="tiny mut b">Professeur : ses classes et ses élèves. Administrateur : gère toute l’école et la direction. Comptabilité : uniquement l’espace comptable (recettes, dépenses, cotisations, rapports).</p>` : '<input type="hidden" name="role" value="prof">'}
     <div class="field"><label class="lbl" for="np-n">Nom affiché</label><input id="np-n" name="name" class="inp" placeholder="ex. Imam Youssef" required></div>
@@ -110,7 +110,7 @@ export function adminView(u) {
     <div class="field"><label class="lbl" for="np-p">Mot de passe temporaire</label><div class="row"><input id="np-p" name="pw" class="inp" value="${d.randomPw()}" required minlength="8"><button type="button" class="ib" data-act="gen-pw" aria-label="Générer un autre mot de passe">${ic('refresh', 18)}</button></div><span class="hint">À changer à la première connexion.</span></div>
     <button class="btn full">${ic('plus', 20)}Créer le compte</button>
   </form>
-  <div class="ck pad col"><div class="row between"><h2>L’équipe</h2>${pill(team.length + ' compte(s)', 'var(--neutral)')}</div>
+  <div class="ck pad col" style="box-shadow:5px 5px 0 var(--yellow)"><div class="row between"><h2 class="sec-t" style="margin:0">L’équipe</h2>${pill(team.length + ' compte(s)', 'var(--neutral)')}</div>
   <div class="list">${rows}</div><a class="btn2 sm" href="#/prof/annuaire" style="align-self:flex-start">${ic('users', 16)}Annuaire de l’équipe</a></div>
   </div></div>`);
 }

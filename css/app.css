@@ -392,7 +392,8 @@ a.bd:hover{color:var(--ink);transform:rotate(var(--rot,0deg)) translate(-1px,-1p
 /* carte bleue (formulaires de saisie) */
 .bcard{position:relative;overflow:hidden;background:var(--primary);color:#fff;border:var(--bw) solid var(--ink);border-radius:14px;box-shadow:5px 5px 0 var(--ink);padding:16px}
 .bcard .lbl,.bcard label{color:#fff}.bcard .hint{color:#DCE3FF}
-.bcard .inp{background:#fff}
+.bcard .inp,.bcard select,.bcard input,.bcard textarea{background:#fff;color:var(--ink)}
+.bcard input[type=checkbox]{accent-color:var(--yellow)}
 .bcard .btn{background:var(--yellow);color:var(--ink)}
 .bcard>*{position:relative}
 .bcard .w1-blob{position:absolute}
@@ -401,3 +402,7 @@ a.bd:hover{color:var(--ink);transform:rotate(var(--rot,0deg)) translate(-1px,-1p
 .ihead .who{width:44px;height:44px;flex:none;border-radius:999px;border:var(--bw) solid var(--ink);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;box-sizing:border-box;text-decoration:none;color:var(--ink)}
 @media(min-width:960px){.ihead{display:none}}
 .wl{padding:2px 14px}
+/* titres de section en grand (comme « Fréquentes ») */
+.sec-t{font-size:24px;font-weight:800;line-height:1.1;margin:10px 0 -2px;display:flex;align-items:center;gap:8px}
+button.bd{border:var(--bw) solid var(--ink)}
+.bcard h2{color:#fff}

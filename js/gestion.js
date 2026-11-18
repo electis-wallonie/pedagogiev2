@@ -133,16 +133,17 @@ export function locauxView(u, q) {
     return `<div class="li"><span class="av" style="width:40px;height:40px;background:var(--blue2)">${ic('door', 18)}</span><div class="grow"><div class="b">${esc(l.name)}</div><div class="small mut b" style="font-weight:600">${n ? `${n} créneau(x) par semaine` : 'Jamais utilisé'}</div></div>
     <button class="ib sm" data-act="loc-ren" data-id="${l.id}" aria-label="Renommer ${esc(l.name)}">${ic('edit', 16)}</button><button class="ib sm" data-act="loc-del" data-id="${l.id}" aria-label="Supprimer ${esc(l.name)}">${ic('trash', 16)}</button></div>`;
   }).join('');
-  const listCard = `<div class="ck pad col" id="salles"><div class="row between"><h2>${ic('door', 20)} Les salles de la mosquée</h2>${pill(L.length + ' local(aux)', 'var(--neutral)')}</div>
+  const listCard = `<div class="ck pad col" id="salles" style="box-shadow:5px 5px 0 var(--blue2)"><div class="row between"><h2 class="sec-t" style="margin:0">${ic('door', 24)} Les salles</h2>${pill(L.length + ' local(aux)', 'var(--neutral)')}</div>
     <p class="small mut b" style="font-weight:600">Ajoutez vos salles avec les noms que vous voulez (salle de prière, salle de classe, bureau, cuisine…).</p>
     <div class="list">${locRows || '<p class="small mut">Aucune salle pour le moment.</p>'}</div>
     <form class="row" data-form="loc-add"><label class="sr" for="la">Nom du local</label><input id="la" name="name" class="inp" placeholder="ex. Salle polyvalente" required><button class="btn sm">${ic('plus', 18)}Ajouter</button></form></div>`;
-  const finder = `<div class="ck pad col" style="background:var(--hi)"><h2>${ic('clock', 20)} Trouver un local libre</h2><p class="small mut b" style="font-weight:600">Ex. : un prof veut ouvrir une classe le samedi matin.</p>
+  const finder = `<div class="bcard col"><span class="w1-blob" aria-hidden="true"></span><h2>${ic('clock', 20)} Trouver un local libre</h2><p class="small b" style="font-weight:600;color:#DCE3FF">Ex. : un prof veut ouvrir une classe le samedi matin.</p>
     <div class="grid2" style="gap:8px"><div class="field" style="grid-column:1/-1"><label class="lbl" for="lf-d">Jour</label><select id="lf-d" class="inp" data-change="loc-find">${ORDER.map((k) => `<option value="${k}" ${k === 6 ? 'selected' : ''}>${DAYS[k]}</option>`).join('')}</select></div>
     <div class="field"><label class="lbl" for="lf-a">De</label><input id="lf-a" type="time" class="inp" value="09:00" data-change="loc-find"></div>
     <div class="field"><label class="lbl" for="lf-b">À</label><input id="lf-b" type="time" class="inp" value="12:00" data-change="loc-find"></div></div>
     <div id="lf-res">${freeList(6, 540, 720)}</div></div>`;
   return shell(u, 4, `<div class="page">${top('Locaux', 'Direction · emploi du temps des salles', '#/admin', L.length ? `<a class="btn sm" href="#/admin/locaux/pdf">${ic('dl', 18)}PDF</a>` : '')}
+  ${hero('Locaux de la mosquée', `${L.length} salle(s)`, { sub: `${usage().length} créneau(x) par semaine${nconf ? ` · ${nconf} conflit(s)` : ''}`, chip: days.length ? days.length + ' j' : '', chipSub: days.length ? 'utilisés' : '', shadow: nconf ? 'var(--pink)' : 'var(--mint)' })}
   ${L.length ? finder : ''}
   ${L.length ? `<div class="row wrap between" style="gap:8px"><div class="seg" style="flex:1 1 260px"><a href="#/admin/locaux" class="${v === 'salle' ? 'on' : ''}">Par salle</a><a href="#/admin/locaux?v=jour" class="${v === 'jour' ? 'on' : ''}">Par jour</a></div>
   <div class="row wrap" style="gap:8px">${pill('&nbsp;', 'var(--present)')}<span class="small b">Libre</span>${pill('&nbsp;', 'var(--absent)')}<span class="small b">Pris</span></div></div>

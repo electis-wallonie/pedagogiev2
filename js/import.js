@@ -1,6 +1,6 @@
 // Import d'une liste d'élèves depuis Excel (.xlsx) ou CSV — sans bibliothèque externe
 import * as d from './data.js';
-import { ACT, FORMS, CHANGE, esc, ic, pill, toast, todayISO, DAYS } from './ui.js';
+import { ACT, FORMS, CHANGE, esc, ic, pill, toast, todayISO, DAYS, hero } from './ui.js';
 import { shell } from './prof.js';
 
 // ---------- lecture .xlsx (zip + XML) ----------
@@ -165,16 +165,15 @@ export function importView(u) {
   const admin = d.isAdmin(u);
   let body = '';
   if (imp && imp.done) {
-    body = `<div class="ck pad col" style="background:var(--mint)"><h2>${imp.done.length} élève(s) importé(s)</h2>
-    <p class="b" style="font-weight:600">Chaque élève a reçu son code de suivi. Téléchargez la liste des codes pour les transmettre aux parents.</p>
-    <button class="btn" data-act="imp-codes">${ic('dl', 20)}Télécharger la liste des codes</button></div>
+    body = `${hero('Import terminé', `${imp.done.length} élève(s) importé(s)`, { sub: 'Chaque élève a reçu son code de suivi : transmettez-les aux parents.', shadow: 'var(--mint)', extra: `<button class="btn" data-act="imp-codes" style="background:var(--yellow);color:var(--ink)">${ic('dl', 20)}Télécharger la liste des codes</button>` })}
     <div class="ck pad" style="padding-top:4px;padding-bottom:4px;overflow-x:auto"><div class="list">${imp.done.map((s) => `<a class="li" href="#/prof/eleve/${s.id}"><span class="grow b">${esc(s.prenoms)} ${esc(s.nom)}</span><span class="small mut b">${esc(d.cls(s.classId).name)}</span><span class="code tiny">${esc(s.code)}</span></a>`).join('')}</div></div>
     <button class="btn2" data-act="imp-reset">Importer un autre fichier</button>`;
   } else if (imp && imp.rows) {
     const ok = imp.rows.filter((r) => !r.err && !r.dup);
     const newCls = [...new Set(ok.filter((r) => r.classe && !r.classId).map((r) => r.classe))];
     const noCls = ok.filter((r) => !r.classe).length;
-    body = `<div class="ck pad col"><div class="row between wrap"><h2>${esc(imp.name)}</h2>${pill(imp.rows.length + ' ligne(s)', 'var(--neutral)')}</div>
+    body = `${hero('Fichier · ' + esc(imp.name), `${ok.length} prêt(s) à importer`, { sub: `${imp.rows.length} ligne(s) lue(s)`, chip: imp.rows.filter((r) => r.err).length ? imp.rows.filter((r) => r.err).length + ' à corriger' : 'OK', shadow: ok.length ? 'var(--mint)' : 'var(--pink)' })}
+    <div class="ck pad col">
     ${imp.missing.length ? `<div class="err">Colonnes introuvables : ${imp.missing.map((k) => ({ nom: 'Nom', prenoms: 'Prénom', parent: 'Parent', age: 'Âge (ou Date de naissance)', tel: 'Téléphone', email: 'E-mail' }[k])).join(', ')}</div>` : ''}
     <div class="row wrap" style="gap:8px">${pill(ok.length + ' prêt(s) à importer', 'var(--mint)')}${pill(imp.rows.filter((r) => r.err).length + ' incomplet(s)', 'var(--absent)', 'var(--onabsent)')}${pill(imp.rows.filter((r) => r.dup).length + ' déjà présent(s)', 'var(--prev)')}</div>
     ${noCls ? `<div class="field"><label class="lbl" for="impc">Classe pour les ${noCls} élève(s) sans classe</label><select id="impc" name="defaultClass" form="impf" class="inp">${cls.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}${cls.length ? '' : '<option value="">(créez d’abord une classe)</option>'}</select></div>` : ''}
@@ -185,17 +184,18 @@ export function importView(u) {
     </tbody></table></div>
     <form id="impf" data-form="imp-go" class="row wrap"><button type="button" class="btn2" data-act="imp-reset">Annuler</button><span class="grow"></span><button class="btn" ${ok.length ? '' : 'disabled'}>${ic('upload', 20)}Importer ${ok.length} élève(s)</button></form>`;
   } else {
-    body = `<div class="ck pad col"><h2>1. Préparez le fichier Excel</h2>
+    body = `${hero('Importer des élèves', 'En 2 étapes', { sub: 'Un fichier Excel ou CSV, une ligne par élève. Les codes de suivi sont créés tout seuls.', shadow: 'var(--blue2)' })}
+    <h2 class="sec-t">1. Préparez le fichier</h2><div class="ck pad col">
     <p class="b" style="font-weight:600">Une ligne par élève. La 1re ligne contient les titres des colonnes, dans cet ordre (l’ordre conseillé ; l’application reconnaît aussi les colonnes dans un autre ordre) :</p>
     <button class="btn sm" data-act="imp-template" style="align-self:flex-start">${ic('dl', 18)}Télécharger le modèle Excel (.xlsx)</button>
     <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="background:var(--neutral)">${['#', 'Colonne', '', 'Exemple', 'À savoir'].map((h) => `<th style="padding:8px 10px;text-align:start">${h}</th>`).join('')}</tr></thead><tbody>
     ${COLS.map(([h, req, ex, help], i) => `<tr style="border-top:2px solid var(--neutral)"><td style="padding:8px 10px" class="b">${String.fromCharCode(65 + i)}</td><td style="padding:8px 10px;white-space:nowrap" class="b">${esc(h)}</td><td style="padding:8px 10px">${req ? pill('Obligatoire', 'var(--absent)', 'var(--onabsent)') : pill('Facultatif', 'var(--neutral)')}</td><td style="padding:8px 10px;white-space:nowrap">${esc(ex)}</td><td style="padding:8px 10px" class="small">${esc(help)}</td></tr>`).join('')}
     </tbody></table></div>
     <p class="small mut b" style="font-weight:600">Toutes les colonnes sont obligatoires. Une ligne incomplète est signalée et n’est pas importée : complétez-la dans le fichier puis importez à nouveau (les élèves déjà importés sont ignorés).</p></div>
-    <div class="ck pad col"><h2>2. Choisissez le fichier</h2>
+    <h2 class="sec-t">2. Choisissez le fichier</h2><div class="bcard col"><span class="w1-blob" aria-hidden="true"></span>
     <label class="btn" for="impfile" style="cursor:pointer">${ic('upload', 20)}Choisir un fichier Excel ou CSV</label>
     <input id="impfile" type="file" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="sr" data-change="imp-file">
-    <p class="small mut b" style="font-weight:600">Formats acceptés : .xlsx (Excel) et .csv. Pour un ancien fichier .xls, ouvrez-le dans Excel et enregistrez-le en .xlsx.</p>
+    <p class="small b" style="font-weight:600;color:#DCE3FF">Formats acceptés : .xlsx (Excel) et .csv. Pour un ancien fichier .xls, ouvrez-le dans Excel et enregistrez-le en .xlsx.</p>
     ${imp && imp.error ? `<div class="err" role="alert">${esc(imp.error)}</div>` : ''}</div>`;
   }
   return shell(u, 3, `<div class="page">
