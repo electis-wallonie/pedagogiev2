@@ -8,15 +8,15 @@ import { shell } from './prof.js';
 const rerender = () => window.dispatchEvent(new Event('hashchange'));
 const okMail = (m) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(m || '').trim());
 const logo = (s = 40) => `<span class="logo" style="width:${s}px;height:${s}px">${ic('moon', Math.round(s * 0.52), 2.6)}</span>`;
-const langBtn = () => `<button class="btn2 sm" data-act="lang" lang="${isAr ? 'fr' : 'ar'}">${ic('globe', 18)}<span data-notr dir="auto">${isAr ? 'Français' : 'العربية'}</span></button>`;
+const langBtn = () => `<button class="btn2 sm" data-act="lang" lang="${isAr ? 'fr' : 'ar'}" aria-label="${isAr ? 'Français' : 'العربية'}">${ic('globe', 18)}<span class="hide-sm" data-notr dir="auto">${isAr ? 'Français' : 'العربية'}</span></button>`;
 
 // ---------- navigation publique : 4 rubriques ----------
-const PUB = [['#/', 'clock', 'Prières'], ['#/imam', 'chat', 'Imam'], ['#/cours', 'book', 'Cours'], ['#/contact', 'mail', 'Contact']];
+const PUB = [['#/', 'clock', 'Prières'], ['#/imam', 'chat', 'Questions'], ['#/cours', 'book', 'Cours'], ['#/contact', 'mail', 'Contact']];
 export const mosqueName = () => { const m = d.D().mosque || {}; return m.name || (CFG && CFG.nom) || (MW && (MW.label || MW.name)) || 'Notre mosquée'; };
 export function pubShell(active, body) {
   if (!MW && !MW_ERR) loadMawaqit();
   return `<div class="page pub">
-  <div class="row wrap" style="gap:10px"><a href="#/" class="row" style="text-decoration:none;color:var(--ink);gap:10px">${logo(44)}<span class="b" style="font-size:20px" data-notr dir="auto">${esc(mosqueName())}</span></a><span class="grow"></span>${langBtn()}<a href="#/login" class="btn2 sm">${ic('lock', 16)}Espace équipe</a></div>
+  <div class="row" style="gap:8px"><a href="#/" class="row" style="text-decoration:none;color:var(--ink);gap:10px;flex:1;min-width:0">${logo(44)}<span class="b" style="font-size:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" data-notr dir="auto">${esc(mosqueName())}</span></a>${langBtn()}<a href="#/login" class="btn2 sm" aria-label="Espace équipe">${ic('lock', 16)}<span class="hide-sm">Espace équipe</span></a></div>
   <nav class="seg desk" aria-label="Rubriques">${PUB.map(([h, i, l], k) => `<a href="${h}" class="${k === active ? 'on' : ''}">${ic(i, 18)}&nbsp;${l}</a>`).join('')}</nav>
   ${body}</div>
   <nav class="tabbar" aria-label="Rubriques">${PUB.map(([h, i, l], k) => `<a href="${h}" class="${k === active ? 'on' : ''}"><span>${ic(i, 22)}</span>${l}</a>`).join('')}</nav>`;

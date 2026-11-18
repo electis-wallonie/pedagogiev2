@@ -102,7 +102,7 @@ export function locauxView(u) {
   ${missing.length ? `<div class="ck pad col"><h2>Classes sans local</h2><div class="list">${missing.map((c) => `<div class="li"><span class="grow b">${esc(c.name)}</span><button class="btn2 sm" data-act="loc-edit" data-id="${c.id}">${ic('door', 16)}Local utilisé</button></div>`).join('')}</div></div>` : ''}
   <div class="grid2 stack" style="align-items:start">
   <div class="ck pad col"><h2>${ic('clock', 20)} Trouver un local libre</h2><p class="small mut b" style="font-weight:600">Ex. : un prof veut ouvrir une classe le samedi matin.</p>
-    <div class="grid3" style="gap:8px"><div class="field"><label class="lbl" for="lf-d">Jour</label><select id="lf-d" class="inp" data-change="loc-find">${ORDER.map((k) => `<option value="${k}" ${k === 6 ? 'selected' : ''}>${DAYS[k]}</option>`).join('')}</select></div>
+    <div class="grid2" style="gap:8px"><div class="field" style="grid-column:1/-1"><label class="lbl" for="lf-d">Jour</label><select id="lf-d" class="inp" data-change="loc-find">${ORDER.map((k) => `<option value="${k}" ${k === 6 ? 'selected' : ''}>${DAYS[k]}</option>`).join('')}</select></div>
     <div class="field"><label class="lbl" for="lf-a">De</label><input id="lf-a" type="time" class="inp" value="09:00" data-change="loc-find"></div>
     <div class="field"><label class="lbl" for="lf-b">À</label><input id="lf-b" type="time" class="inp" value="12:00" data-change="loc-find"></div></div>
     <div id="lf-res">${freeList(6, 540, 720)}</div></div>
@@ -220,12 +220,12 @@ export function famillesView(u) {
   const cards = F.map((f) => {
     const kids = d.familyKids(f.id);
     return `<div class="ck pad col fam" style="gap:10px" data-q="${esc((f.name + ' ' + kids.map((k) => k.prenoms + ' ' + k.nom + ' ' + k.parent).join(' ')).toLowerCase())}">
-    <div class="row between wrap" style="gap:8px"><span class="b" style="font-size:18px">${esc(f.name)}</span><span class="row" style="gap:6px"><button type="button" class="btn2 sm" data-act="fam-pay" data-id="${f.id}" aria-label="Cotisation : ${eur(f.cotisation)}">${ic('euro', 16)}${eur(f.cotisation)}</button>${payBtn(f)}<button class="ib sm" data-act="fam-edit" data-id="${f.id}" aria-label="Modifier ${esc(f.name)}">${ic('edit', 16)}</button></span></div>
+    <div class="row between wrap" style="gap:8px"><span class="b" style="font-size:18px">${esc(f.name)}</span><span class="row wrap" style="gap:6px"><button type="button" class="btn2 sm" data-act="fam-pay" data-id="${f.id}" aria-label="Cotisation : ${eur(f.cotisation)}">${ic('euro', 16)}${eur(f.cotisation)}</button>${payBtn(f)}<button class="ib sm" data-act="fam-edit" data-id="${f.id}" aria-label="Modifier ${esc(f.name)}">${ic('edit', 16)}</button></span></div>
     <div class="row wrap" style="gap:6px">${kids.map((k, i) => `<a class="pill" href="#/prof/eleve/${k.id}" style="background:${ACC[i % 4]};text-decoration:none">${esc(k.prenoms.split(' ')[0])} · ${esc(d.cls(k.classId).name)}</a>`).join('') || '<span class="small mut">Aucun enfant</span>'}</div></div>`;
   }).join('');
   return shell(u, 2, `<div class="page">${top('Élèves', `${F.length} famille(s) · ${d.D().students.length} élève(s)`, null, `<button class="btn sm" data-act="fam-new">${ic('plus', 18)}Famille</button>`)}
   ${elevesSeg(1)}
-  <div class="grid3"><div class="ck stat" style="background:var(--blue2)"><div class="v" style="font-size:24px">${eur(c.theo)}</div><div class="l">cotisations prévues</div></div><div class="ck stat" style="background:var(--mint)"><div class="v" style="font-size:24px">${eur(c.real)}</div><div class="l">déjà payées</div></div><div class="ck stat" style="background:var(--pink)"><div class="v" style="font-size:24px">${eur(c.rest)}</div><div class="l">reste à payer</div></div></div>
+  <div class="grid3"><div class="ck stat" style="background:var(--blue2)"><div class="v" style="font-size:clamp(17px,5vw,24px);overflow-wrap:anywhere">${eur(c.theo)}</div><div class="l">cotisations prévues</div></div><div class="ck stat" style="background:var(--mint)"><div class="v" style="font-size:clamp(17px,5vw,24px);overflow-wrap:anywhere">${eur(c.real)}</div><div class="l">déjà payées</div></div><div class="ck stat" style="background:var(--pink)"><div class="v" style="font-size:clamp(17px,5vw,24px);overflow-wrap:anywhere">${eur(c.rest)}</div><div class="l">reste à payer</div></div></div>
   <p class="small mut b" style="font-weight:600">Une famille regroupe les fiches des frères et sœurs déjà inscrits (pas de compte à créer). Bouton 1 : montant de la cotisation. Bouton 2 : où en est le paiement (rouge = rien, orange = en partie, vert = tout).</p>
   ${lone.length ? `<div class="ck pad col" style="background:var(--hi)"><div class="row between wrap"><h2>${lone.length} élève(s) sans famille</h2><button class="btn sm" data-act="fam-auto">${ic('users', 18)}Regrouper automatiquement</button></div>
     <p class="small b" style="font-weight:600">« Regrouper automatiquement » crée une famille par nom de famille + prénom du parent. Vous pourrez corriger ensuite.</p>
@@ -310,7 +310,7 @@ export function financeTile() {
   const s = d.financeSummary();
   const up = s.solde >= 0;
   return `<a href="#/compta" class="ck pad col" style="gap:6px;text-decoration:none;color:var(--ink);background:${up ? 'var(--mint)' : 'var(--pink)'}"><span class="row between"><span class="b" style="font-size:18px">${ic('euro', 20)} Finances</span>${ic('chev', 18)}</span>
-  <span class="row" style="gap:8px;align-items:baseline"><span style="font-size:28px;font-weight:800">${up ? '▲' : '▼'} ${eur(s.solde)}</span><span class="small b">solde</span></span>
+  <span class="row wrap" style="gap:4px 8px;align-items:baseline"><span style="font-size:clamp(22px,6vw,28px);font-weight:800">${up ? '▲' : '▼'} ${eur(s.solde)}</span><span class="small b">solde</span></span>
   <span class="small b" style="font-weight:600">Recettes ${eur(s.rec)} · Dépenses ${eur(s.dep)} · dons, zakat, loyer, énergie…</span></a>`;
 }
 export function locauxTile() {

@@ -101,7 +101,7 @@ export function fiche(code, tab = 'apercu', q = null) {
   const desk = `<div class="seg desk" role="navigation" aria-label="Sections">${TABS.map(([id, , l]) => `<a href="${base}/${id}" class="${id === tab ? 'on' : ''}">${l}</a>`).join('')}</div>`;
   const mob = `<nav class="tabbar" aria-label="Sections">${TABS.map(([id, i, l]) => `<a href="${base}/${id}" class="${id === tab ? 'on' : ''}"><span>${ic(i, 22)}</span>${l}</a>`).join('')}</nav>`;
   return `<div class="page">
-  <div class="row between"><a href="#/cours" class="row" style="text-decoration:none;color:var(--ink)">${ic('back', 20)}${logo(36)}<span class="b">Cours</span></a><div class="row" style="gap:8px">${langBtn()}<a href="#/contact" class="btn2 sm">${ic('mail', 16)}Contact</a></div></div>
+  <div class="row between wrap" style="gap:8px"><a href="#/cours" class="row" style="text-decoration:none;color:var(--ink)">${ic('back', 20)}${logo(36)}<span class="b">Cours</span></a><div class="row" style="gap:8px">${langBtn()}<a href="#/contact" class="ib" aria-label="Contact">${ic('mail', 18)}</a></div></div>
   <div class="ck pad row">${av(initials(st), 60, 'var(--yellow)', 20)}<div class="grow"><h1 style="font-size:25px">${esc(st.prenoms)} ${esc(st.nom)}</h1>
   <div class="row wrap" style="gap:8px;margin-top:6px">${pill(esc(c ? c.name : ''), 'var(--blue2)')}</div></div></div>
   ${F.parentBadge(st)}

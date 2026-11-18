@@ -83,7 +83,7 @@ function bord(u, m, months) {
   const recent = ops(m).slice(0, 6);
   return `${top('Tableau de bord', `Bonjour ${esc(u.name)}`, `<div class="row wrap" style="gap:8px">${addBtns(m)}</div>`)}
   ${monthNav('bord', m, months)}
-  <div class="grid4">${kpi('Solde de l’association', sign(s.solde), s.solde >= 0 ? 'var(--mint)' : 'var(--pink)', 'depuis le début des comptes')}${kpi(`Recettes · ${monthLabel(m).split(' ')[0]}`, eur(r), 'var(--surface)')}${kpi(`Dépenses · ${monthLabel(m).split(' ')[0]}`, eur(e.total), 'var(--surface)')}${kpi('Résultat du mois', sign(r - e.total), r - e.total >= 0 ? 'var(--hi)' : 'var(--pink)')}</div>
+  <div class="kpis">${kpi('Solde de l’association', sign(s.solde), s.solde >= 0 ? 'var(--mint)' : 'var(--pink)', 'depuis le début des comptes')}${kpi(`Recettes · ${monthLabel(m).split(' ')[0]}`, eur(r), 'var(--surface)')}${kpi(`Dépenses · ${monthLabel(m).split(' ')[0]}`, eur(e.total), 'var(--surface)')}${kpi('Résultat du mois', sign(r - e.total), r - e.total >= 0 ? 'var(--hi)' : 'var(--pink)')}</div>
   <div class="ck pad col"><div class="row between wrap"><h2>${ic('pie', 20)} 12 derniers mois</h2><button class="btn2 sm" data-act="compta-csv" data-m="${m}">${ic('dl', 16)}Exporter le mois (Excel)</button></div>${chart(lastMonths(12))}</div>
   <div class="grid2 stack" style="align-items:start">
     <div class="ck pad col"><div class="row between"><h2>Dépenses du mois</h2><a class="small b" href="#/compta/depenses?m=${m}">Détail</a></div>${bars(expCats, '#FF5A5F')}</div>
@@ -111,7 +111,7 @@ function journal(u, m, months, q) {
   const tr = all.filter((o) => o.type === 'R').reduce((a, o) => a + o.amount, 0), td = all.filter((o) => o.type === 'D').reduce((a, o) => a + o.amount, 0);
   return `${top('Journal', 'Toutes les opérations du mois', `<div class="row wrap" style="gap:8px">${addBtns(m)}</div>`)}
   ${monthNav('journal', m, months)}
-  <div class="grid3">${kpi('Entrées', '+ ' + eur(tr), 'var(--mint)')}${kpi('Sorties', '− ' + eur(td), 'var(--pink)')}${kpi('Résultat', sign(tr - td), 'var(--hi)')}</div>
+  <div class="kpis">${kpi('Entrées', '+ ' + eur(tr), 'var(--mint)')}${kpi('Sorties', '− ' + eur(td), 'var(--pink)')}${kpi('Résultat', sign(tr - td), 'var(--hi)')}</div>
   <div class="row wrap" style="gap:8px"><div class="seg" style="flex:1 1 280px">${[['all', 'Tout'], ['rec', 'Recettes'], ['dep', 'Dépenses']].map(([k, l]) => `<a href="#/compta/journal?m=${m}&t=${k}" class="${t === k ? 'on' : ''}">${l}</a>`).join('')}</div><button class="btn2 sm" data-act="compta-csv" data-m="${m}">${ic('dl', 16)}Exporter (Excel)</button></div>
   <div class="field"><label class="sr" for="jq">Rechercher</label><input id="jq" class="inp" placeholder="Rechercher une opération…" data-filter=".op"></div>
   <div class="ck pad">${opsTable(list, true)}</div>
@@ -139,7 +139,7 @@ function cotisations(u, m, months, q) {
   const list = F.filter((f) => s === 'all' || (s === 'todo' ? f.status !== 'paid' && f.cotisation : f.status === s));
   const pct = c.theo ? Math.round((c.real / c.theo) * 100) : 0;
   return `${top('Cotisations de l’école', `${F.length} famille(s)`)}
-  <div class="grid3">${kpi('Prévu', eur(c.theo), 'var(--blue2)')}${kpi('Encaissé', eur(c.real), 'var(--mint)', pct + ' %')}${kpi('Reste à encaisser', eur(c.rest), 'var(--pink)')}</div>
+  <div class="kpis">${kpi('Prévu', eur(c.theo), 'var(--blue2)')}${kpi('Encaissé', eur(c.real), 'var(--mint)', pct + ' %')}${kpi('Reste à encaisser', eur(c.rest), 'var(--pink)')}</div>
   <div class="prog"><span style="width:${pct}%"></span></div>
   <div class="seg" style="overflow-x:auto">${[['all', 'Toutes'], ['todo', 'À relancer'], ['unpaid', 'Pas payé'], ['partial', 'Partiel'], ['paid', 'Payé']].map(([k, l]) => `<a href="#/compta/cotisations?s=${k}" class="${s === k ? 'on' : ''}">${l}</a>`).join('')}</div>
   <div class="field"><label class="sr" for="cq">Rechercher</label><input id="cq" class="inp" placeholder="Rechercher une famille…" data-filter=".fr"></div>
@@ -174,7 +174,7 @@ function rapports(u, m, months, q) {
   const rows = (o) => Object.entries(o).sort((a, b) => b[1] - a[1]).map(([l, v]) => `<tr><td>${esc(l)}</td><td style="text-align:end">${eur(v)}</td></tr>`).join('');
   return `${top('Rapports', 'Compte de résultat simplifié', `<div class="row wrap" style="gap:8px"><button class="btn2 sm" data-act="compta-csv" data-y="${y}">${ic('dl', 16)}Journal ${y} (Excel)</button><button class="btn2 sm" data-act="print">${ic('note', 16)}Imprimer</button></div>`)}
   <div class="seg">${years.map((x) => `<a href="#/compta/rapports?y=${x}" class="${x === y ? 'on' : ''}">Année ${x}</a>`).join('')}</div>
-  <div class="grid3">${kpi('Total recettes', eur(ti), 'var(--mint)')}${kpi('Total dépenses', eur(te), 'var(--pink)')}${kpi('Résultat', sign(ti - te), 'var(--hi)')}</div>
+  <div class="kpis">${kpi('Total recettes', eur(ti), 'var(--mint)')}${kpi('Total dépenses', eur(te), 'var(--pink)')}${kpi('Résultat', sign(ti - te), 'var(--hi)')}</div>
   <div class="grid2 stack" style="align-items:start">
     <div class="ck pad col"><h2>Recettes ${y}</h2><table class="tbl"><tbody>${rows(inc) || '<tr><td class="mut">—</td></tr>'}<tr class="b"><td>Total</td><td style="text-align:end">${eur(ti)}</td></tr></tbody></table></div>
     <div class="ck pad col"><h2>Dépenses ${y}</h2><table class="tbl"><tbody>${rows(exp) || '<tr><td class="mut">—</td></tr>'}<tr class="b"><td>Total</td><td style="text-align:end">${eur(te)}</td></tr></tbody></table></div>

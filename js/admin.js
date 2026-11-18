@@ -85,7 +85,7 @@ export function adminView(u) {
   const roles = creatable(u);
   return shell(u, 4, `<div class="page">
   <div class="top"><span class="logo">${ic('shield', 22, 2.6)}</span><div class="grow"><div class="small mut b">${d.roleLabel(u)}</div><h1>Direction</h1></div></div>
-  <div class="grid3">${publicTile()}${locauxTile()}${financeTile()}</div>
+  <div class="gridauto">${publicTile()}${locauxTile()}${financeTile()}</div>
   <div class="ck pad col" id="messages"><h2>${ic('mega', 22)} Message de la direction</h2>
   <p class="small mut b" style="font-weight:600">Affiché en haut de toutes les fiches élèves et des tableaux de bord de l’équipe, entre les deux dates choisies.</p>
   <form class="col" data-form="ann">
@@ -98,7 +98,7 @@ export function adminView(u) {
   <div class="grid2 stack" style="align-items:start">
   <form class="ck pad col" data-form="new-prof">
     <h2>Nouveau compte</h2>
-    ${roles.length > 1 ? `<fieldset style="border:0;padding:0;margin:0"><legend class="lbl">Type de compte</legend><div class="seg">${roles.map(([k, l], i) => `<label style="flex:1"><input type="radio" name="role" value="${k}" class="sr" ${i === 0 ? 'checked' : ''}><span class="rolebtn">${l}</span></label>`).join('')}</div></fieldset>
+    ${roles.length > 1 ? `<fieldset style="border:0;padding:0;margin:0"><legend class="lbl">Type de compte</legend><div class="seg roles">${roles.map(([k, l], i) => `<label style="flex:1"><input type="radio" name="role" value="${k}" class="sr" ${i === 0 ? 'checked' : ''}><span class="rolebtn">${l}</span></label>`).join('')}</div></fieldset>
     <p class="tiny mut b">Professeur : ses classes et ses élèves. Administrateur : gère toute l’école et la direction. Comptabilité : uniquement l’espace comptable (recettes, dépenses, cotisations, rapports).</p>` : '<input type="hidden" name="role" value="prof">'}
     <div class="field"><label class="lbl" for="np-n">Nom affiché</label><input id="np-n" name="name" class="inp" placeholder="ex. Imam Youssef" required></div>
     ${contactFields({}, 'np')}
