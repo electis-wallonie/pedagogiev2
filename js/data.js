@@ -238,8 +238,9 @@ export async function purgeExpired() {
       n.files = keep;
     }
   }
-  // Les notes de sourate (cahier de l'imam), même vocales, ne sont PAS concernées : elles restent tant que la
-  // sourate est en cours (vacances comprises) et ne s'effacent qu'à sa validation.
+  // Notes de sourate (cahier de l'imam) : J+30 au plus tard (texte et vocal), ou plus tôt si la sourate est validée.
+  for (const x of db.snotes || []) if ((x.at || '') < voiceLimit) { if (x.audioId) await delAudio(x.audioId).catch(() => {}); x.gone = true; changed = true; }
+  if (db.snotes && db.snotes.some((x) => x.gone)) db.snotes = db.snotes.filter((x) => !x.gone);
   for (const list of [db.notes, db.announcements || []]) {
     for (const x of list) if (x.audioId && (x.at || '') < voiceLimit) { await delAudio(x.audioId).catch(() => {}); x.audioId = null; x.audioGone = true; changed = true; }
   }
