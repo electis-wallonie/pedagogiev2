@@ -40,6 +40,7 @@ export async function seed() {
     const objs = db.objectives.filter((o) => o.level === level).slice(0, acquiredCount);
     objs.forEach((o, i) => { st.acquired[o.id] = daysAgo(60 - i * 8); });
     st.tel = '+32 470 00 ' + String(10 + db.students.length).padStart(2, '0') + ' ' + String(20 + db.students.length).padStart(2, '0');
+    st.email = (parent + '.' + nom).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z.]/g, '') + '@exemple.be';
     st.code = genCode(st, classe);
     db.students.push(st);
     return st;

@@ -42,13 +42,17 @@ function callBtn(s, small = true) {
   return `<a class="ib ${small ? 'sm' : ''}" href="${telHref(s.tel)}" aria-label="Appeler le parent de ${esc(s.prenoms.split(' ')[0])}" style="background:var(--mint);position:relative">${ic('phone', small ? 16 : 20)}</a>`;
 }
 function contactCard(s) {
-  if (!s.tel) return `<div class="ck flat pad row wrap" style="gap:10px">${ic('phone', 20)}<span class="grow b small">Aucun numéro de téléphone pour ce parent.</span><a class="btn2 sm" href="#/prof/eleve/${s.id}/edit">${ic('plus', 16)}Ajouter un numéro</a></div>`;
+  if (!s.tel && !s.email) return `<div class="ck flat pad row wrap" style="gap:10px">${ic('phone', 20)}<span class="grow b small">Ni téléphone ni e-mail pour ce parent.</span><a class="btn2 sm" href="#/prof/eleve/${s.id}/edit">${ic('plus', 16)}Compléter</a></div>`;
   const wa = waNum(s.tel);
   return `<div class="ck pad col" style="gap:10px"><div class="row between wrap"><span class="b">${ic('phone', 18)} Contact du parent</span><span class="small mut b" style="font-weight:600">Visible seulement par les profs et l’admin</span></div>
-  <div class="row wrap" style="gap:8px"><span class="code" style="font-size:20px">${esc(s.tel)}</span></div>
-  <div class="row wrap" style="gap:8px"><a class="btn" href="${telHref(s.tel)}" style="background:var(--mint);color:var(--ink)">${ic('phone', 20)}Appeler ${esc(s.parent)}</a>
-  <a class="btn2" href="sms:${String(s.tel).replace(/[^\d+]/g, '')}">${ic('mail', 20)}SMS</a>
-  ${wa ? `<a class="btn2" href="https://wa.me/${wa}" target="_blank" rel="noopener">${ic('chat', 20)}WhatsApp</a>` : ''}</div></div>`;
+  <div class="row wrap" style="gap:8px 16px">${s.tel ? `<span class="code" style="font-size:20px">${esc(s.tel)}</span>` : ''}${s.email ? `<span class="b" style="word-break:break-all">${esc(s.email)}</span>` : ''}</div>
+  <div class="row wrap" style="gap:8px">${s.tel ? `<a class="btn" href="${telHref(s.tel)}" style="background:var(--mint);color:var(--ink)">${ic('phone', 20)}Appeler ${esc(s.parent)}</a>
+  <a class="btn2" href="sms:${String(s.tel).replace(/[^\d+]/g, '')}">${ic('chat', 20)}SMS</a>
+  ${wa ? `<a class="btn2" href="https://wa.me/${wa}" target="_blank" rel="noopener">${ic('chat', 20)}WhatsApp</a>` : ''}` : ''}
+  ${s.email ? `<a class="btn2" href="mailto:${esc(s.email)}">${ic('mail', 20)}E-mail</a>` : ''}</div>
+  ${!s.tel || !s.email ? `<a class="small b" href="#/prof/eleve/${s.id}/edit">${ic('plus', 14)} Ajouter ${!s.tel ? 'le téléphone' : 'l’e-mail'}</a>` : ''}
+  ${s.adresse ? `<div class="small b" style="font-weight:600">${ic('home', 14)} ${esc(s.adresse)}</div>` : ''}
+  ${s.remarques ? `<div class="ck flat pad small b" style="background:var(--hi);font-weight:600;white-space:pre-wrap">${ic('alert', 14)} ${esc(s.remarques)}</div>` : ''}</div>`;
 }
 
 // ---------- tableau de bord ----------
@@ -354,7 +358,7 @@ export function eleves(u) {
   const body = `<div class="page">${top('Élèves', `${sts.length} élève(s)`, null, `<a class="btn sm" href="#/prof/eleve/new">${ic('plus', 18)}Élève</a>`)}
   ${d.isAdmin(u) ? elevesSeg(0) : ''}
   <div class="field"><label class="sr" for="q">Rechercher</label><input id="q" class="inp" placeholder="Rechercher un élève…" data-filter=".li"></div>
-  <div class="ck pad" style="padding-top:4px;padding-bottom:4px"><div class="list">${sts.map((s, k) => `<div class="li" data-q="${esc((s.prenoms + ' ' + s.nom + ' ' + s.parent + ' ' + d.cls(s.classId).name).toLowerCase())}">${av(initials(s), 42, ACC[k % 4], 14)}<a href="#/prof/eleve/${s.id}" class="grow" style="text-decoration:none;color:var(--ink)"><span class="b" style="display:block">${esc(s.prenoms)} ${esc(s.nom)}</span><span class="small mut b" style="font-weight:600">${esc(d.cls(s.classId).name)} · Parent : ${esc(s.parent)}${d.isAdmin(u) ? famPill(s) : ''}</span></a>${callBtn(s)}${ic('chev', 18)}</div>`).join('') || '<p class="mut small" style="padding:12px 0">Aucun élève.</p>'}</div></div></div>`;
+  <div class="ck pad" style="padding-top:4px;padding-bottom:4px"><div class="list">${sts.map((s, k) => `<div class="li" data-q="${esc((s.prenoms + ' ' + s.nom + ' ' + s.parent + ' ' + (s.email || '') + ' ' + d.cls(s.classId).name).toLowerCase())}">${av(initials(s), 42, ACC[k % 4], 14)}<a href="#/prof/eleve/${s.id}" class="grow" style="text-decoration:none;color:var(--ink)"><span class="b" style="display:block">${esc(s.prenoms)} ${esc(s.nom)}</span><span class="small mut b" style="font-weight:600">${esc(d.cls(s.classId).name)} · Parent : ${esc(s.parent)}${d.isAdmin(u) ? famPill(s) : ''}</span></a>${callBtn(s)}${ic('chev', 18)}</div>`).join('') || '<p class="mut small" style="padding:12px 0">Aucun élève.</p>'}</div></div></div>`;
   return shell(u, 2, body);
 }
 function studentForm(u, s, classId) {
@@ -367,20 +371,27 @@ function studentForm(u, s, classId) {
   <div class="field"><label class="lbl" for="sp">Prénom(s)</label><input id="sp" name="prenoms" class="inp" required value="${esc(s ? s.prenoms : '')}" autocomplete="off"><span class="hint">Tous les prénoms, séparés par un espace</span></div></div>
   <div class="grid2 stack"><div class="field"><label class="lbl" for="sg">Âge</label><input id="sg" name="age" type="number" min="2" max="99" inputmode="numeric" class="inp" required value="${s ? d.ageOf(s) ?? '' : ''}"><span class="hint">L’âge se met à jour tout seul chaque année.</span></div>
   <div class="field"><label class="lbl" for="sa">Prénom d’un parent</label><input id="sa" name="parent" class="inp" required value="${esc(s ? s.parent : '')}" autocomplete="off"></div></div>
-  <div class="field"><label class="lbl" for="stl">Téléphone du parent</label><input id="stl" name="tel" type="tel" inputmode="tel" class="inp code" value="${esc(s ? s.tel || '' : '')}" autocomplete="off" placeholder="ex. +32 470 12 34 56"><span class="hint">Visible seulement par les profs et l’admin (jamais sur la fiche des parents). Avec l’indicatif (+32, +33…), le bouton WhatsApp apparaît aussi.</span></div>
+  <div class="grid2 stack"><div class="field"><label class="lbl" for="stl">Téléphone du parent</label><input id="stl" name="tel" type="tel" inputmode="tel" class="inp code" required value="${esc(s ? s.tel || '' : '')}" autocomplete="off" placeholder="ex. +32 470 12 34 56"><span class="hint">Avec l’indicatif (+32, +33…), le bouton WhatsApp apparaît aussi.</span></div>
+  <div class="field"><label class="lbl" for="sml">E-mail du parent</label><input id="sml" name="email" type="email" inputmode="email" class="inp" required value="${esc(s ? s.email || '' : '')}" autocomplete="off" autocapitalize="none" placeholder="ex. karim.benali@gmail.com"></div></div>
+  <span class="hint" style="margin-top:-6px">Téléphone et e-mail : visibles seulement par les profs et l’admin, jamais sur la fiche des parents.</span>
+  <details ${s && (s.adresse || s.remarques) ? 'open' : ''}><summary class="small b" style="cursor:pointer">Infos complémentaires (facultatif) : adresse, santé, remarques</summary>
+  <div class="field" style="margin-top:8px"><label class="lbl" for="sad">Adresse</label><input id="sad" name="adresse" class="inp" value="${esc(s ? s.adresse || '' : '')}" autocomplete="off" placeholder="ex. Rue de la Station 12, 4000 Liège"></div>
+  <div class="field"><label class="lbl" for="srq">Santé / remarques</label><textarea id="srq" name="remarques" class="inp" placeholder="ex. allergie aux arachides, asthme, autorisé à rentrer seul…">${esc(s ? s.remarques || '' : '')}</textarea></div></details>
   <details ${s && s.naissance ? 'open' : ''}><summary class="small b" style="cursor:pointer">Date de naissance précise (facultatif)</summary><div class="field" style="margin-top:8px"><label class="lbl" for="sb">Date de naissance</label><input id="sb" name="naissance" type="date" class="inp" value="${s && s.naissance ? s.naissance : ''}"><span class="hint">Si elle est remplie, l’âge est calculé à partir d’elle.</span></div></details>
   ${s ? '' : '<div class="ck flat pad small b" style="background:var(--yellow);font-weight:600">Le code de suivi est créé automatiquement : classe, initiales, prénom du parent, âge, + 4 caractères de sécurité.</div>'}
   <button class="btn full">${s ? 'Enregistrer' : 'Ajouter l’élève'}</button></form>`;
 }
 export function eleveNew(u, q) {
-  return shell(u, 2, `<div class="page narrow">${top('Nouvel élève', '4 infos, le code se crée tout seul', q.get('c') ? `#/prof/classe/${q.get('c')}` : '#/prof/eleves')}${studentForm(u, null, q.get('c'))}</div>`);
+  return shell(u, 2, `<div class="page narrow">${top('Nouvel élève', 'Le code de suivi se crée tout seul', q.get('c') ? `#/prof/classe/${q.get('c')}` : '#/prof/eleves')}${studentForm(u, null, q.get('c'))}</div>`);
 }
 FORMS.student = (f, fd) => {
   const u = d.me();
   const id = f.dataset.id;
-  const v = { classId: fd.get('classId'), nom: (fd.get('nom') || '').trim(), prenoms: (fd.get('prenoms') || '').trim().replace(/\s+/g, ' '), naissance: fd.get('naissance') || null, parent: (fd.get('parent') || '').trim(), tel: (fd.get('tel') || '').trim() };
+  const v = { classId: fd.get('classId'), nom: (fd.get('nom') || '').trim(), prenoms: (fd.get('prenoms') || '').trim().replace(/\s+/g, ' '), naissance: fd.get('naissance') || null, parent: (fd.get('parent') || '').trim(), tel: (fd.get('tel') || '').trim(), email: (fd.get('email') || '').trim().toLowerCase(), adresse: (fd.get('adresse') || '').trim(), remarques: (fd.get('remarques') || '').trim() };
   const age = parseInt(fd.get('age'), 10);
   if (!v.nom || !v.prenoms || !v.parent || (!v.naissance && !(age > 0))) { toast('Merci de remplir tous les champs'); return; }
+  if (v.tel.replace(/[^\d]/g, '').length < 8) { toast('Indiquez le numéro de téléphone du parent'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email)) { toast('Indiquez une adresse e-mail valide'); return; }
   if (v.naissance) { v.age = null; v.ageAt = null; } else { v.age = age; v.ageAt = todayISO(); }
   const c = d.cls(v.classId);
   if (!d.canSeeClass(u, c)) return;

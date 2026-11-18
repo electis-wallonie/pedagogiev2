@@ -12,14 +12,14 @@ Application web installable (PWA) qui remplace les feuilles de suivi papier : **
 
 ## Fonctionnalités
 
-- **Téléphone du parent** : saisi à la création de l’élève (ou importé). Visible **uniquement** par les profs et l’admin, avec les boutons Appeler / SMS / WhatsApp sur la fiche élève, dans les listes et sur le récapitulatif de l’appel (absents). Jamais affiché aux parents.
+- **Téléphone et e-mail du parent** : obligatoires à la création de l’élève (ou importés). Visible **uniquement** par les profs et l’admin, avec les boutons Appeler / SMS / WhatsApp sur la fiche élève, dans les listes et sur le récapitulatif de l’appel (absents). Jamais affiché aux parents.
 - **Horaires des classes** : à la création d’une classe, on indique le nombre de cours par semaine puis le jour et l’heure de chacun (ex. mardi 10h, jeudi 17h30). « Prochain cours » s’affiche sur le tableau de bord, la page de la classe, la fiche élève (prof) et la fiche parent.
 - **Classes** : nom, jours, heures de début et de fin, couleur, niveau de départ.
 - **Locaux** (admin, Direction → Locaux) : liste des locaux, bouton « Local utilisé » sur chaque classe (local, jour, début, fin), planning de la semaine en rouge (utilisé) / vert (libre) avec uniquement les jours utilisés, signalement des conflits, et recherche d’un local libre sur un créneau.
 - **Compteur d’heures des profs** (admin) : chaque appel terminé ajoute la durée du cours au compteur du prof. Remis à zéro le 1er de chaque mois. Visible sur la Direction et la vue d’ensemble.
 - **Familles & cotisations** (admin, Élèves → Familles) : regrouper les frères et sœurs déjà inscrits (sans compte), ① montant de la cotisation, ② paiement (pas payé / partiel / payé). Regroupement automatique par nom + parent.
 - **Finances** (admin, Direction → Finances) : récap du solde ; Recettes (cotisations théoriques et réelles, dons ponctuels ou mensuels) ; Dépenses par mois (heures × taux horaire par prof, montant modifiable, autres dépenses) avec historique.
-- **Import Excel** (.xlsx ou .csv) : colonnes Classe, Nom, Prénom(s), Âge (ou Date de naissance), Parent. Les classes manquantes sont créées, les doublons ignorés, et la liste des codes est téléchargeable à la fin.
+- **Import Excel** (.xlsx ou .csv), modèle .xlsx téléchargeable dans l’app. Colonnes dans l’ordre : Classe, Nom*, Prénom(s)*, Âge*, Date de naissance, Parent*, Téléphone*, E-mail*, Adresse, Santé / remarques, Famille, Cotisation (€), Paiement, Montant versé (€) (* obligatoire). Les classes manquantes sont créées, les doublons ignorés, et la liste des codes est téléchargeable à la fin.
 - **Messages de la direction** (admin) : texte et/ou vocal, visibles entre deux dates en haut des fiches et des tableaux de bord.
 - **Français / arabe** : bouton de langue partout. En arabe, la mise en page passe de droite à gauche et les noms des sourates s’affichent en arabe. Les notes saisies par les utilisateurs ne sont pas traduites.
 - **Âge** à la place de la date de naissance : il se met à jour tout seul chaque année. Une date de naissance précise reste possible (facultatif).
