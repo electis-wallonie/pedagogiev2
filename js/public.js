@@ -1,6 +1,6 @@
 // Côté parents / élèves : accueil avec le code, fiche en lecture seule, installation
 import * as d from './data.js';
-import { schedLabel, nextLabel } from './ui.js';
+import { schedLabel, nextLabel, brandLogo } from './ui.js';
 import { ACT, FORMS, esc, ic, av, pill, fdate, flong, toast, openModal, initials } from './ui.js';
 import * as F from './fiche.js';
 import { annoncesHtml } from './annonces.js';
@@ -10,7 +10,7 @@ export const langBtn = () => `<button class="btn2 sm" data-act="lang" lang="${is
 
 let lastError = null;
 
-const logo = (s = 44) => `<span class="logo" style="width:${s}px;height:${s}px">${ic('book', Math.round(s * 0.52), 2.6)}</span>`;
+const logo = (s = 44) => brandLogo(s);
 const blobs = () => `<div class="hero" aria-hidden="true">
 <i style="width:230px;height:230px;border-radius:999px;background:var(--yellow);left:-40px;top:20px"></i>
 <i style="width:150px;height:150px;border-radius:24px;background:var(--blue2);right:20px;top:46px;transform:rotate(12deg)"></i>
@@ -93,7 +93,6 @@ export function fiche(code, tab = 'apercu', q = null) {
       <a href="${base}/coran" class="ck stat" style="background:var(--yellow);text-decoration:none;color:var(--ink)"><div class="v">${k.v}</div><div class="l">sourates validées</div></a>
       <a href="${base}/langue" class="ck stat" style="background:var(--blue2);text-decoration:none;color:var(--ink)"><div class="v">${got}/${objs.length}</div><div class="l">objectifs</div></a>
       <a href="${base}/presence" class="ck stat" style="background:var(--mint);text-decoration:none;color:var(--ink)"><div class="v">${p.rate === null ? '—' : p.rate + '%'}</div><div class="l">présence</div></a></div>
-      ${d.nextCourse(c) ? `<div class="ck pad col" style="gap:4px;background:var(--blue2)"><span class="tiny b">PROCHAIN COURS</span><span class="b" style="font-size:21px">${nextLabel(d.nextCourse(c))}</span><span class="small b" style="font-weight:600">${esc(c.name)} · ${schedLabel(d.slotsOf(c))}</span></div>` : ''}
       ${(() => { const t = new Date(); t.setMinutes(t.getMinutes() - t.getTimezoneOffset()); const today = t.toISOString().slice(0, 10); const dv = d.notesForStudent(st).filter((n) => n.kind === 'devoir' && n.due >= today).sort((a, b) => a.due.localeCompare(b.due))[0]; return dv ? `<a href="${base}/notes" class="ck pad col" style="gap:6px;background:var(--mint);text-decoration:none;color:var(--ink)"><span class="tiny b">${ic('book', 14)} DEVOIRS</span><span class="b" style="font-size:19px">Pour le ${fdate(dv.due, { weekday: 'long', day: 'numeric', month: 'long' })}</span>${dv.text ? `<span data-notr dir="auto" style="white-space:pre-wrap;font-weight:500">${esc(dv.text)}</span>` : ''}${(dv.files || []).length || dv.audioId ? '<span class="small b">+ pièce jointe ou vocal dans Notes</span>' : ''}</a>` : ''; })()}
       <h2>Sourate en cours</h2>${F.enCoursCards(st, 'p-sour')}
       ${last ? `<div class="ck pad row between wrap"><div><div class="b">Dernier cours</div><div class="small mut b" style="font-weight:600">${flong(last.date)}</div></div>${pill(last.s === 'P' ? 'Présent' : last.s === 'A' ? 'Absent à ce cours' : 'Absent · prévenu', `var(--${last.s === 'P' ? 'present' : last.s === 'A' ? 'absent' : 'prev'})`, `var(--on${last.s === 'P' ? 'present' : last.s === 'A' ? 'absent' : 'prev'})`)}</div>` : ''}
@@ -107,9 +106,10 @@ export function fiche(code, tab = 'apercu', q = null) {
   const mob = `<nav class="tabbar" aria-label="Sections">${TABS.map(([id, i, l]) => `<a href="${base}/${id}" class="${id === tab ? 'on' : ''}"><span>${ic(i, 22)}</span>${l}</a>`).join('')}</nav>`;
   return `<div class="page">
   <div class="row between wrap" style="gap:8px"><a href="#/cours" class="row" style="text-decoration:none;color:var(--ink)">${ic('back', 20)}${logo(36)}<span class="b">Cours</span></a><div class="row" style="gap:8px">${langBtn()}<a href="#/contact" class="ib" aria-label="Contact">${ic('mail', 18)}</a></div></div>
-  <div class="ck pad row">${av(initials(st), 60, 'var(--yellow)', 20)}<div class="grow"><h1 style="font-size:25px">${esc(st.prenoms)} ${esc(st.nom)}</h1>
-  <div class="row wrap" style="gap:8px;margin-top:6px">${pill(esc(c ? c.name : ''), 'var(--blue2)')}</div></div></div>
-  ${F.parentBadge(st)}
+  ${(() => { const nx = c && d.nextCourse(c); const k = nx ? Math.round((new Date(nx.when.getFullYear(), nx.when.getMonth(), nx.when.getDate()) - new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate())) / 864e5) : null;
+    return `<div class="ck fid"><div class="row fid-in">${av(initials(st), 60, 'var(--yellow)', 20)}<div class="grow" style="min-width:0"><h1 style="font-size:24px">${esc(st.prenoms)} ${esc(st.nom)}</h1>
+  <div class="row wrap" style="gap:6px;margin-top:6px">${pill(esc(c ? c.name : ''), 'var(--blue2)')}${d.ageOf(st) != null ? pill(`${d.ageOf(st)} ans`, 'var(--surface)') : ''}</div>${st.parent ? `<div style="margin-top:6px">${F.parentBadge(st)}</div>` : ''}</div></div>
+  ${nx ? `<div class="fid-nx">${ic('clock', 18)}<span class="col grow" style="gap:0;min-width:0"><span class="fid-l">Prochain cours</span><span class="b">${nextLabel(nx)}</span></span>${k >= 2 ? `<span class="fid-k">dans ${k} j</span>` : ''}</div>` : ''}</div>`; })()}
   ${tab === 'apercu' ? annoncesHtml() : ''}
   ${desk}<div class="col" style="gap:14px">${body}</div></div>${mob}`;
 }

@@ -2,6 +2,7 @@
 // familles, locaux, comptes, import. Fusionné dans le dictionnaire principal par i18n.js.
 // Les contenus saisis (noms, notes…) ne sont pas traduits.
 export const AR2 = {
+  'Prochain cours': 'الحصة القادمة',
   'ex. Inscription de mon fils, don, horaires…': 'مثلًا: تسجيل ابني، تبرّع، المواقيت…', '3. Votre message': '3. رسالتك',
   'Faire une demande d’inscription': 'طلب التسجيل', 'Demande d’inscription': 'طلب التسجيل', 'Remplissez ce formulaire : la mosquée étudie votre demande et vous recontacte.': 'املأ هذه الاستمارة: يدرس المسجد طلبك ثم يتصل بك.', 'Cours souhaité': 'الدرس المطلوب', 'Pour quelle année ?': 'لأي سنة؟', 'Cette année': 'هذه السنة', 'L’année prochaine': 'السنة القادمة', 'L’élève': 'التلميذ', 'Parent ou responsable': 'الولي أو المسؤول', 'Pour un adulte qui s’inscrit lui-même, indiquez votre propre nom.': 'إن كنت بالغًا تسجّل نفسك، اكتب اسمك.', 'Nom et prénom': 'الاسم واللقب', 'Âge': 'العمر', 'Message': 'رسالة', '(facultatif)': '(اختياري)', 'Vos coordonnées servent uniquement à la mosquée pour traiter cette demande.': 'تُستعمل معلوماتك فقط من طرف المسجد لمعالجة هذا الطلب.', 'Envoyer la demande': 'إرسال الطلب', 'Demande envoyée': 'تم إرسال الطلب', 'Merci ! La mosquée a bien reçu votre demande d’inscription. Elle vous recontactera par téléphone ou par e-mail.': 'شكرًا! استلم المسجد طلب تسجيلك وسيتصل بك هاتفيًا أو بالبريد الإلكتروني.', 'Retour aux cours': 'العودة إلى الدروس', 'Demandes d’inscription': 'طلبات التسجيل', 'Aucune en attente': 'لا طلبات معلّقة', 'Envoyées depuis l’onglet Cours du site public': 'مرسلة من قسم الدروس في الموقع العام', 'Inscriptions en attente': 'تسجيلات معلّقة', 'Accepter et créer l’élève': 'قبول وإنشاء التلميذ', 'Refuser': 'رفض', 'En attente': 'معلّق', 'Acceptée': 'مقبول', 'Retenue': 'محجوز', 'Refusée': 'مرفوض', 'Classe': 'القسم', 'Traitées': 'معالجة', 'Toutes': 'الكل',
   'Mon suivi': 'متابعتي', 'Entrez le code donné par l’enseignant.': 'أدخل الرمز الذي أعطاه المعلّم.', 'Voir la fiche': 'عرض الملف', 'Nos cours': 'دروسنا', 'S’inscrire : écrire à la direction': 'التسجيل: راسل الإدارة', 'Code introuvable. Vérifiez chaque lettre, ou demandez-le à l’enseignant.': 'الرمز غير موجود. تحقّق من كل حرف أو اطلبه من المعلّم.', 'Se souvenir de ce code sur cet appareil': 'تذكّر هذا الرمز على هذا الجهاز',
@@ -160,6 +161,7 @@ export const AR2 = {
 };
 const D = (h, m) => (m ? `${h} س ${m} د` : `${h} س`);
 export const RULES2 = [
+  [/^dans (\d+) j$/, (m) => `بعد ${m[1]} أيام`],
   [/^(\d+) en attente$/, (m) => `${m[1]} في الانتظار`],
   [/^Reçue le (.+)$/, (m) => `وصل في ${m[1]}`],
   [/^Retenir pour (.+)$/, (m) => `حجز لسنة ${m[1]}`],

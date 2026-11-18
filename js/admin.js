@@ -7,7 +7,7 @@ import { locauxTile, financeTile, hoursPill } from './gestion.js';
 import { contactFields, readContact } from './contact.js';
 import { publicTile, teamHost, mosqueName, loadMawaqit, mawaqitData } from './mosquee.js';
 import { demandesTile, pending } from './demandes.js';
-import { hero } from './ui.js';
+import { hero, brandLogo } from './ui.js';
 
 const go = (h) => { if (location.hash === h) window.dispatchEvent(new Event('hashchange')); else location.hash = h; };
 let loginErr = false;
@@ -16,7 +16,7 @@ export function loginView() {
   const err = loginErr; loginErr = false;
   if (!mawaqitData()) loadMawaqit();
   return `<div class="page narrow" style="padding-top:30px">
-  <div class="row">${teamHost() ? '' : `<a href="#/" class="ib" aria-label="Retour">${ic('back', 20)}</a>`}<span class="logo">${ic('moon', 22, 2.6)}</span><span class="grow col" style="gap:0"><span class="b" style="font-size:18px">Espace équipe</span><span class="small mut b" data-notr dir="auto">${esc(mosqueName())}</span></span>${langBtn()}</div>
+  <div class="row">${teamHost() ? '' : `<a href="#/" class="ib" aria-label="Retour">${ic('back', 20)}</a>`}${brandLogo(44)}<span class="grow col" style="gap:0"><span class="b" style="font-size:18px">Espace équipe</span><span class="small mut b" data-notr dir="auto">${esc(mosqueName())}</span></span>${langBtn()}</div>
   <form class="bcard col" data-form="login"><span class="w1-blob" aria-hidden="true"><i></i><i></i></span>
     <span class="col" style="gap:2px;padding-inline-end:70px"><h1 style="margin:0;color:#fff;font-size:24px">Connexion</h1><span class="small b" style="font-weight:600">Réservé à la direction, à la comptabilité et aux professeurs.</span></span>
     <div class="field"><label class="lbl" for="lg">Identifiant</label><input id="lg" name="login" class="inp" autocomplete="username" autocapitalize="none" required></div>

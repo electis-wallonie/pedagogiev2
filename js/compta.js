@@ -2,7 +2,7 @@
 // Accessible au compte « Comptabilité » et aux administrateurs. Pas de classes ni d'élèves ici : que la trésorerie.
 import * as d from './data.js';
 import { locale } from './i18n.js';
-import { ACT, esc, ic, av, pill, fdate, toast, openModal, todayISO, hero, band, bands } from './ui.js';
+import { ACT, esc, ic, av, pill, fdate, toast, openModal, todayISO, hero, band, bands, brandLogo } from './ui.js';
 import { eur, monthLabel, entryForm, entryList, teacherRows, PAY } from './gestion.js';
 import { myContactCard } from './contact.js';
 import { comptaPending } from './demandes.js';
@@ -12,11 +12,11 @@ const MOB = ['bord', 'journal', 'recettes', 'depenses', 'plus'];
 export function comptaShell(u, active, body) {
   const link = (k, i, l, cls) => `<a class="${cls} ${k === active ? 'on' : ''}" href="#/compta/${k}">${ic(i, 20)}${l}</a>`;
   return `<div class="shell compta"><nav class="side" aria-label="Comptabilité">
-  <div class="row" style="padding:0 6px 16px"><span class="logo" style="background:var(--mint)">${ic('euro', 22, 2.6)}</span><span class="b" style="font-size:19px">Comptabilité</span></div>
+  <div class="row" style="padding:0 6px 16px">${brandLogo(44)}<span class="b" style="font-size:19px">Comptabilité</span></div>
   ${NAV.map(([k, i, l]) => link(k, i, l, 'nav')).join('')}
   ${d.isAdmin(u) ? `<a class="sub" href="#/admin" style="margin-top:10px">${ic('back', 16)}Retour à la direction</a>` : ''}
   <span class="grow"></span><div class="row" style="padding:8px 6px">${av(u.name.split(' ').map((w) => w[0]).join('').slice(0, 2), 40, 'var(--mint)', 13)}<div class="grow"><div class="b small">${esc(u.name)}</div><div class="tiny mut b">${d.roleLabel(u)}</div></div><button class="ib sm" data-act="logout" aria-label="Se déconnecter">${ic('out', 16)}</button></div>
-  </nav><main class="main"><header class="ihead"><span class="logo" style="width:44px;height:44px;background:var(--mint)">${ic('euro', 23, 2.6)}</span><span class="col grow" style="gap:0;min-width:0"><span class="tiny b mut" style="letter-spacing:1.2px">ESPACE ÉQUIPE</span><span class="b" style="font-size:17px;line-height:1.1">Comptabilité</span></span><button class="ib" data-act="lang" aria-label="Langue">${ic('globe', 18)}</button><a class="who" href="#/compta/compte" style="background:var(--mint)" aria-label="${esc(u.name)}">${esc(u.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase())}</a></header>${body}</main>
+  </nav><main class="main"><header class="ihead">${brandLogo(44)}<span class="col grow" style="gap:0;min-width:0"><span class="tiny b mut" style="letter-spacing:1.2px">ESPACE ÉQUIPE</span><span class="b" style="font-size:17px;line-height:1.1">Comptabilité</span></span><button class="ib" data-act="lang" aria-label="Langue">${ic('globe', 18)}</button><a class="who" href="#/compta/compte" style="background:var(--mint)" aria-label="${esc(u.name)}">${esc(u.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase())}</a></header>${body}</main>
   <nav class="tabbar" aria-label="Comptabilité">${MOB.map((k) => { const [, i, l] = k === 'plus' ? ['plus', 'grid', 'Plus'] : NAV.find((x) => x[0] === k); return `<a class="${k === active || (k === 'plus' && !MOB.includes(active)) ? 'on' : ''}" href="#/compta/${k}"><span>${ic(i, 22)}</span>${l === 'Tableau de bord' ? 'Bord' : l}</a>`; }).join('')}</nav></div>`;
 }
 const top = (title, sub, right = '') => `<div class="top"><div class="grow">${sub ? `<div class="small mut b">${sub}</div>` : ''}<h1>${title}</h1></div>${right}</div>`;

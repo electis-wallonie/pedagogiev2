@@ -48,6 +48,8 @@ const P = {
   sheet: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/>', key: '<circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3L21 2M17 6l3 3M14 9l2 2"/>',
 };
 const FLIP = new Set(['back', 'chev', 'arrow', 'send']);
+// Logo de l’app (pastille bleue, arche jaune, croissant et étoile)
+export const brandLogo = (s = 44) => `<svg class="brand" width="${s}" height="${s}" viewBox="0 0 48 48" role="img" aria-label="Logo"><rect x="2" y="2" width="44" height="44" rx="13" fill="#1F4FFF" stroke="#0B1F66" stroke-width="3"/><path d="M13 40V24a11 11 0 0 1 22 0v16z" fill="#FFD400" stroke="#0B1F66" stroke-width="3" stroke-linejoin="round"/><path d="M27.5 23.5a5 5 0 1 1-5.6-6.6a4 4 0 1 0 5.6 6.6z" fill="#0B1F66"/><circle cx="30" cy="14" r="2" fill="#FFFFFF"/></svg>`;
 export function ic(n, s = 22, w = 2.4) {
   return `<svg${FLIP.has(n) ? ' class="fl"' : ''} width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n] || ''}</svg>`;
 }

@@ -1,13 +1,13 @@
 // Espace public de la mosquée (sans compte) : Prières (Mawaqit) · Imam · Cours · Contact
 // + réglages côté direction : nom de la mosquée, lien Mawaqit, destinataires de Contact, questions à l'imam
 import * as d from './data.js';
-import { ACT, FORMS, esc, ic, pill, toast, openModal, closeModal, ask } from './ui.js';
+import { ACT, FORMS, esc, ic, pill, toast, openModal, closeModal, ask, brandLogo } from './ui.js';
 import { isAr, locale } from './i18n.js';
 import { shell } from './prof.js';
 
 const rerender = () => window.dispatchEvent(new Event('hashchange'));
 const okMail = (m) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(m || '').trim());
-const logo = (s = 40) => `<span class="logo" style="width:${s}px;height:${s}px">${ic('moon', Math.round(s * 0.52), 2.6)}</span>`;
+const logo = (s = 40) => brandLogo(s);
 const langBtn = () => `<button class="btn2 sm" data-act="lang" lang="${isAr ? 'fr' : 'ar'}" aria-label="${isAr ? 'Français' : 'العربية'}">${ic('globe', 18)}<span class="hide-sm" data-notr dir="auto">${isAr ? 'Français' : 'العربية'}</span></button>`;
 
 // ---------- navigation publique : 4 rubriques ----------

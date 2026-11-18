@@ -1,6 +1,6 @@
 // Espace professeur : classes, élèves, appel, Coran, objectifs, notes, réglages
 import * as d from './data.js';
-import { hero, band, bands, btabs, untilLabel } from './ui.js';
+import { hero, band, bands, btabs, untilLabel, brandLogo } from './ui.js';
 import { ACT, FORMS, CHANGE, esc, ic, av, pill, fdate, flong, fshort, toast, openModal, closeModal, refreshModal, copyText, todayISO, daysSince,
   STATUS, COLORS, COLOR_NAMES, ACC, DAYS, schedLabel, nextLabel, initials, fullName, takePending, msgHtml, composer, hydrateAudio , ask, askText, takeFiles, pending, pendingFiles , devoirTag } from './ui.js';
 import * as F from './fiche.js';
@@ -25,12 +25,12 @@ export function shell(u, active, body) {
   nav.push(['prof/reglages', 'gear', 'Réglages', 3]);
   const cl = d.myClasses(u).map((c) => `<a class="sub" href="#/prof/classe/${c.id}"><span style="width:14px;height:14px;border-radius:5px;border:2px solid var(--ink);background:${colorOf(c)}"></span><span class="grow">${esc(c.name)}</span><span class="mut">${d.studentsOf(c.id).length}</span></a>`).join('');
   return `<div class="shell"><nav class="side" aria-label="Navigation">
-  <div class="row" style="padding:0 6px 16px"><span class="logo">${ic('book', 22, 2.6)}</span><span class="b" style="font-size:20px">Suivi</span>${admin ? pill(d.isSuper(u) ? 'Méga admin' : 'Admin', 'var(--yellow)') : ''}</div>
+  <div class="row" style="padding:0 6px 16px">${brandLogo(44)}<span class="b" style="font-size:20px">Suivi</span>${admin ? pill(d.isSuper(u) ? 'Méga admin' : 'Admin', 'var(--yellow)') : ''}</div>
   ${nav.map(([h, i, l, k]) => `<a class="nav ${k === active ? 'on' : ''}" href="#/${h}">${ic(i, 20)}${l}</a>`).join('')}
   <div class="tiny mut b" style="padding:18px 14px 4px">${admin ? 'TOUTES LES CLASSES' : 'MES CLASSES'}</div>${cl}
   <a class="sub" href="#/prof/classes?new=1" style="color:var(--primary)">${ic('plus', 16)}Nouvelle classe</a>
   <span class="grow"></span><div class="row" style="padding:8px 6px">${av(u.name.split(' ').map((w) => w[0]).join('').slice(0, 2), 40, 'var(--yellow)', 13)}<div class="grow"><div class="b small">${esc(u.name)}</div><div class="tiny mut b">${d.roleLabel(u)}</div></div><button class="ib sm" data-act="lang" aria-label="Langue">${ic('globe', 16)}</button><button class="ib sm" data-act="logout" aria-label="Se déconnecter">${ic('out', 16)}</button></div>
-  </nav><main class="main"><header class="ihead"><span class="logo" style="width:44px;height:44px">${ic('moon', 23, 2.6)}</span><span class="col grow" style="gap:0;min-width:0"><span class="tiny b mut" style="letter-spacing:1.2px">ESPACE ÉQUIPE</span><span class="b" style="font-size:17px;line-height:1.1">${d.roleLabel(u)}</span></span><button class="ib" data-act="lang" aria-label="Langue">${ic('globe', 18)}</button><a class="who" href="#/prof/reglages" style="background:var(--pink)" aria-label="${esc(u.name)}">${esc(u.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase())}</a></header>${body}</main>
+  </nav><main class="main"><header class="ihead">${brandLogo(44)}<span class="col grow" style="gap:0;min-width:0"><span class="tiny b mut" style="letter-spacing:1.2px">ESPACE ÉQUIPE</span><span class="b" style="font-size:17px;line-height:1.1">${d.roleLabel(u)}</span></span><button class="ib" data-act="lang" aria-label="Langue">${ic('globe', 18)}</button><a class="who" href="#/prof/reglages" style="background:var(--pink)" aria-label="${esc(u.name)}">${esc(u.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase())}</a></header>${body}</main>
   <nav class="tabbar" aria-label="Navigation">${nav.map(([h, i, l, k]) => `<a class="${k === active ? 'on' : ''}" href="#/${h}"><span>${ic(i, 22)}</span>${l}</a>`).join('')}</nav></div>`;
 }
 const top = (title, sub, back, right = '') => `<div class="top">${back ? `<a href="${back}" class="ib" aria-label="Retour">${ic('back', 20)}</a>` : ''}<div class="grow">${sub ? `<div class="small mut b">${sub}</div>` : ''}<h1>${title}</h1></div>${right}</div>`;
@@ -46,7 +46,7 @@ function callBtn(s, small = true) {
 function contactCard(s) {
   if (!s.tel && !s.email) return `<div class="ck flat pad row wrap" style="gap:10px">${ic('phone', 20)}<span class="grow b small">Ni téléphone ni e-mail pour ce parent.</span><a class="btn2 sm" href="#/prof/eleve/${s.id}/edit">${ic('plus', 16)}Compléter</a></div>`;
   const wa = waNum(s.tel);
-  return `<div class="ck pad col" style="gap:10px"><div class="row between wrap"><span class="b">${ic('phone', 18)} Contact du parent</span><span class="small mut b" style="font-weight:600">Visible seulement par les profs et l’admin</span></div>
+  return `<div class="ck pad col" style="gap:10px"><div class="row between wrap"><span class="b">${ic('phone', 18)} <span>Contact du parent</span>${s.parent ? ` · <bdi>${esc(s.parent)}</bdi>` : ''}</span><span class="small mut b" style="font-weight:600">Visible seulement par les profs et l’admin</span></div>
   <div class="row wrap" style="gap:8px 16px">${s.tel ? `<span class="code" style="font-size:20px">${esc(s.tel)}</span>` : ''}${s.email ? `<span class="b" style="word-break:break-all">${esc(s.email)}</span>` : ''}</div>
   <div class="row wrap" style="gap:8px">${s.tel ? `<a class="btn" href="${telHref(s.tel)}" style="background:var(--mint);color:var(--ink)">${ic('phone', 20)}Appeler ${esc(s.parent)}</a>
   <a class="btn2" href="sms:${String(s.tel).replace(/[^\d+]/g, '')}">${ic('chat', 20)}SMS</a>
@@ -489,9 +489,8 @@ export function eleve(u, id, tab = 'coran', q = null) {
   else if (tab === 'presence') body = F.presence(s);
   else body = F.notes(s, true);
   return shell(u, 2, `<div class="page">
-  <div class="top"><a href="#/prof/classe/${c.id}" class="ib" aria-label="Retour">${ic('back', 20)}</a>${av(initials(s), 56, 'var(--yellow)', 19)}<div class="grow"><h1 style="font-size:24px">${esc(s.prenoms)} ${esc(s.nom)}</h1><div class="row wrap" style="gap:8px;margin-top:4px">${pill(esc(c.name), colorOf(c))}${d.nextCourse(c) ? `<span class="small b">Prochain cours : ${nextLabel(d.nextCourse(c))}</span>` : ''}</div></div>
+  <div class="top"><a href="#/prof/classe/${c.id}" class="ib" aria-label="Retour">${ic('back', 20)}</a>${av(initials(s), 56, 'var(--yellow)', 19)}<div class="grow"><h1 style="font-size:24px">${esc(s.prenoms)} ${esc(s.nom)}</h1><div class="row wrap" style="gap:8px;margin-top:4px">${pill(esc(c.name), colorOf(c))}${d.ageOf(s) != null ? pill(`${d.ageOf(s)} ans`, 'var(--surface)') : ''}${d.nextCourse(c) ? `<span class="small b">Prochain cours : ${nextLabel(d.nextCourse(c))}</span>` : ''}</div></div>
   <a class="ib" href="#/prof/eleve/${id}/edit" aria-label="Modifier l’élève">${ic('edit', 18)}</a></div>
-  ${F.parentBadge(s)}
   ${contactCard(s)}
   <div class="ck flat row" style="padding:8px 8px 8px 14px"><span class="grow code small">${esc(s.code)}</span><button class="ib sm" data-act="copy" data-t="${esc(s.code)}" aria-label="Copier le code">${ic('copy', 16)}</button><button class="ib sm" data-act="share" data-id="${s.id}" aria-label="Partager le lien de la fiche">${ic('share', 16)}</button><a class="ib sm" href="#/f/${encodeURIComponent(s.code)}" aria-label="Voir comme un parent">${ic('users', 16)}</a></div>
   <div class="seg" role="navigation" aria-label="Sections" style="overflow-x:auto">${ETABS.map(([k, l]) => `<a href="#/prof/eleve/${id}/${k}" class="${k === tab ? 'on' : ''}">${l}</a>`).join('')}</div>
