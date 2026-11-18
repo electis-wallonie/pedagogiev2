@@ -356,3 +356,48 @@ div.cal-ev{cursor:default}
 .dm-ok{align-items:center;text-align:center;gap:12px}
 .dm-okic{width:64px;height:64px;border-radius:999px;background:var(--mint);border:var(--bw) solid var(--ink);display:flex;align-items:center;justify-content:center;box-shadow:4px 4px 0 var(--ink)}
 @media(min-width:760px){.dm-form{max-width:640px}}
+
+/* ===== Espace équipe : même style que l'espace public ===== */
+.hero2{background:var(--ink);color:#fff;border:var(--bw) solid var(--ink);border-radius:14px;box-shadow:5px 5px 0 var(--hs,var(--primary));padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.hero-l{color:var(--yellow);letter-spacing:1.5px;text-transform:uppercase}[dir=rtl] .hero-l{text-transform:none}
+.hero-big{font-size:30px;font-weight:800;line-height:1.1}
+.hero-s{color:var(--blue2)}
+.hero-chip{flex:none;display:flex;flex-direction:column;align-items:center;background:var(--yellow);color:var(--ink);border:2.5px solid #fff;border-radius:12px;padding:8px 12px;text-align:center;line-height:1.1}
+.hero-chip b{font-size:18px}.hero-chip span{font-size:11px;font-weight:800}
+.hero2 .btn,.hero2 .btn2{border-color:#fff}.hero2 .btn2{background:transparent;color:#fff}
+.hero-bar{height:10px;border-radius:999px;background:#2B3F86;overflow:hidden}.hero-bar span{display:block;height:100%;background:var(--yellow)}
+.bds{display:flex;flex-direction:column;gap:9px}
+.bd{display:flex;align-items:center;gap:12px;border:var(--bw) solid var(--ink);border-radius:14px;box-shadow:5px 5px 0 var(--ink);padding:11px 14px;transform:rotate(var(--rot,0deg));color:var(--ink);text-decoration:none}
+a.bd:hover{color:var(--ink);transform:rotate(var(--rot,0deg)) translate(-1px,-1px)}
+.bd-t{font-size:18px;font-weight:800;line-height:1.15}
+.bd-r{font-size:20px;font-weight:800;white-space:nowrap}
+.bd-ic{width:40px;height:40px;flex:none;border-radius:12px;background:var(--surface);border:var(--bw) solid var(--ink);display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+.bd.past{background:var(--neutral);color:var(--muted);box-shadow:none;padding:7px 14px}
+.bd-chk{width:28px;height:28px;flex:none;border-radius:999px;background:var(--surface);border:2.5px solid var(--ink);display:flex;align-items:center;justify-content:center;color:var(--ink);box-sizing:border-box}
+.bd-pt{font-size:14px}.bd-ps{font-weight:700}
+.btabs{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.btabs a{font-size:18px;font-weight:800;color:#9AA6CC;text-decoration:none}
+.btabs a.on{font-size:24px;color:var(--ink)}
+/* les segments de navigation (liens) deviennent des onglets en grands titres */
+.seg:not(.desk):has(> a){border:0;background:transparent;padding:0;gap:14px;flex-wrap:wrap;align-items:baseline;overflow:visible!important}
+.seg:not(.desk):has(> a) a{flex:0 0 auto;min-height:0;padding:0;font-size:17px;color:#9AA6CC;background:transparent!important}
+.seg:not(.desk):has(> a) a.on{font-size:23px;color:var(--ink)}
+/* toutes les zones d'écriture deviennent la bulle jaune */
+.composer.bubble{position:relative;background:var(--yellow);border:var(--bw) solid var(--ink);border-radius:24px;box-shadow:5px 5px 0 var(--ink);padding:14px;margin-bottom:20px}
+.composer.bubble::after{content:"";position:absolute;left:34px;bottom:-20px;width:26px;height:20px;background:var(--yellow);border-left:var(--bw) solid var(--ink);clip-path:polygon(0 0,100% 0,0 100%);border-bottom:0}
+.composer.bubble::before{content:"";position:absolute;left:34px;bottom:-23px;width:30px;height:23px;background:var(--ink);clip-path:polygon(0 0,100% 0,0 100%)}
+.composer.bubble textarea,.composer.bubble .inp{background:#fff}
+.composer.bubble .btn{background:var(--ink);color:#fff}
+.composer.bubble .btn2{background:#fff}
+/* carte bleue (formulaires de saisie) */
+.bcard{position:relative;overflow:hidden;background:var(--primary);color:#fff;border:var(--bw) solid var(--ink);border-radius:14px;box-shadow:5px 5px 0 var(--ink);padding:16px}
+.bcard .lbl,.bcard label{color:#fff}.bcard .hint{color:#DCE3FF}
+.bcard .inp{background:#fff}
+.bcard .btn{background:var(--yellow);color:var(--ink)}
+.bcard>*{position:relative}
+.bcard .w1-blob{position:absolute}
+/* en-tête de l'espace équipe (téléphone) */
+.ihead{display:flex;align-items:center;gap:10px;padding:14px 16px 0}
+.ihead .who{width:44px;height:44px;flex:none;border-radius:999px;border:var(--bw) solid var(--ink);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;box-sizing:border-box;text-decoration:none;color:var(--ink)}
+@media(min-width:960px){.ihead{display:none}}
+.wl{padding:2px 14px}

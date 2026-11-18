@@ -1,5 +1,6 @@
 // Espace professeur : classes, élèves, appel, Coran, objectifs, notes, réglages
 import * as d from './data.js';
+import { hero, band, bands, btabs, untilLabel } from './ui.js';
 import { ACT, FORMS, CHANGE, esc, ic, av, pill, fdate, flong, fshort, toast, openModal, closeModal, refreshModal, copyText, todayISO, daysSince,
   STATUS, COLORS, COLOR_NAMES, ACC, DAYS, schedLabel, nextLabel, initials, fullName, takePending, msgHtml, composer, hydrateAudio , ask, askText, takeFiles, pending, pendingFiles , devoirTag } from './ui.js';
 import * as F from './fiche.js';
@@ -29,7 +30,7 @@ export function shell(u, active, body) {
   <div class="tiny mut b" style="padding:18px 14px 4px">${admin ? 'TOUTES LES CLASSES' : 'MES CLASSES'}</div>${cl}
   <a class="sub" href="#/prof/classes?new=1" style="color:var(--primary)">${ic('plus', 16)}Nouvelle classe</a>
   <span class="grow"></span><div class="row" style="padding:8px 6px">${av(u.name.split(' ').map((w) => w[0]).join('').slice(0, 2), 40, 'var(--yellow)', 13)}<div class="grow"><div class="b small">${esc(u.name)}</div><div class="tiny mut b">${d.roleLabel(u)}</div></div><button class="ib sm" data-act="lang" aria-label="Langue">${ic('globe', 16)}</button><button class="ib sm" data-act="logout" aria-label="Se déconnecter">${ic('out', 16)}</button></div>
-  </nav><main class="main">${body}</main>
+  </nav><main class="main"><header class="ihead"><span class="logo" style="width:44px;height:44px">${ic('moon', 23, 2.6)}</span><span class="col grow" style="gap:0;min-width:0"><span class="tiny b mut" style="letter-spacing:1.2px">ESPACE ÉQUIPE</span><span class="b" style="font-size:17px;line-height:1.1">${d.roleLabel(u)}</span></span><button class="ib" data-act="lang" aria-label="Langue">${ic('globe', 18)}</button><a class="who" href="#/prof/reglages" style="background:var(--pink)" aria-label="${esc(u.name)}">${esc(u.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase())}</a></header>${body}</main>
   <nav class="tabbar" aria-label="Navigation">${nav.map(([h, i, l, k]) => `<a class="${k === active ? 'on' : ''}" href="#/${h}"><span>${ic(i, 22)}</span>${l}</a>`).join('')}</nav></div>`;
 }
 const top = (title, sub, back, right = '') => `<div class="top">${back ? `<a href="${back}" class="ib" aria-label="Retour">${ic('back', 20)}</a>` : ''}<div class="grow">${sub ? `<div class="small mut b">${sub}</div>` : ''}<h1>${title}</h1></div>${right}</div>`;
@@ -78,11 +79,11 @@ export function dashboard(u) {
   ${top(d.isAdmin(u) ? 'Vue d’ensemble' : `Bonjour ${esc(u.name)}`, fdate(todayISO(), { weekday: 'long', day: 'numeric', month: 'long' }), null)}
   ${annoncesHtml()}
   ${!u.tel || !u.email ? `<a class="ck pad row wrap" href="#/prof/reglages" style="background:var(--hi);text-decoration:none;color:var(--ink);gap:10px">${ic('phone', 20)}<span class="grow b">Complétez votre téléphone et votre e-mail pour que l’équipe et les parents puissent vous contacter.</span>${ic('chev', 18)}</a>` : ''}
-  ${(() => { const nx = cl.map((c) => ({ c, n: d.nextCourse(c) })).filter((x) => x.n).sort((a, b) => a.n.when - b.n.when)[0]; return nx ? `<div class="ck pad row between wrap" style="background:var(--ink);color:#fff"><div><div class="tiny b" style="color:var(--yellow)">PROCHAIN COURS</div><div class="b" style="font-size:22px;margin-top:4px">${esc(nx.c.name)} · ${nextLabel(nx.n)}</div></div><a class="btn y" href="#/prof/classe/${nx.c.id}/appel">${ic('check', 20)}Faire l’appel</a></div>` : ''; })()}
+  ${(() => { const nx = cl.map((c) => ({ c, n: d.nextCourse(c) })).filter((x) => x.n).sort((a, b) => a.n.when - b.n.when)[0]; return nx ? hero(`Prochain cours · ${esc(nx.c.name)}`, nextLabel(nx.n), { sub: `${localLine(nx.c)} · ${d.studentsOf(nx.c.id).length} élèves`, chip: untilLabel(nx.n), chipSub: 'avant le cours', extra: `<a class="btn y full" href="#/prof/classe/${nx.c.id}/appel">${ic('check', 20)}Faire l’appel</a>` }) : ''; })()}
   ${d.isAdmin(u) ? `<div class="grid3"><div class="ck stat" style="background:var(--pink)"><div class="v">${d.profs().length}</div><div class="l">professeurs</div></div><div class="ck stat" style="background:var(--blue2)"><div class="v">${cl.length}</div><div class="l">classes</div></div><div class="ck stat" style="background:var(--mint)"><div class="v">${sts.length}</div><div class="l">élèves</div></div></div>` : ''}
   ${cl.length ? '' : `<div class="ck pad col" style="background:var(--hi)"><h2>Bienvenue !</h2><p class="b" style="font-weight:600">Commencez par créer votre première classe, puis ajoutez vos élèves.</p><a class="btn" href="#/prof/classes?new=1">${ic('plus', 20)}Créer une classe</a></div>`}
-  ${cl.length ? `<div class="row between"><h2>${d.isAdmin(u) ? 'Toutes les classes' : 'Mes classes'}</h2><a href="#/prof/classes" class="small">Tout voir</a></div>
-  <div class="gridauto">${cl.map((c) => classTile(c)).join('')}</div>` : ''}
+  ${cl.length ? `<div class="row between"><span class="tiny b mut" style="letter-spacing:1.2px">CETTE SEMAINE</span><a href="#/prof/classes" class="small">Toutes les classes</a></div>
+  ${weekBands(cl)}` : ''}
   ${d.isAdmin(u) ? hoursCard() : ''}
   <div class="grid3"><div class="ck stat" style="background:var(--yellow)"><div class="v">${sv}</div><div class="l">sourates validées (7 j)</div></div>
   <div class="ck stat" style="background:var(--blue2)"><div class="v">${oa}</div><div class="l">objectifs acquis (7 j)</div></div>
@@ -93,6 +94,15 @@ export function dashboard(u) {
   </div></div>`;
   return shell(u, 0, body);
 }
+const BG = (c) => colorOf(c);
+function weekBands(cl) {
+  const ago6 = new Date(Date.now() - 6 * 864e5).toISOString().slice(0, 10);
+  const rows = cl.map((c) => ({ c, last: d.attendanceOfClass(c.id).find((a) => a.date >= ago6 && d.recDone(a)), n: d.nextCourse(c) }))
+    .sort((a, b) => (a.last ? 0 : 1) - (b.last ? 0 : 1) || (a.n ? a.n.when : 9e15) - (b.n ? b.n.when : 9e15));
+  return bands(rows.map(({ c, last, n }, k) => last
+    ? band(esc(c.name), { past: true, k, sub: `appel fait le ${fdate(last.date, { weekday: 'short', day: 'numeric' })}`, right: `${Object.values(last.records).filter((x) => x === 'P').length}/${d.studentsOf(c.id).length}`, href: `#/prof/classe/${c.id}` })
+    : band(esc(c.name), { k, bg: BG(c), sub: n ? nextLabel(n) : 'Horaires à compléter', right: n ? untilLabel(n) : '', href: `#/prof/classe/${c.id}` })));
+}
 function schedLine(c, withNext = true) {
   const sl = d.slotsOf(c);
   if (!sl.length) return `<span class="tiny b" style="display:block">Horaires à compléter</span>`;
@@ -101,21 +111,23 @@ function schedLine(c, withNext = true) {
 }
 function courseCard(c) {
   const sl = d.slotsOf(c);
+  const nn = sl.length && d.nextCourse(c);
+  if (nn) return hero('Prochain cours', nextLabel(nn), { sub: `${schedLabel(sl)} · ${localLine(c)}`, chip: untilLabel(nn), chipSub: 'avant le cours', extra: `<div class="row" style="gap:8px"><a class="btn y grow" href="#/prof/classe/${c.id}/appel">${ic('check', 18)}Appel</a><a class="btn2 grow" href="#notes-devoirs">${ic('book', 18)}Devoir</a></div>` });
   if (!sl.length) return `<div class="ck flat pad row wrap" style="background:var(--hi);gap:10px">${ic('cal', 20)}<span class="grow b small">Horaires des cours à compléter</span><button class="btn2 sm" data-act="class-edit" data-id="${c.id}">${ic('edit', 16)}Ajouter les horaires</button></div>`;
   const n = d.nextCourse(c);
   return `<div class="ck flat pad col" style="gap:4px;background:var(--hi)"><span class="b">${ic('cal', 18)} Prochain cours : ${nextLabel(n)}</span><span class="small b" style="font-weight:600">Cours : ${schedLabel(sl)}</span></div>`;
 }
-function classTile(c) {
-  return `<div class="ck tile" style="background:${colorOf(c)};position:relative"><a href="#/prof/classe/${c.id}" style="position:absolute;inset:0;border-radius:inherit" aria-label="${esc(c.name)}"></a><span class="big">${esc(c.name.replace(/^classe\s*/i, '') || c.name[0])}</span>
-  <span><span class="b" style="display:block;font-size:17px">${esc(c.name)}</span><span class="small b" style="font-weight:600;display:block">${d.studentsOf(c.id).length} élèves</span>${schedLine(c)}${d.isAdmin(d.me()) ? `<span class="tiny b" style="display:block">${esc((d.user(c.profId) || {}).name || '')}</span>` : ''}${d.isAdmin(d.me()) ? `<span class="tiny b" style="display:block">${localLine(c)}</span>` : ''}<span class="tiny b" style="display:block">${lastAppel(c)}</span></span>
-  <span class="row wrap" style="gap:6px;position:relative"><a href="#/prof/classe/${c.id}/appel" class="btn2 sm">${ic('check', 18)}Faire l’appel</a>${d.isAdmin(d.me()) ? `<button type="button" class="btn2 sm" data-act="loc-edit" data-id="${c.id}">${ic('door', 18)}Local utilisé</button>` : ''}</span></div>`;
+function classTile(c, k = 0) {
+  const n = d.nextCourse(c), admin = d.isAdmin(d.me());
+  const sub = [`${d.studentsOf(c.id).length} élèves`, d.slotsOf(c).length ? schedLabel(d.slotsOf(c)) : 'Horaires à compléter', admin ? localLine(c) : '', admin ? esc((d.user(c.profId) || {}).name || '') : ''].filter(Boolean).join(' · ');
+  return `<div class="bd" style="--rot:${[-0.8, 0.7, -0.5, 0.9, -0.6][k % 5]}deg;background:${colorOf(c)};position:relative"><a href="#/prof/classe/${c.id}" style="position:absolute;inset:0;border-radius:inherit" aria-label="${esc(c.name)}"></a><span class="bd-ic">${ic('grid', 18)}</span><span class="col grow" style="gap:0;min-width:0"><span class="bd-t">${esc(c.name)}</span><span class="tiny b">${sub}</span>${n ? `<span class="tiny b">Prochain cours : ${nextLabel(n)}</span>` : ''}</span><a href="#/prof/classe/${c.id}/appel" class="ib" style="position:relative" aria-label="Faire l’appel en ${esc(c.name)}">${ic('check', 18)}</a>${admin ? `<button type="button" class="ib" style="position:relative" data-act="loc-edit" data-id="${c.id}" aria-label="Local utilisé">${ic('door', 18)}</button>` : ''}</div>`;
 }
 
 // ---------- classes ----------
 export function classes(u, q) {
   const cl = d.myClasses(u);
   const body = `<div class="page">${top(d.isAdmin(u) ? 'Toutes les classes' : 'Mes classes', `${cl.length} classe(s) · ${d.myStudents(u).length} élèves`, null, `<button class="btn sm" data-act="class-new">${ic('plus', 18)}Classe</button>`)}
-  <div class="gridauto">${cl.map(classTile).join('')}<button class="ck tile flat" data-act="class-new" style="border-style:dashed;align-items:center;justify-content:center;cursor:pointer;background:var(--surface)">${ic('plus', 30)}<span class="b">Nouvelle classe</span></button></div></div>`;
+  <div class="bds">${cl.map((c, k) => classTile(c, k)).join('')}</div><button class="btn2 full" data-act="class-new" style="border-style:dashed;margin-top:4px">${ic('plus', 20)}Nouvelle classe</button></div>`;
   if (q.get('new')) setTimeout(() => classForm(u), 0);
   return shell(u, 1, body);
 }
@@ -275,8 +287,8 @@ export function appel(u, id, recId, q) {
   const rows = sts.map((s) => `<div class="ck flat appel-row"><span class="grow b">${esc(s.prenoms.split(' ')[0])} ${esc(s.nom)}</span>
   ${['P', 'A', 'E'].map((k) => `<button type="button" class="st-btn ${r[s.id] === k ? 'on-' + k : ''}" data-act="ap" data-sid="${s.id}" data-s="${k}" aria-pressed="${r[s.id] === k}" aria-label="${STATUS[k].l} : ${esc(s.prenoms.split(' ')[0])}">${ic(STATUS[k].icon, 20, 2.8)}<span class="lab">${k === 'E' ? 'Prévenu' : STATUS[k].l}</span></button>`).join('')}</div>`).join('');
   const body = `<div class="page">${top('L’appel', esc(c.name), `#/prof/classe/${id}`)}
-  <div class="ck pad col" style="gap:8px;background:var(--yellow)"><span class="b" style="font-size:20px">Cours du ${whenLabel(rec)}</span>
-  ${byLine(rec)}
+  ${hero(`Appel · ${esc(c.name)}`, whenLabel(rec), { chip: `${cnt('P')} / ${sts.length}`, chipSub: 'présents' })}
+  <div class="ck pad col" style="gap:8px">${byLine(rec)}
   <details><summary class="small b" style="cursor:pointer">Corriger la date</summary><div class="row wrap" style="margin-top:8px"><label class="sr" for="ad">Date du cours</label><input id="ad" type="date" class="inp" value="${rec.date}" max="${todayISO()}" data-change="ap-when" data-k="date" style="max-width:200px"></div></details></div>
   <div class="row wrap" style="gap:8px">${pill(cnt('P') + ' présent(s)', 'var(--present)', 'var(--onpresent)')}${pill(cnt('A') + ' absent(s)', 'var(--absent)', 'var(--onabsent)')}${pill(cnt('E') + ' prévenu(s)', 'var(--prev)')}${rest ? pill(rest + ' à marquer', 'var(--neutral)') : ''}</div>
   ${rest ? `<button class="btn2 sm" data-act="ap-all" style="align-self:flex-start">${ic('check', 18)}Marquer les ${rest} restant(s) présents</button>` : ''}
@@ -337,13 +349,10 @@ export function historique(u, id) {
   const c = d.cls(id);
   const list = d.attendanceOfClass(id);
   const body = `<div class="page">${top('Historique des appels', esc(c.name), `#/prof/classe/${id}`)}
-  <div class="ck pad" style="padding-top:4px;padding-bottom:4px"><div class="list">${list.map((a) => {
-    const v = Object.values(a.records);
-    const k = (s) => v.filter((x) => x === s).length;
-    const by = d.user(d.recBy(a));
-    return `<a class="li" href="#/prof/classe/${id}/appel/${a.id}"><span class="grow"><span class="b" style="display:block">${whenLabel(a)}</span><span class="small mut b" style="font-weight:600">Appel fait par ${esc(by ? by.name : '—')}${by && by.id !== c.profId ? ' (remplacement)' : ''}${d.recDone(a) ? '' : ' · pas terminé'}</span></span>${pill(k('P'), 'var(--present)', 'var(--onpresent)')}${pill(k('A'), 'var(--absent)', 'var(--onabsent)')}${pill(k('E'), 'var(--prev)')}${ic('chev', 18)}</a>`;
-  }).join('') || '<p class="mut small" style="padding:12px 0">Aucun appel pour le moment.</p>'}</div></div>
-  <p class="tiny mut b">Vert : présents · Rouge : absents · Jaune : absents prévenus. Touchez une date pour corriger l’appel.</p></div>`;
+  ${list.length ? bands(list.map((a, k) => { const v = Object.values(a.records); const by = d.user(d.recBy(a)); const p = v.filter((x) => x === 'P').length;
+    const sub = `${p} présent(s) · ${v.filter((x) => x === 'A').length} absent(s) · ${esc(by ? by.name : '—')}${by && by.id !== c.profId ? ' (remplacement)' : ''}`;
+    return d.recDone(a) ? band(whenLabel(a), { past: true, k, sub, href: `#/prof/classe/${id}/appel/${a.id}` }) : band(whenLabel(a), { k, bg: 'var(--yellow)', sub: sub + ' · pas terminé', href: `#/prof/classe/${id}/appel/${a.id}` }); })) : '<p class="mut small" style="padding:12px 0">Aucun appel pour le moment.</p>'}
+  <p class="tiny mut b">Touchez une date pour corriger l’appel. En jaune : appel commencé mais pas terminé.</p></div>`;
   return shell(u, 1, body);
 }
 
@@ -415,7 +424,7 @@ function studentForm(u, s, classId) {
   const cl = d.myClasses(u);
   if (!cl.length) return `<div class="ck pad col" style="background:var(--hi)"><p class="b">Créez d’abord une classe.</p><a class="btn" href="#/prof/classes?new=1">Créer une classe</a></div>`;
   const sel = s ? s.classId : classId || cl[0].id;
-  return `<form class="ck pad col" data-form="student" data-id="${s ? s.id : ''}">
+  return `<form class="bcard col" data-form="student" data-id="${s ? s.id : ''}"><span class="w1-blob" aria-hidden="true"><i></i><i></i></span>
   <div class="field"><label class="lbl" for="sc">Classe</label><select id="sc" name="classId" class="inp" style="background:var(--blue2)">${cl.map((c) => `<option value="${c.id}" ${c.id === sel ? 'selected' : ''}>${clsLabel(c)}</option>`).join('')}</select>${s ? '<span class="hint">Changer de classe conserve tout le suivi.</span>' : ''}</div>
   <div class="grid2 stack"><div class="field"><label class="lbl" for="sn">Nom</label><input id="sn" name="nom" class="inp" required value="${esc(s ? s.nom : '')}" autocomplete="off"></div>
   <div class="field"><label class="lbl" for="sp">Prénom(s)</label><input id="sp" name="prenoms" class="inp" required value="${esc(s ? s.prenoms : '')}" autocomplete="off"><span class="hint">Tous les prénoms, séparés par un espace</span></div></div>
@@ -457,9 +466,7 @@ export function eleveCree(u, id) {
   <a class="btn2 full" href="#/prof/eleve/new?c=${c.id}">${ic('plus', 20)}Inscrire un autre élève</a><a class="btn full" href="#/prof/eleve/${id}">Ouvrir la fiche</a></div>`);
 }
 function codeCard(s) {
-  return `<div class="ck pad col" style="background:var(--yellow)"><span class="tiny b">CODE DE SUIVI À DONNER AU PARENT</span><span class="code" style="font-size:21px">${esc(s.code)}</span>
-  <div class="grid2"><button class="btn2 sm" data-act="copy" data-t="${esc(s.code)}">${ic('copy', 18)}Copier</button><button class="btn sm" data-act="share" data-id="${s.id}">${ic('share', 18)}Partager le lien</button></div>
-  <span class="tiny b" style="font-weight:600">Le lien ouvre directement la fiche, sans rien taper.</span></div>`;
+  return hero('Code de suivi à donner', `<span class="code" style="font-size:22px;color:#fff;background:transparent;border:0;padding:0;word-break:break-all">${esc(s.code)}</span>`, { sub: 'Le lien ouvre directement la fiche, sans rien taper.', extra: `<div class="grid2"><button class="btn2 sm" data-act="copy" data-t="${esc(s.code)}">${ic('copy', 18)}Copier</button><button class="btn y sm" data-act="share" data-id="${s.id}">${ic('share', 18)}Partager le lien</button></div>` });
 }
 ACT.copy = (el) => copyText(el.dataset.t);
 ACT.share = async (el) => {

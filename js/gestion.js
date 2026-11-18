@@ -1,7 +1,7 @@
 // Gestion de l'association (admin) : locaux, heures des professeurs, familles & cotisations, finances
 import * as d from './data.js';
 import { locale } from './i18n.js';
-import { ACT, FORMS, CHANGE, esc, ic, av, pill, fdate, toast, openModal, closeModal, refreshModal, todayISO, ask, askText, DAYS, ACC, initials, fullName } from './ui.js';
+import { ACT, FORMS, CHANGE, esc, ic, av, pill, fdate, toast, openModal, closeModal, refreshModal, todayISO, ask, askText, DAYS, ACC, initials, fullName , hero } from './ui.js';
 import { shell } from './prof.js';
 import { mosqueName } from './mosquee.js';
 
@@ -280,7 +280,7 @@ export function famillesView(u) {
   }).join('');
   return shell(u, 2, `<div class="page">${top('Élèves', `${F.length} famille(s) · ${d.D().students.length} élève(s)`, null, `<button class="btn sm" data-act="fam-new">${ic('plus', 18)}Famille</button>`)}
   ${elevesSeg(1)}
-  <div class="grid3"><div class="ck stat" style="background:var(--blue2)"><div class="v" style="font-size:clamp(17px,5vw,24px);overflow-wrap:anywhere">${eur(c.theo)}</div><div class="l">cotisations prévues</div></div><div class="ck stat" style="background:var(--mint)"><div class="v" style="font-size:clamp(17px,5vw,24px);overflow-wrap:anywhere">${eur(c.real)}</div><div class="l">déjà payées</div></div><div class="ck stat" style="background:var(--pink)"><div class="v" style="font-size:clamp(17px,5vw,24px);overflow-wrap:anywhere">${eur(c.rest)}</div><div class="l">reste à payer</div></div></div>
+  ${(() => { const pct = c.theo ? Math.round((c.real / c.theo) * 100) : 0; return hero('Cotisations encaissées', eur(c.real), { sub: `sur ${eur(c.theo)} prévus · reste ${eur(c.rest)}`, chip: pct + ' %', shadow: 'var(--mint)', extra: `<div class="hero-bar"><span style="width:${pct}%"></span></div>` }); })()}
   <p class="small mut b" style="font-weight:600">Une famille regroupe les fiches des frères et sœurs déjà inscrits (pas de compte à créer). Bouton 1 : montant de la cotisation. Bouton 2 : où en est le paiement (rouge = rien, orange = en partie, vert = tout).</p>
   ${lone.length ? `<div class="ck pad col" style="background:var(--hi)"><div class="row between wrap"><h2>${lone.length} élève(s) sans famille</h2><button class="btn sm" data-act="fam-auto">${ic('users', 18)}Regrouper automatiquement</button></div>
     <p class="small b" style="font-weight:600">« Regrouper automatiquement » crée une famille par nom de famille + prénom du parent. Vous pourrez corriger ensuite.</p>

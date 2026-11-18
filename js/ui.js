@@ -71,6 +71,13 @@ export const ftime = (iso) => new Date(iso).toLocaleTimeString(locale, { hour: '
 const ORDER = [1, 2, 3, 4, 5, 6, 0];
 export const hm = (t) => (t || '').replace(':', 'h');
 export function schedLabel(slots) { return slots.slice().sort((a, b) => ORDER.indexOf(a.day) - ORDER.indexOf(b.day) || a.time.localeCompare(b.time)).map((s) => `${DAYS[s.day]} ${hm(s.time)}`).join(' · '); }
+export function untilLabel(n) {
+  if (!n) return '';
+  const m = Math.max(0, Math.round((n.when - Date.now()) / 60000));
+  if (m < 60) return `${m} min`;
+  if (m < 1440) return `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}`;
+  return `${Math.floor(m / 1440)} j ${Math.floor((m % 1440) / 60)} h`;
+}
 export function nextLabel(n) {
   if (!n) return '';
   const iso = `${n.when.getFullYear()}-${String(n.when.getMonth() + 1).padStart(2, '0')}-${String(n.when.getDate()).padStart(2, '0')}`;
@@ -255,7 +262,7 @@ export async function takeFiles(zone, untilIso = null) {
   return out;
 }
 export function composer(form, zone, attrs = '', placeholder = 'Écrire une note…', withFiles = false, pre = '') {
-  return `<form class="composer" data-form="${form}" ${attrs}>${pre}
+  return `<form class="composer bubble" data-form="${form}" ${attrs}>${pre}
   <label class="sr" for="${zone}-t">Note</label>
   <textarea id="${zone}-t" name="text" class="inp" placeholder="${esc(placeholder)}"></textarea>
   <div id="${zone}">${zoneHtml(zone)}</div>
@@ -273,3 +280,20 @@ export function msgHtml(m, delAct) {
     <span class="tiny mut b">Pièces jointes disponibles jusqu’au ${fdate(m.files[0].until)}</span></div>` : '';
   return `<div class="msg"><div class="meta"><span>${esc(fdate(m.at, { weekday: 'short', day: 'numeric', month: 'short' }))} · ${ftime(m.at)}</span>${del}</div>${m.text ? `<div class="txt" data-notr dir="auto">${esc(m.text)}</div>` : ''}${audio}${files}</div>`;
 }
+
+// ---------- Style « espace équipe » (repris de l'espace public) ----------
+// Bloc bleu nuit : ce qui vient ensuite (prochain cours, sourate en cours, solde…)
+export function hero(label, big, o = {}) {
+  const chip = o.chip ? `<span class="hero-chip"><b>${o.chip}</b>${o.chipSub ? `<span>${o.chipSub}</span>` : ''}</span>` : '';
+  return `<div class="hero2" style="${o.shadow ? `--hs:${o.shadow}` : ''}"><div class="row between" style="gap:10px;align-items:center"><div class="col" style="gap:0;min-width:0"><span class="tiny b hero-l">${label}</span><span class="hero-big">${big}</span>${o.sub ? `<span class="small b hero-s">${o.sub}</span>` : ''}</div>${chip}</div>${o.extra || ''}</div>`;
+}
+// Bande de couleur (comme les prières) ; « past » = fait, en gris avec une coche
+const ROTS = [-0.8, 0.7, -0.5, 0.9, -0.6, 0.5, -0.7];
+export function band(title, o = {}) {
+  const k = o.k || 0, tag = o.href ? 'a' : 'div', href = o.href ? ` href="${o.href}"` : '';
+  if (o.past) return `<${tag} class="bd past"${href} style="--rot:${ROTS[k % 7]}deg"><span class="bd-chk">${ic('check', 15)}</span><span class="grow b bd-pt">${title}${o.sub ? ` <span class="bd-ps">· ${o.sub}</span>` : ''}</span>${o.right ? `<span class="b">${o.right}</span>` : ''}</${tag}>`;
+  return `<${tag} class="bd"${href} style="--rot:${ROTS[k % 7]}deg;background:${o.bg || 'var(--mint)'}">${o.icon ? `<span class="bd-ic">${ic(o.icon, 18)}</span>` : ''}<span class="col grow" style="gap:0;min-width:0"><span class="bd-t">${title}</span>${o.sub ? `<span class="tiny b">${o.sub}</span>` : ''}</span>${o.right ? `<span class="bd-r">${o.right}</span>` : ''}${o.after || ''}</${tag}>`;
+}
+export const bands = (arr) => `<div class="bds">${arr.join('')}</div>`;
+// Onglets en grands titres (comme « Fréquentes / Récentes »)
+export const btabs = (items) => `<nav class="btabs" aria-label="Sections">${items.map(([h, l, on]) => `<a href="${h}" class="${on ? 'on' : ''}" ${on ? 'aria-current="page"' : ''}>${l}</a>`).join('')}</nav>`;

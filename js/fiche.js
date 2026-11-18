@@ -28,11 +28,9 @@ export function enCoursCards(st, act) {
     const x = st.coran[n];
     const notes = d.sourateNotes(st.id, n);
     const last = notes[notes.length - 1];
-    return `<div class="ck pad col" style="background:var(--hi)">
-      <div class="row between wrap">${pill('En cours', 'var(--c)')}<span class="small b">Début d’apprentissage : ${fshort(x.start)}</span></div>
-      <div class="row between"><h3 style="font-size:21px">${n} · ${esc(d.sName(n))}</h3><span class="tiny mut b">depuis ${daysSince(x.start)} j</span></div>
-      ${last ? `<div class="col" style="gap:6px"><span class="tiny b">Dernière note de l’imam</span>${msgHtml(last)}</div>` : '<span class="small mut">Pas encore de note.</span>'}
-      <button type="button" class="btn2 sm" data-act="${act}" data-n="${n}">${notes.length > 1 ? `Voir les ${notes.length} notes` : 'Ouvrir'} ${ic('chev', 18)}</button>
+    return `<div class="hero2"><div class="row between" style="gap:10px;align-items:center"><div class="col" style="gap:0;min-width:0"><span class="tiny b hero-l">Sourate en cours · depuis ${daysSince(x.start)} j</span><span class="hero-big">${n} · ${esc(d.sName(n))}</span><span class="small b hero-s">Début d’apprentissage : ${fshort(x.start)}</span></div></div>
+      ${last ? `<div class="col" style="gap:6px;background:#fff;color:var(--ink);border-radius:12px;padding:10px;border:2.5px solid #fff"><span class="tiny b">Dernière note de l’imam</span>${msgHtml(last)}</div>` : '<span class="small b hero-s">Pas encore de note.</span>'}
+      <button type="button" class="btn y sm" data-act="${act}" data-n="${n}">${notes.length > 1 ? `Voir les ${notes.length} notes` : 'Ouvrir'} ${ic('chev', 18)}</button>
     </div>`;
   }).join('');
 }

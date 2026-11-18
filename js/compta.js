@@ -2,7 +2,7 @@
 // Accessible au compte « Comptabilité » et aux administrateurs. Pas de classes ni d'élèves ici : que la trésorerie.
 import * as d from './data.js';
 import { locale } from './i18n.js';
-import { ACT, esc, ic, av, pill, fdate, toast, openModal, todayISO } from './ui.js';
+import { ACT, esc, ic, av, pill, fdate, toast, openModal, todayISO, hero } from './ui.js';
 import { eur, monthLabel, entryForm, entryList, teacherRows, PAY } from './gestion.js';
 import { myContactCard } from './contact.js';
 import { comptaPending } from './demandes.js';
@@ -16,7 +16,7 @@ export function comptaShell(u, active, body) {
   ${NAV.map(([k, i, l]) => link(k, i, l, 'nav')).join('')}
   ${d.isAdmin(u) ? `<a class="sub" href="#/admin" style="margin-top:10px">${ic('back', 16)}Retour à la direction</a>` : ''}
   <span class="grow"></span><div class="row" style="padding:8px 6px">${av(u.name.split(' ').map((w) => w[0]).join('').slice(0, 2), 40, 'var(--mint)', 13)}<div class="grow"><div class="b small">${esc(u.name)}</div><div class="tiny mut b">${d.roleLabel(u)}</div></div><button class="ib sm" data-act="logout" aria-label="Se déconnecter">${ic('out', 16)}</button></div>
-  </nav><main class="main">${body}</main>
+  </nav><main class="main"><header class="ihead"><span class="logo" style="width:44px;height:44px;background:var(--mint)">${ic('euro', 23, 2.6)}</span><span class="col grow" style="gap:0;min-width:0"><span class="tiny b mut" style="letter-spacing:1.2px">ESPACE ÉQUIPE</span><span class="b" style="font-size:17px;line-height:1.1">Comptabilité</span></span><button class="ib" data-act="lang" aria-label="Langue">${ic('globe', 18)}</button><a class="who" href="#/compta/compte" style="background:var(--mint)" aria-label="${esc(u.name)}">${esc(u.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase())}</a></header>${body}</main>
   <nav class="tabbar" aria-label="Comptabilité">${MOB.map((k) => { const [, i, l] = k === 'plus' ? ['plus', 'grid', 'Plus'] : NAV.find((x) => x[0] === k); return `<a class="${k === active || (k === 'plus' && !MOB.includes(active)) ? 'on' : ''}" href="#/compta/${k}"><span>${ic(i, 22)}</span>${l === 'Tableau de bord' ? 'Bord' : l}</a>`; }).join('')}</nav></div>`;
 }
 const top = (title, sub, right = '') => `<div class="top"><div class="grow">${sub ? `<div class="small mut b">${sub}</div>` : ''}<h1>${title}</h1></div>${right}</div>`;
@@ -85,7 +85,8 @@ function bord(u, m, months) {
   const recent = ops(m).slice(0, 6);
   return `${top('Tableau de bord', `Bonjour ${esc(u.name)}`, `<div class="row wrap" style="gap:8px">${addBtns(m)}</div>`)}
   ${monthNav('bord', m, months)}
-  <div class="kpis">${kpi('Solde de l’association', sign(s.solde), s.solde >= 0 ? 'var(--mint)' : 'var(--pink)', 'depuis le début des comptes')}${kpi(`Recettes · ${monthLabel(m).split(' ')[0]}`, eur(r), 'var(--surface)')}${kpi(`Dépenses · ${monthLabel(m).split(' ')[0]}`, eur(e.total), 'var(--surface)')}${kpi('Résultat du mois', sign(r - e.total), r - e.total >= 0 ? 'var(--hi)' : 'var(--pink)')}</div>
+  ${hero('Solde de l’association', sign(s.solde), { sub: 'depuis le début des comptes', shadow: s.solde >= 0 ? 'var(--mint)' : 'var(--pink)' })}
+  <div class="kpis">${kpi(`Recettes · ${monthLabel(m).split(' ')[0]}`, eur(r), 'var(--mint)')}${kpi(`Dépenses · ${monthLabel(m).split(' ')[0]}`, eur(e.total), 'var(--pink)')}${kpi('Résultat du mois', sign(r - e.total), r - e.total >= 0 ? 'var(--hi)' : 'var(--pink)')}</div>
   ${comptaPending()}
   <div class="ck pad col"><div class="row between wrap"><h2>${ic('pie', 20)} 12 derniers mois</h2><button class="btn2 sm" data-act="compta-csv" data-m="${m}">${ic('dl', 16)}Exporter le mois (Excel)</button></div>${chart(lastMonths(12))}</div>
   <div class="grid2 stack" style="align-items:start">
@@ -114,7 +115,7 @@ function journal(u, m, months, q) {
   const tr = all.filter((o) => o.type === 'R').reduce((a, o) => a + o.amount, 0), td = all.filter((o) => o.type === 'D').reduce((a, o) => a + o.amount, 0);
   return `${top('Journal', 'Toutes les opérations du mois', `<div class="row wrap" style="gap:8px">${addBtns(m)}</div>`)}
   ${monthNav('journal', m, months)}
-  <div class="kpis">${kpi('Entrées', '+ ' + eur(tr), 'var(--mint)')}${kpi('Sorties', '− ' + eur(td), 'var(--pink)')}${kpi('Résultat', sign(tr - td), 'var(--hi)')}</div>
+  ${hero('Résultat du mois', sign(tr - td), { sub: `+ ${eur(tr)} d’entrées · − ${eur(td)} de sorties`, shadow: tr - td >= 0 ? 'var(--mint)' : 'var(--pink)' })}
   <div class="row wrap" style="gap:8px"><div class="seg" style="flex:1 1 280px">${[['all', 'Tout'], ['rec', 'Recettes'], ['dep', 'Dépenses']].map(([k, l]) => `<a href="#/compta/journal?m=${m}&t=${k}" class="${t === k ? 'on' : ''}">${l}</a>`).join('')}</div><button class="btn2 sm" data-act="compta-csv" data-m="${m}">${ic('dl', 16)}Exporter (Excel)</button></div>
   <div class="field"><label class="sr" for="jq">Rechercher</label><input id="jq" class="inp" placeholder="Rechercher une opération…" data-filter=".op"></div>
   <div class="ck pad">${opsTable(list, true)}</div>
@@ -142,8 +143,7 @@ function cotisations(u, m, months, q) {
   const list = F.filter((f) => s === 'all' || (s === 'todo' ? f.status !== 'paid' && f.cotisation : f.status === s));
   const pct = c.theo ? Math.round((c.real / c.theo) * 100) : 0;
   return `${top('Cotisations de l’école', `${F.length} famille(s)`)}
-  <div class="kpis">${kpi('Prévu', eur(c.theo), 'var(--blue2)')}${kpi('Encaissé', eur(c.real), 'var(--mint)', pct + ' %')}${kpi('Reste à encaisser', eur(c.rest), 'var(--pink)')}</div>
-  <div class="prog"><span style="width:${pct}%"></span></div>
+  ${hero('Encaissé', eur(c.real), { sub: `sur ${eur(c.theo)} prévus · reste ${eur(c.rest)}`, chip: pct + ' %', shadow: 'var(--mint)', extra: `<div class="hero-bar"><span style="width:${pct}%"></span></div>` })}
   ${comptaPending(true)}
   <div class="seg" style="overflow-x:auto">${[['all', 'Toutes'], ['todo', 'À relancer'], ['unpaid', 'Pas payé'], ['partial', 'Partiel'], ['paid', 'Payé']].map(([k, l]) => `<a href="#/compta/cotisations?s=${k}" class="${s === k ? 'on' : ''}">${l}</a>`).join('')}</div>
   <div class="field"><label class="sr" for="cq">Rechercher</label><input id="cq" class="inp" placeholder="Rechercher une famille…" data-filter=".fr"></div>
@@ -156,7 +156,8 @@ function enseignants(u, m, months) {
   const P = d.staff(m);
   return `${top('Enseignants de l’école', 'Heures de cours et montants')}
   ${monthNav('enseignants', m, months)}
-  <div class="ck pad col"><div class="row between wrap"><h2>${ic('clock', 20)} ${monthLabel(m)}</h2><span class="kpi" style="font-size:24px">${eur(d.monthExpenses(m).profs)}</span></div>
+  ${hero(`À verser · ${monthLabel(m)}`, eur(d.monthExpenses(m).profs), { sub: `${P.length} enseignant(s)`, shadow: 'var(--mint)' })}
+  <div class="ck pad col">
   <div class="list">${P.map((p) => { const h = d.profHours(p.id, m); return `<button type="button" class="li" data-act="hours-detail" data-id="${p.id}" data-m="${m}" style="background:none;border:0;border-bottom:2px solid var(--neutral);width:100%;text-align:start;cursor:pointer;font:inherit;color:var(--ink)"><span class="grow"><span class="b" style="display:block">${esc(p.name)}</span><span class="small mut b" style="font-weight:600">${h.n} cours · ${d.fmtH(h.min)}${h.missing ? ` · ${h.missing} sans heure de fin` : ''} · voir le détail</span></span><span class="b">${eur(d.profCost(p, m))}</span>${ic('chev', 18)}</button>`; }).join('') || '<p class="small mut">Aucun enseignant.</p>'}</div></div>
   <div class="ck pad col"><h2>Taux et montants</h2>${teacherRows(m)}</div>`;
 }

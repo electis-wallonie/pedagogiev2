@@ -1,7 +1,7 @@
 // Demandes d'inscription : formulaire public (onglet Cours) → rubrique « Demandes » de la direction
 // (méga administrateur + administrateurs) → visibles « en attente » dans la comptabilité.
 import * as d from './data.js';
-import { ACT, FORMS, esc, ic, pill, fdate, toast, todayISO } from './ui.js';
+import { ACT, FORMS, esc, ic, pill, fdate, toast, todayISO, hero } from './ui.js';
 import { pubShell, config } from './mosquee.js';
 import { shell } from './prof.js';
 
@@ -96,7 +96,8 @@ export function demandesView(u, q) {
   const n = (k) => all.filter((x) => (k === 'new' ? x.status === 'new' : x.status !== 'new')).length;
   return shell(u, 4, `<div class="page">
   <div class="top"><a class="ib" href="#/admin" aria-label="Retour">${ic('back', 20)}</a><div class="grow"><div class="small mut b">Direction</div><h1>Demandes d’inscription</h1></div></div>
-  <p class="small mut b" style="font-weight:600;margin-top:-6px">Les demandes envoyées depuis l’onglet Cours du site. Une demande acceptée crée l’élève, son code de suivi et sa famille (pour la cotisation).</p>
+  ${hero('En attente', n('new') ? `${n('new')} demande(s)` : 'Aucune', { sub: 'Envoyées depuis l’onglet Cours du site', shadow: 'var(--pink)' })}
+  <p class="small mut b" style="font-weight:600">Les demandes envoyées depuis l’onglet Cours du site. Une demande acceptée crée l’élève, son code de suivi et sa famille (pour la cotisation).</p>
   <div class="seg">${[['new', `En attente (${n('new')})`], ['done', `Traitées (${n('done')})`], ['all', 'Toutes']].map(([k, l]) => `<a href="#/admin/demandes?v=${k}" class="${f === k ? 'on' : ''}">${l}</a>`).join('')}</div>
   ${shown.length ? shown.map((x) => card(x, u)).join('') : `<div class="ck pad small mut b">${f === 'new' ? 'Aucune demande en attente.' : 'Rien à afficher.'}</div>`}
   </div>`);

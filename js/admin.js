@@ -6,7 +6,8 @@ import { langBtn } from './public.js';
 import { locauxTile, financeTile, hoursPill } from './gestion.js';
 import { contactFields, readContact } from './contact.js';
 import { publicTile, teamHost, mosqueName, loadMawaqit, mawaqitData } from './mosquee.js';
-import { demandesTile } from './demandes.js';
+import { demandesTile, pending } from './demandes.js';
+import { hero } from './ui.js';
 
 const go = (h) => { if (location.hash === h) window.dispatchEvent(new Event('hashchange')); else location.hash = h; };
 let loginErr = false;
@@ -16,13 +17,13 @@ export function loginView() {
   if (!mawaqitData()) loadMawaqit();
   return `<div class="page narrow" style="padding-top:30px">
   <div class="row">${teamHost() ? '' : `<a href="#/" class="ib" aria-label="Retour">${ic('back', 20)}</a>`}<span class="logo">${ic('moon', 22, 2.6)}</span><span class="grow col" style="gap:0"><span class="b" style="font-size:18px">Espace équipe</span><span class="small mut b" data-notr dir="auto">${esc(mosqueName())}</span></span>${langBtn()}</div>
-  <h1>Connexion</h1>
-  <form class="ck pad col" data-form="login">
+  <form class="bcard col" data-form="login"><span class="w1-blob" aria-hidden="true"><i></i><i></i></span>
+    <span class="col" style="gap:2px;padding-inline-end:70px"><h1 style="margin:0;color:#fff;font-size:24px">Connexion</h1><span class="small b" style="font-weight:600">Réservé à la direction, à la comptabilité et aux professeurs.</span></span>
     <div class="field"><label class="lbl" for="lg">Identifiant</label><input id="lg" name="login" class="inp" autocomplete="username" autocapitalize="none" required></div>
     <div class="field"><label class="lbl" for="pw">Mot de passe</label><input id="pw" name="pw" type="password" class="inp" autocomplete="current-password" required></div>
     ${err ? '<div class="err" role="alert">Identifiant ou mot de passe incorrect.</div>' : ''}
     <button class="btn full">${ic('lock', 20)}Se connecter</button>
-    <p class="small mut b" style="font-weight:600">Pas de compte ? Les comptes enseignants sont créés par l’administrateur.</p>
+    <p class="small b" style="font-weight:600;color:#DCE3FF">Pas de compte ? Les comptes sont créés par la direction.</p>
   </form>
   ${d.D().demo ? `<div class="ck flat pad col" style="background:var(--hi);gap:8px"><span class="b">Comptes de démonstration</span>
     ${[['Méga admin', 'admin', 'admin1234'], ['Admin', 'direction', 'admin1234'], ['Comptabilité', 'tresorier', 'compta1234'], ['Prof', 'rahman', 'prof1234']].map(([r, l, p]) => `<div class="row between small"><span><b>${r}</b> : ${l} / ${p}</span><button class="btn2 sm" data-act="demo-login" data-l="${l}" data-p="${p}">Utiliser</button></div>`).join('')}</div>` : ''}
@@ -41,7 +42,7 @@ export function pwView(u) {
   return `<div class="page narrow" style="padding-top:30px">
   <h1>${u.mustChange ? 'Choisissez votre mot de passe' : 'Changer de mot de passe'}</h1>
   ${u.mustChange ? '<p class="mut b" style="font-weight:600">Votre compte a été créé avec un mot de passe temporaire. Choisissez-en un nouveau.</p>' : ''}
-  <form class="ck pad col" data-form="pw">
+  <form class="bcard col" data-form="pw" style="background:var(--ink)"><span class="w1-blob" aria-hidden="true"><i></i><i></i></span>
     ${u.mustChange ? '' : '<div class="field"><label class="lbl" for="p0">Mot de passe actuel</label><input id="p0" name="old" type="password" class="inp" autocomplete="current-password" required></div>'}
     <div class="field"><label class="lbl" for="p1">Nouveau mot de passe</label><input id="p1" name="p1" type="password" class="inp" autocomplete="new-password" minlength="8" required><span class="hint">8 caractères minimum</span></div>
     <div class="field"><label class="lbl" for="p2">Confirmer</label><input id="p2" name="p2" type="password" class="inp" autocomplete="new-password" minlength="8" required></div>
@@ -87,10 +88,11 @@ export function adminView(u) {
   const roles = creatable(u);
   return shell(u, 4, `<div class="page">
   <div class="top"><span class="logo">${ic('shield', 22, 2.6)}</span><div class="grow"><div class="small mut b">${d.roleLabel(u)}</div><h1>Direction</h1></div></div>
-  <div class="gridauto">${demandesTile()}${publicTile()}${locauxTile()}${financeTile()}</div>
+  ${(() => { const p = pending(); return hero('Demandes d’inscription', p.length ? `${p.length} en attente` : 'Aucune en attente', { sub: 'Envoyées depuis l’onglet Cours du site', shadow: 'var(--pink)', extra: `<a class="btn y full" href="#/admin/demandes">${ic('users', 18)}Voir les demandes</a>` }); })()}
+  <div class="gridauto">${publicTile()}${locauxTile()}${financeTile()}</div>
   <div class="ck pad col" id="messages"><h2>${ic('mega', 22)} Message de la direction</h2>
   <p class="small mut b" style="font-weight:600">Affiché en haut de toutes les fiches élèves et des tableaux de bord de l’équipe, entre les deux dates choisies.</p>
-  <form class="col" data-form="ann">
+  <form class="col composer bubble" data-form="ann">
     <div class="grid2"><div class="field"><label class="lbl" for="af">Visible du</label><input id="af" name="from" type="date" class="inp" value="${today}" required></div><div class="field"><label class="lbl" for="at">Jusqu’au</label><input id="at" name="to" type="date" class="inp" value="${in7}" required></div></div>
     <label class="sr" for="za-t">Message</label><textarea id="za-t" name="text" class="inp" placeholder="Ex : l’école sera fermée samedi prochain…"></textarea>
     <div id="za"></div>
