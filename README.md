@@ -17,6 +17,7 @@ Une application web installable (PWA), **la même pour toutes les mosquées**. C
 | Nom à afficher (laisser vide = nom Mawaqit) ? | `nom` | `Mosquée Al-Mouhsinine` |
 | Quel **style** ? (voir `css/styles/`) | `style` | `pastille` ou `sobre` |
 | Couleur de la barre du téléphone ? | `couleurTheme` | `#1F4FFF` |
+| Quels cours la mosquée propose-t-elle ? (affichés dans l’onglet Cours) | `cours` | liste de `{"public": "Adultes", "detail": "Coran, tajwid", "horaires": "Mar. 19h–21h", "couleur": "jaune", "icone": "book"}` ; couleurs : mint, jaune, rose, bleu ; icônes : users, book, hands |
 | Adresse de connexion de l’équipe ? (le public ne voit alors aucun bouton de connexion) | `domaineEquipe` | `connexion.ma-mosquee.fr` |
 
 3. **Lancer la synchronisation Mawaqit :** onglet *Actions* → « Horaires Mawaqit » → *Run workflow*. Elle crée `data/mawaqit.json`, puis tourne seule chaque nuit.

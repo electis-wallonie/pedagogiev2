@@ -5,7 +5,7 @@ import { ACT, FORMS, esc, ic, av, pill, fdate, flong, toast, openModal, initials
 import * as F from './fiche.js';
 import { annoncesHtml } from './annonces.js';
 import { isAr } from './i18n.js';
-import { pubShell } from './mosquee.js';
+import { pubShell, config } from './mosquee.js';
 export const langBtn = () => `<button class="btn2 sm" data-act="lang" lang="${isAr ? 'fr' : 'ar'}">${ic('globe', 18)}<span data-notr dir="auto">${isAr ? 'Français' : 'العربية'}</span></button>`;
 
 let lastError = null;
@@ -25,21 +25,25 @@ export function home() {
     const c = d.cls(s.classId);
     return `<a href="#/f/${encodeURIComponent(s.code)}" class="ck pad row" style="text-decoration:none;color:var(--ink)">${av(initials(s), 48, 'var(--yellow)', 16)}<span class="grow"><span class="b" style="display:block;font-size:17px">${esc(s.prenoms.split(' ')[0])} ${esc(s.nom)}</span><span class="small mut b">${esc(c ? c.name : '')}</span></span>${ic('chev', 20)}</a>`;
   }).join('')}<button class="btn2 sm" data-act="forget-codes" style="align-self:flex-start">Oublier ces fiches sur cet appareil</button></div>` : '';
-  return pubShell(2, `<div class="home-grid">
-  <div class="col" style="gap:18px">
-    <h1 style="font-size:clamp(30px,5vw,52px);line-height:1.05">Suivi des cours</h1>
-    <p class="mut b" style="font-weight:600;font-size:17px">Tapez le code de suivi donné par l’enseignant : celui de votre enfant, ou le vôtre si vous suivez vous-même un cours. Pas de compte, pas de mot de passe.</p>
-    <form class="ck pad col" data-form="code" novalidate>
-      <div class="field"><label class="lbl" for="code">Code de suivi</label>
-      <input id="code" name="code" class="inp code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ex. CL2-YIB-KARIM-03052016-AB12" value="${esc(err || '')}" ${err ? 'aria-invalid="true" aria-describedby="code-err"' : ''}></div>
-      ${err ? `<div id="code-err" class="err" role="alert">Aucune fiche ne correspond à ce code. Vérifiez les tirets et les chiffres, ou demandez le code à l’enseignant.</div>` : ''}
-      <label class="check"><input type="checkbox" name="remember" checked>Se souvenir de ce code sur cet appareil</label>
-      <button class="btn full">Voir la fiche ${ic('arrow', 20)}</button>
+  // Design W1 « Mon suivi » : la carte bleue avec le code, puis la liste blanche des cours (mosquee.json → "cours").
+  const COL = { mint: 'var(--mint)', jaune: 'var(--yellow)', rose: 'var(--pink)', bleu: 'var(--blue2)' };
+  const cours = (config().cours || []).filter((c) => c && c.public);
+  const list = cours.length ? `<div class="col" style="gap:10px"><h2 style="margin-top:6px">Nos cours</h2>${cours.map((c, k) => `<div class="w1-c"><span class="w1-ic" style="background:${COL[c.couleur] || ['var(--mint)', 'var(--yellow)', 'var(--pink)'][k % 3]}">${ic(c.icone || ['users', 'book', 'hands'][k % 3], 20)}</span><span class="col grow" style="gap:1px;min-width:0"><span class="b" style="font-size:16px" dir="auto">${esc(c.public)}</span>${c.detail ? `<span class="small mut" style="font-weight:600" dir="auto">${esc(c.detail)}</span>` : ''}${c.horaires ? `<span class="small b" dir="auto">${esc(c.horaires)}</span>` : ''}</span></div>`).join('')}
+    <a href="#/contact" class="small b row" style="gap:6px">${ic('mail', 16)}S’inscrire : écrire à la direction</a></div>` : '';
+  return pubShell(2, `<div class="home-grid w1-grid">
+  <div class="col" style="gap:16px">
+    <form class="w1-card" data-form="code" novalidate>
+      <span class="w1-blob" aria-hidden="true"><i></i><i></i></span>
+      <span class="col" style="gap:2px;position:relative;padding-inline-end:70px"><h1 class="w1-h">Mon suivi</h1><span class="small b" style="font-weight:600">Entrez le code donné par l’enseignant.</span></span>
+      <label class="sr" for="code">Code de suivi</label>
+      <input id="code" name="code" class="inp code w1-in" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CL2-YIB-KARIM-…" value="${esc(err || '')}" ${err ? 'aria-invalid="true" aria-describedby="code-err"' : ''}>
+      ${err ? `<div id="code-err" class="w1-err" role="alert">${ic('x', 15)}Code introuvable. Vérifiez chaque lettre, ou demandez-le à l’enseignant.</div>` : ''}
+      <label class="check w1-check"><input type="checkbox" name="remember" checked>Se souvenir de ce code sur cet appareil</label>
+      <button class="btn full y">${ic('key', 18)}Voir la fiche</button>
     </form>
     ${kids}
-    <a href="#/installer" class="small">Installer l’app sur mon téléphone</a>
   </div>
-  <div>${blobs()}</div>
+  ${list}
   </div>`);
 }
 FORMS.code = (f, fd) => {

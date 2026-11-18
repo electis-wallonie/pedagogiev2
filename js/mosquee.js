@@ -85,7 +85,7 @@ function hijri(date) {
   } catch { return ''; }
 }
 const SERVICES = [['womenSpace', 'Espace femmes'], ['ablutions', 'Salle d’ablutions'], ['janazaPrayer', 'Prière mortuaire (janaza)'], ['aidPrayer', 'Prière de l’Aïd'], ['childrenCourses', 'Cours pour enfants'], ['adultCourses', 'Cours pour adultes'], ['ramadanMeal', 'Repas du Ramadan'], ['handicapAccessibility', 'Accès handicapés'], ['parking', 'Parking']];
-setInterval(() => { const el = document.getElementById('np-in'); if (el) { const n = nextPrayer(); if (n) el.textContent = 'dans ' + inLabel(n.at); } }, 30000);
+setInterval(() => { const el = document.getElementById('np-in'); if (el) { const n = nextPrayer(); if (n) el.textContent = inLabel(n.at); } }, 30000);
 export function prieres(q) {
   if (!MW && !MW_ERR) { loadMawaqit(); return pubShell(0, `<h1>Horaires de prière</h1><div class="ck pad"><p class="b">Chargement des horaires…</p></div>`); }
   const tilesHtml = '';
@@ -105,18 +105,23 @@ export function prieres(q) {
     for (let k = 1; k <= days; k++) { const dd = new Date(y, mo, k); const tt = dayTimes(dd); if (tt) rows.push(`<tr style="border-top:2px solid var(--neutral);${k === now.getDate() ? 'background:var(--hi);font-weight:800' : ''}"><td style="padding:6px 8px">${dd.toLocaleDateString(locale, { weekday: 'short', day: 'numeric' })}</td>${tt.map((x) => `<td style="padding:6px 8px;text-align:center">${x}</td>`).join('')}</tr>`); }
     month = `<div class="ck pad col"><div class="row between"><h2>${now.toLocaleDateString(locale, { month: 'long', year: 'numeric' })}</h2><a href="#/" class="small b">Fermer</a></div><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="background:var(--neutral)"><th style="padding:6px 8px;text-align:start">Jour</th>${PR.map(([f]) => `<th style="padding:6px 8px">${f}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div></div>`;
   }
+  // Design T3 : la journée entière en bandes ; passées en gris compact, la prochaine devient le bloc bleu nuit.
+  const COL = ['var(--blue2)', 'var(--hi)', 'var(--yellow)', 'var(--mint)', 'var(--pink)', 'var(--blue2)'];
+  const ROT = [-1, 0.8, -0.6, 1, -0.8, 0.6];
+  const label = (i) => (i === 2 && fri && jum.length ? ['Jumu’a', 'الجمعة'] : PR[i]);
+  const timeOf = (i) => (i === 2 && fri && jum.length ? jum[0] : t[i]);
+  const iqOf = (i) => { const qi = i === 0 ? 0 : i >= 2 ? i - 1 : -1; return iq && qi >= 0 ? iq[qi] : ''; };
+  const block = (i, time, extra, tomorrow) => { const [f, a] = tomorrow ? PR[0] : label(i); return `<div class="pt3-next" style="--rot:${tomorrow ? 0 : ROT[i]}deg"><div class="row between" style="gap:10px;align-items:center"><div class="col" style="gap:0;min-width:0"><span class="tiny b up" style="color:var(--yellow);letter-spacing:1.5px"><span>${tomorrow ? 'Demain' : 'Prochaine'}</span> · ${isAr ? '' : `<span data-notr>${esc(f)}</span> `}<span data-notr lang="ar">${a}</span></span><span class="pt3-big">${time}</span>${extra}</div><span class="pt3-cd"><b id="np-in">${inLabel(np.at)}</b><span>avant l’adhan</span></span></div></div>`; };
+  const band = (i) => { const [f, a] = label(i); const past = !!np && (np.tomorrow || i < np.i); const time = timeOf(i), q = iqOf(i);
+    if (np && !np.tomorrow && i === np.i) return block(i, time, q ? `<span class="small b">Iqama ${q}</span>` : '');
+    if (past) return `<div class="pt3 past" style="--rot:${ROT[i]}deg"><span class="pt3-chk">${ic('check', 15)}</span><span class="grow b">${f} ${isAr ? '' : `<span data-notr lang="ar" class="small">${a}</span>`}</span><span class="pt3-t">${time}</span></div>`;
+    return `<div class="pt3" style="--rot:${ROT[i]}deg;background:${COL[i]}"><span class="col grow" style="gap:0;min-width:0"><span class="b pt3-n">${f} ${isAr ? '' : `<span data-notr lang="ar">${a}</span>`}</span><span class="small b">${i === 1 ? 'Lever du soleil' : q ? 'Iqama ' + q : ''}</span></span><span class="pt3-t big">${time}</span></div>`; };
   return pubShell(0, `
-  <div class="ck col" style="padding:0;overflow:hidden;background:var(--ink);color:#fff">
-    ${MW.image ? `<div style="height:140px;background:url('${esc(MW.image)}') center/cover"></div>` : ''}
-    <div class="pad col" style="gap:6px">
-      <div class="row between wrap"><span class="b" data-notr dir="auto" style="font-size:20px">${esc(name)}</span><span class="small b" style="color:var(--yellow)">${esc(now.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' }))} · <span data-notr>${esc(hijri(now))}</span></span></div>
-      ${np ? `<div class="row wrap" style="gap:10px;align-items:baseline"><span class="tiny b" style="color:var(--yellow)">PROCHAINE PRIÈRE</span><span style="font-size:34px;font-weight:800">${PR[np.i][0]} · ${np.time}</span><span class="b" id="np-in">dans ${inLabel(np.at)}</span>${np.tomorrow ? '<span class="small">(demain)</span>' : ''}</div>` : ''}
-    </div></div>
-  <div class="prayers">${PR.map(([f, a], i) => { const qi = i === 0 ? 0 : i >= 2 ? i - 1 : -1; const on = np && !np.tomorrow && np.i === i; return `<div class="ck pr ${on ? 'on' : ''} ${i === 1 ? 'sun' : ''}"><span class="b">${i === 2 && fri && jum.length ? 'Jumu’a' : f}</span>${isAr ? '' : `<span class="small" data-notr lang="ar">${a}</span>`}<span class="pt">${i === 2 && fri && jum.length ? jum[0] : t[i]}</span>${iq && qi >= 0 ? `<span class="tiny b">Iqama ${iq[qi]}</span>` : '<span class="tiny">&nbsp;</span>'}</div>`; }).join('')}</div>
-  <div class="row wrap" style="gap:8px">${jum.length ? pill(`${ic('star', 14)} Jumu’a (vendredi) : ${jum.join(' · ')}`, 'var(--yellow)') : ''}${[MW.aidPrayerTime, MW.aidPrayerTime2, MW.aidPrayerTime3].filter(Boolean).length ? pill(`Prière de l’Aïd : ${[MW.aidPrayerTime, MW.aidPrayerTime2, MW.aidPrayerTime3].filter(Boolean).join(' · ')}`, 'var(--mint)') : ''}<a class="pill" href="#/?mois=1" style="background:var(--surface);text-decoration:none">${ic('cal', 14)} Horaires du mois</a></div>
+  <div class="row between wrap" style="gap:6px"><span class="b">${esc(now.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' }))}</span><span class="small b mut" data-notr>${esc(hijri(now))}</span></div>
+  <div class="pt3-stack">${np && np.tomorrow ? block(0, np.time, '', true) : ''}${[0, 1, 2, 3, 4, 5].map(band).join('')}</div>
+  <div class="row wrap" style="gap:8px">${jum.length ? pill(`${ic('star', 14)} Jumu’a : ${jum.join(' · ')}`, 'var(--pink)') : ''}${[MW.aidPrayerTime, MW.aidPrayerTime2, MW.aidPrayerTime3].filter(Boolean).length ? pill(`Prière de l’Aïd : ${[MW.aidPrayerTime, MW.aidPrayerTime2, MW.aidPrayerTime3].filter(Boolean).join(' · ')}`, 'var(--mint)') : ''}<a class="pill" href="#/?mois=1" style="background:var(--surface);text-decoration:none">${ic('cal', 14)} Le mois</a>${MW.latitude ? `<a class="pill" href="https://www.google.com/maps/dir/?api=1&destination=${MW.latitude},${MW.longitude}" target="_blank" rel="noopener" style="background:var(--surface);text-decoration:none">${ic('arrow', 14)} Itinéraire</a>` : ''}</div>
   ${month}
   ${(MW.announcements || []).length ? `<div class="ck pad col"><h2>${ic('mega', 20)} Annonces de la mosquée</h2>${MW.announcements.map((a) => `<div class="col" style="gap:4px"><span class="b" data-notr dir="auto">${esc(a.title || '')}</span><span style="white-space:pre-wrap" data-notr dir="auto">${esc(a.content || '')}</span></div>`).join('<hr style="border:0;border-top:2px solid var(--neutral);width:100%">')}</div>` : ''}
-  ${MW.latitude ? `<a class="btn2 sm" style="align-self:flex-start" href="https://www.google.com/maps/dir/?api=1&destination=${MW.latitude},${MW.longitude}" target="_blank" rel="noopener">${ic('arrow', 16)}Itinéraire</a>` : ''}
   <p class="tiny mut b">Horaires repris de la page Mawaqit officielle de la mosquée${MW.updatedAt ? ` · mis à jour le ${new Date(MW.updatedAt).toLocaleDateString(locale)}` : ''}. <a href="${esc(MW.source || MW.url || 'https://mawaqit.net')}" target="_blank" rel="noopener">Voir sur Mawaqit</a></p>`);
 }
 
@@ -152,30 +157,35 @@ export function imamMail() {
   return c ? c.email : '';
 }
 export function imam(q) {
-  const faq = (d.D().faq || []).slice().sort((a, b) => b.at.localeCompare(a.at));
-  const th = q && q.get('t');
-  const list = th ? faq.filter((f) => f.theme === th) : faq;
-  return pubShell(1, `<h1 style="font-size:clamp(30px,5vw,46px);line-height:1.05">Questions à l’imam</h1>
-  <p class="mut b" style="font-weight:600">Une question sur la prière, le jeûne, la famille… Posez-la à l’imam, vous pouvez rester anonyme. Les réponses utiles à tous sont publiées ci-dessous.</p>
-  ${imamMail() ? `<form class="ck pad col" data-form="imam-ask">
-    <div class="field"><label class="lbl" for="qt">Thème</label><select id="qt" name="theme" class="inp">${THEMES.map((t) => `<option>${t}</option>`).join('')}</select></div>
-    <div class="field"><label class="lbl" for="qq">Votre question</label><textarea id="qq" name="question" class="inp" rows="5" required placeholder="As-salamu alaykum, …"></textarea></div>
-    <div class="field"><label class="lbl" for="qn">Votre prénom (facultatif)</label><input id="qn" name="nom" class="inp" placeholder="Laissez vide pour rester anonyme"></div>
-    <button class="btn full">${ic('send', 20)}Envoyer ma question</button>
-    <p class="tiny mut b">Votre application e-mail s’ouvre avec la question prête : il ne reste qu’à envoyer.</p></form>`
-    : `<div class="ck pad" style="background:var(--hi)"><p class="b">La mosquée n’a pas encore indiqué l’adresse de l’imam.</p></div>`}
-  <div class="row between wrap"><h2>Questions &amp; réponses</h2>${pill(faq.length + ' réponse(s)', 'var(--neutral)')}</div>
-  ${faq.length ? `<div class="row wrap" style="gap:6px"><a class="pill" href="#/imam" style="background:${th ? 'var(--surface)' : 'var(--yellow)'};text-decoration:none">Tout</a>${THEMES.filter((t) => faq.some((f) => f.theme === t)).map((t) => `<a class="pill" href="#/imam?t=${encodeURIComponent(t)}" style="background:${th === t ? 'var(--yellow)' : 'var(--surface)'};text-decoration:none">${t}</a>`).join('')}</div>
-  <div class="field"><label class="sr" for="fq">Rechercher</label><input id="fq" class="inp" placeholder="Rechercher dans les réponses…" data-filter=".qa"></div>
-  <div class="col" style="gap:10px">${list.map((f) => `<details class="ck pad qa" data-q="${esc((f.q + ' ' + f.r).toLowerCase())}"><summary style="cursor:pointer;list-style:none" class="col"><span class="tiny b mut">${esc(f.theme)}</span><span class="b" style="font-size:17px" data-notr dir="auto">${esc(f.q)}</span></summary><div style="margin-top:10px;white-space:pre-wrap;font-weight:500" data-notr dir="auto">${esc(f.r)}</div></details>`).join('')}</div>`
+  // Design Z1·I : la grande bulle pour poser sa question, puis « Fréquentes » / « Récentes » en grands titres.
+  const all = d.D().faq || [];
+  const v = q && q.get('v') === 'r' ? 'r' : 'f';
+  const rec = all.slice().sort((a, b) => b.at.localeCompare(a.at));
+  const fav = all.filter((f) => f.freq);
+  const freq = fav.length ? fav : all.slice().sort((a, b) => a.at.localeCompare(b.at));
+  const list = v === 'r' ? rec : freq;
+  const ago = (iso) => { const n = Math.floor((Date.now() - new Date(iso)) / 864e5); return n <= 0 ? 'aujourd’hui' : n === 1 ? 'hier' : n < 7 ? `il y a ${n} j` : n < 30 ? `il y a ${Math.floor(n / 7)} sem.` : `il y a ${Math.floor(n / 30)} mois`; };
+  const mail = imamMail();
+  return pubShell(1, `
+  <form class="qz-bubble" data-form="imam-ask">
+    <h1 class="qz-h">Une question ?<br>L’imam vous répond.</h1>
+    ${mail ? `<label class="sr" for="qq">Votre question</label><textarea id="qq" name="question" class="inp" rows="3" required placeholder="Écrivez votre question…"></textarea>
+    <button class="btn full ink">${ic('send', 20)}Envoyer à l’imam</button>` : '<p class="b">La mosquée n’a pas encore indiqué l’adresse de l’imam.</p>'}
+    <svg class="qz-tail" width="46" height="34" viewBox="0 0 46 34" aria-hidden="true"><path d="M3 0 L3 31 L40 0" fill="var(--yellow)" stroke="var(--ink)" stroke-width="3" stroke-linejoin="round"></path><path d="M5 0 H38" stroke="var(--yellow)" stroke-width="6"></path></svg>
+  </form>
+  <div class="qz-who">${logo(30)}<span class="small b">Réponse privée, par e-mail</span></div>
+  <nav class="qz-tabs" aria-label="Questions">
+    <a href="#/imam" class="${v === 'f' ? 'on' : ''}" ${v === 'f' ? 'aria-current="page"' : ''}>Fréquentes</a>
+    <a href="#/imam?v=r" class="${v === 'r' ? 'on' : ''}" ${v === 'r' ? 'aria-current="page"' : ''}>Récentes</a>
+  </nav>
+  ${list.length ? `<div class="ck qz-list">${list.map((f) => `<details class="qz-item"><summary><span class="col grow" style="gap:2px;min-width:0"><span class="tiny b mut up"><span>${esc(f.theme)}</span>${v === 'r' ? ` · <span>${ago(f.at)}</span>` : ''}</span><span class="b qz-q" data-notr dir="auto">${esc(f.q)}</span></span><span class="qz-chev">${ic('chev', 16)}</span></summary><div class="qz-a" data-notr dir="auto">${esc(f.r)}</div></details>`).join('')}</div>`
     : '<p class="small mut">Aucune réponse publiée pour le moment.</p>'}`);
 }
 FORMS['imam-ask'] = (f, fd) => {
   const to = imamMail();
   if (!to) return;
-  const nom = (fd.get('nom') || '').trim();
-  const subject = `Question à l’imam · ${fd.get('theme')}`;
-  const body = `${(fd.get('question') || '').trim()}\n\n${nom || '(question anonyme)'}`;
+  const subject = 'Question à l’imam';
+  const body = (fd.get('question') || '').trim();
   location.href = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 };
 
@@ -229,10 +239,11 @@ ACT['faq-edit'] = (el) => {
   openModal(() => `<div class="row between"><h2>${f.id ? 'Modifier la réponse' : 'Publier une réponse'}</h2><button class="ib" data-act="close-modal" aria-label="Fermer">${ic('x', 20)}</button></div>
   <form class="col" data-form="faq" data-id="${f.id}"><div class="field"><label class="lbl" for="ft">Thème</label><select id="ft" name="theme" class="inp">${THEMES.map((t) => `<option ${t === f.theme ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
   <div class="field"><label class="lbl" for="fqq">Question</label><textarea id="fqq" name="q" class="inp" required>${esc(f.q)}</textarea></div>
-  <div class="field"><label class="lbl" for="fr">Réponse de l’imam</label><textarea id="fr" name="r" class="inp" rows="7" required>${esc(f.r)}</textarea></div><button class="btn full">Publier</button></form>`);
+  <div class="field"><label class="lbl" for="fr">Réponse de l’imam</label><textarea id="fr" name="r" class="inp" rows="7" required>${esc(f.r)}</textarea></div>
+  <label class="row" style="gap:10px;font-weight:800"><input type="checkbox" name="freq" ${f.freq ? 'checked' : ''} style="width:22px;height:22px"> Afficher dans « Fréquentes »</label><button class="btn full">Publier</button></form>`);
 };
 FORMS.faq = (f, fd) => {
-  const v = { theme: fd.get('theme'), q: (fd.get('q') || '').trim(), r: (fd.get('r') || '').trim() };
+  const v = { theme: fd.get('theme'), q: (fd.get('q') || '').trim(), r: (fd.get('r') || '').trim(), freq: !!fd.get('freq') };
   const x = d.D().faq.find((y) => y.id === f.dataset.id);
   if (x) Object.assign(x, v); else d.D().faq.push({ id: d.uid(), at: new Date().toISOString(), ...v });
   d.save(); closeModal(); toast('Réponse publiée'); rerender();

@@ -10,6 +10,8 @@ export function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 const P = {
+  key: '<circle cx="8" cy="15" r="5"/><path d="M11.5 11.5L21 2M17 6l3 3M15 8l2 2"/>',
+  hands: '<path d="M7 11V5a2 2 0 0 1 4 0v6M11 9V4a2 2 0 0 1 4 0v7M15 9a2 2 0 0 1 4 0v4a8 8 0 0 1-8 8h-1a7 7 0 0 1-6-3.5L2 14a2 2 0 0 1 3.4-2L7 14"/>',
   moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
   pie: '<path d="M21.2 15.9A10 10 0 1 1 8 2.8"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>',
   list: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',

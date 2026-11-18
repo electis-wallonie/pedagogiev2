@@ -2,6 +2,8 @@
 // familles, locaux, comptes, import. Fusionné dans le dictionnaire principal par i18n.js.
 // Les contenus saisis (noms, notes…) ne sont pas traduits.
 export const AR2 = {
+  'Mon suivi': 'متابعتي', 'Entrez le code donné par l’enseignant.': 'أدخل الرمز الذي أعطاه المعلّم.', 'Voir la fiche': 'عرض الملف', 'Nos cours': 'دروسنا', 'S’inscrire : écrire à la direction': 'التسجيل: راسل الإدارة', 'Code introuvable. Vérifiez chaque lettre, ou demandez-le à l’enseignant.': 'الرمز غير موجود. تحقّق من كل حرف أو اطلبه من المعلّم.', 'Se souvenir de ce code sur cet appareil': 'تذكّر هذا الرمز على هذا الجهاز',
+  'Une question ?': 'سؤال؟', 'L’imam vous répond.': 'الإمام يجيبك.', 'Envoyer à l’imam': 'إرسال إلى الإمام', 'Réponse privée, par e-mail': 'الجواب على انفراد بالبريد الإلكتروني', 'Fréquentes': 'الأكثر تداولًا', 'Récentes': 'الأحدث', 'Afficher dans « Fréquentes »': 'إظهار في «الأكثر تداولًا»', 'Prochaine prière': 'الصلاة القادمة', 'Prochaine': 'القادمة', 'Demain': 'غدًا', 'avant l’adhan': 'قبل الأذان', 'Lever du soleil': 'شروق الشمس', 'Le mois': 'الشهر', 'Écrivez votre question…': 'اكتب سؤالك…', 'aujourd’hui': 'اليوم', 'hier': 'أمس', 'Votre question': 'سؤالك',
   // navigation publique
   'Prières': 'الصلوات', 'Questions': 'الأسئلة', 'Cours': 'الدروس', 'Mosquée': 'المسجد', 'Contact': 'اتصل بنا', 'Rubriques': 'الأقسام',
   'Français': 'Français', 'Espace équipe': 'فضاء الفريق', 'Voir': 'عرض',
@@ -156,6 +158,11 @@ export const AR2 = {
 };
 const D = (h, m) => (m ? `${h} س ${m} د` : `${h} س`);
 export const RULES2 = [
+  [/^il y a (\d+) j$/, (m) => `منذ ${m[1]} أيام`],
+  [/^il y a (\d+) sem\.$/, (m) => `منذ ${m[1]} أسابيع`],
+  [/^il y a (\d+) mois$/, (m) => `منذ ${m[1]} أشهر`],
+  [/^Iqama (\d\d:\d\d)$/, (m) => `الإقامة ${m[1]}`],
+  [/^Jumu’a : (.+)$/, (m) => `الجمعة: ${m[1]}`],
   [/^Devoirs pour le (.+)$/, (m) => `الواجبات ليوم ${m[1]}`],
   [/^Pour le (.+)$/, (m) => `ليوم ${m[1]}`],
   [/^Au (.+)$/, (m) => `بتاريخ ${m[1]}`],

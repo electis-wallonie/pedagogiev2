@@ -3,5 +3,28 @@
   "mawaqit": "https://mawaqit.net/fr/mosquee-st-jean-de-braye",
   "domaineEquipe": "",
   "style": "pastille",
-  "couleurTheme": "#1F4FFF"
+  "couleurTheme": "#1F4FFF",
+  "cours": [
+    {
+      "public": "Enfants",
+      "detail": "6–14 ans · Coran, arabe, éducation",
+      "horaires": "Mer. 14h–17h · Sam. & dim. 9h–12h",
+      "couleur": "mint",
+      "icone": "users"
+    },
+    {
+      "public": "Adultes",
+      "detail": "Coran, tajwid, arabe",
+      "horaires": "Mar. & jeu. 19h–21h · Dim. 14h–16h",
+      "couleur": "jaune",
+      "icone": "book"
+    },
+    {
+      "public": "Sœurs",
+      "detail": "Coran et sciences",
+      "horaires": "Sam. 14h–16h",
+      "couleur": "rose",
+      "icone": "hands"
+    }
+  ]
 }

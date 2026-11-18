@@ -288,3 +288,58 @@ div.cal-ev{cursor:default}
   .pdf .cal-t{font-size:7px}
   .pdf .cal-body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
+
+/* Prières · design T3 : la journée en bandes */
+.pt3-stack{display:flex;flex-direction:column;gap:9px}
+.pt3{display:flex;align-items:center;gap:12px;border:var(--bw) solid var(--ink);border-radius:14px;box-shadow:5px 5px 0 var(--ink);padding:11px 14px;transform:rotate(var(--rot,0deg))}
+.pt3 .pt3-n{font-size:19px;line-height:1.1}
+.pt3-t{font-size:24px;font-weight:800;letter-spacing:-1px}
+.pt3-t.big{font-size:32px}
+.pt3.past{background:var(--neutral);color:var(--muted);box-shadow:none;padding:7px 14px}
+.pt3-chk{width:30px;height:30px;flex:none;border-radius:999px;background:var(--surface);border:2.5px solid var(--ink);display:flex;align-items:center;justify-content:center;color:var(--ink);box-sizing:border-box}
+.pt3-next{background:var(--ink);color:#fff;border:var(--bw) solid var(--ink);border-radius:14px;box-shadow:5px 5px 0 var(--primary);padding:14px 16px;transform:rotate(var(--rot,0deg))}
+.pt3-big{font-size:44px;font-weight:800;line-height:1.05}
+.pt3-cd{flex:none;display:flex;flex-direction:column;align-items:center;background:var(--yellow);color:var(--ink);border:2.5px solid #fff;border-radius:12px;padding:8px 12px;text-align:center;line-height:1.1}
+.pt3-cd b{font-size:20px}.pt3-cd span{font-size:11px;font-weight:800}
+@media(min-width:760px){.pt3-stack{max-width:620px}}
+
+/* Questions · design Z1·I : la grande bulle + Fréquentes / Récentes */
+.qz-bubble{position:relative;background:var(--yellow);border:var(--bw) solid var(--ink);border-radius:26px;box-shadow:5px 5px 0 var(--ink);padding:18px;display:flex;flex-direction:column;gap:10px;margin-bottom:22px}
+.qz-h{font-size:24px;line-height:1.15;margin:0}
+.qz-bubble textarea{background:#fff}
+.btn.ink{background:var(--ink);color:#fff}
+.qz-tail{position:absolute;left:40px;bottom:-28px}
+[dir=rtl] .qz-tail{left:auto;right:40px;transform:scaleX(-1)}
+.qz-who{display:flex;align-items:center;gap:8px;margin:-18px 0 0 92px}
+[dir=rtl] .qz-who{margin:-18px 92px 0 0}
+.qz-tabs{display:flex;align-items:baseline;gap:16px;margin-top:6px}
+.qz-tabs a{font-size:20px;font-weight:800;color:#9AA6CC;text-decoration:none}
+.qz-tabs a.on{font-size:26px;color:var(--ink)}
+.qz-list{padding:2px 14px;display:flex;flex-direction:column}
+.qz-item{border-top:2px solid var(--neutral)}.qz-item:first-child{border-top:0}
+.qz-item summary{list-style:none;display:flex;gap:10px;align-items:flex-start;padding:11px 2px;cursor:pointer}
+.qz-item summary::-webkit-details-marker{display:none}
+.qz-q{font-size:15px;line-height:1.3}
+.qz-chev{margin-top:14px;display:flex;transition:transform .15s}
+.qz-item[open] .qz-chev{transform:rotate(90deg)}
+.qz-a{padding:0 2px 12px;white-space:pre-wrap;font-weight:500;line-height:1.5;color:var(--muted)}
+@media(min-width:760px){.qz-bubble{max-width:560px}.qz-h{font-size:30px}}
+.up{text-transform:uppercase}
+[dir=rtl] .up{text-transform:none}
+
+/* Cours · design W1 « Mon suivi » */
+.w1-grid{align-items:start!important;min-height:0!important}
+.w1-card{position:relative;overflow:hidden;background:var(--primary);color:#fff;border:var(--bw) solid var(--ink);border-radius:14px;box-shadow:5px 5px 0 var(--ink);padding:16px;display:flex;flex-direction:column;gap:12px}
+.w1-h{font-size:23px;line-height:1.15;margin:0;color:#fff}
+.w1-blob{position:absolute;right:-26px;top:-24px;width:110px;height:110px;pointer-events:none}
+[dir=rtl] .w1-blob{right:auto;left:-26px}
+.w1-blob i{position:absolute;border:3px solid var(--ink);box-sizing:border-box}
+.w1-blob i:first-child{width:72px;height:72px;border-radius:999px;background:var(--mint);right:27px;top:27px}
+.w1-blob i:last-child{width:44px;height:44px;border-radius:12px;background:var(--pink);right:0;top:0;transform:rotate(14deg)}
+.w1-in{position:relative;background:#fff!important;color:var(--ink);box-shadow:3px 3px 0 var(--ink);font-family:ui-monospace,Menlo,monospace;font-size:16px}
+.w1-check{position:relative;color:#fff;font-weight:700}.w1-check input{accent-color:var(--yellow)}
+.w1-err{position:relative;display:flex;gap:8px;align-items:center;background:var(--pink);color:var(--ink);border:2.5px solid var(--ink);border-radius:12px;padding:8px 10px;font-size:13px;font-weight:800}
+.btn.y{position:relative;background:var(--yellow);color:var(--ink)}
+.w1-c{display:flex;gap:12px;align-items:center;background:var(--surface);border:var(--bw) solid var(--ink);border-radius:14px;padding:10px 12px}
+.w1-ic{width:44px;height:44px;flex:none;border-radius:12px;border:var(--bw) solid var(--ink);display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+@media(min-width:960px){.w1-h{font-size:30px}}

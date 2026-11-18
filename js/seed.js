@@ -14,7 +14,7 @@ const daysAgo = (n) => { const d = new Date(); d.setDate(d.getDate() - n); retur
 const stamp = (n, h = 14) => { const d = new Date(); d.setDate(d.getDate() - n); d.setHours(h, 10, 0, 0); return d.toISOString(); };
 
 // À augmenter à chaque nouvelle version des données de démo : les appareils qui ont une ancienne démo la rechargent tout seuls.
-export const SEED_VERSION = 7;
+export const SEED_VERSION = 8;
 export async function seed() {
   await clearAudio().catch(() => {});
   const admin = await makeUser('admin', 'admin', 'Administrateur', 'admin1234', false);
@@ -143,8 +143,11 @@ export async function seed() {
     { id: uid(), label: 'Le directeur de l’école', email: 'ecole@exemple.be' },
   ];
   db.faq = [
-    { id: uid(), at: stamp(10), theme: 'Prière', q: 'Peut-on rattraper une prière manquée ?', r: 'Oui. La prière manquée (qada) se rattrape dès qu’on s’en souvient, dans l’ordre, de préférence avant la prière suivante. Pour toute situation particulière, venez en parler à l’imam après une prière.' },
-    { id: uid(), at: stamp(5), theme: 'Zakat / aumône', q: 'À qui remettre la zakat al-Fitr ?', r: 'La mosquée collecte la zakat al-Fitr pendant les derniers jours du Ramadan et la redistribue aux familles dans le besoin avant la prière de l’Aïd. Le montant est annoncé chaque année.' },
+    { id: uid(), at: stamp(10), freq: true, theme: 'Prière', q: 'Peut-on rattraper une prière manquée ?', r: 'Oui. La prière manquée (qada) se rattrape dès qu’on s’en souvient, dans l’ordre, de préférence avant la prière suivante. Pour toute situation particulière, venez en parler à l’imam après une prière.' },
+    { id: uid(), at: stamp(40), freq: true, theme: 'Jeûne / Ramadan', q: 'Peut-on jeûner en voyage ?', r: 'Le voyageur peut rompre le jeûne et rattraper les jours plus tard. S’il jeûne malgré tout, son jeûne est valable.' },
+    { id: uid(), at: stamp(30), freq: true, theme: 'Famille / mariage', q: 'Mon enfant de 7 ans doit-il déjà prier ?', r: 'On l’y encourage dès 7 ans, avec douceur, pour qu’il en prenne l’habitude. L’obligation vient à la puberté.' },
+    { id: uid(), at: stamp(2), theme: 'Famille / mariage', q: 'Peut-on célébrer le mariage religieux à la mosquée ?', r: 'Oui, sur rendez-vous avec l’imam, quelques semaines avant la date.' },
+    { id: uid(), at: stamp(5), freq: true, theme: 'Zakat / aumône', q: 'À qui remettre la zakat al-Fitr ?', r: 'La mosquée collecte la zakat al-Fitr pendant les derniers jours du Ramadan et la redistribue aux familles dans le besoin avant la prière de l’Aïd. Le montant est annoncé chaque année.' },
   ];
   db.announcements.push({ id: uid(), text: 'Bienvenue sur la nouvelle application de suivi ! Vous y retrouverez l’avancement de votre enfant, ses présences et les notes de l’imam.', audioId: null, from: daysAgo(1), to: daysAgo(-14), at: stamp(1, 9), authorId: admin.id });
   save();
