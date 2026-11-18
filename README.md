@@ -83,6 +83,7 @@ Application web installable (PWA) qui remplace les feuilles de suivi papier : **
   - Sur une sourate en cours, l’imam laisse des **notes datées** (ce qu’il faut réviser, jusqu’où…), en **texte** et/ou en **message vocal**. C’est le cahier de l’élève.
   - À la validation : date de fin enregistrée, notes effacées.
 - **Langue & Religion** : objectifs par niveau, définis par le professeur. Tout le monde (parents compris) peut parcourir tous les niveaux (onglets, flèches ou glisser le doigt) pour voir ce qui est à apprendre ; le niveau actuel de l’élève est marqué ★. Validation élève par élève, ou pour **toute la classe d’un coup** (un objectif ou tout un niveau), avec correction possible élève par élève.
+- **Messages vocaux** : 1 minute maximum (arrêt automatique), qualité voix (≈ 180 Ko la minute), **supprimés automatiquement au bout de 30 jours** (le texte de la note reste).
 - **Notes** : personnelles (un élève) ou pour toute la classe, en texte ou vocal. Les notes **pour toute la classe** acceptent aussi des **photos et fichiers** (tableau en photo, devoirs en PDF…, 5 max, 15 Mo max, photos compressées), **supprimés automatiquement au bout de 7 jours**.
 - **Fiche parent** : aperçu, Coran, Langue & Religion, présence (« absent à ce cours », avec la date), notes.
 - PWA installable et utilisable hors connexion. Mise en page mobile et ordinateur.

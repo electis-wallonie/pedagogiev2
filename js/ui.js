@@ -142,12 +142,15 @@ export async function hydrateAudio(root = document) {
   }
 }
 export const pending = {}; // zone → { blob, dur }
+// Messages vocaux : 1 minute maximum, qualité « voix » (24 kbit/s ≈ 180 Ko la minute), supprimés au bout de 30 jours
+export const VOICE_MAX_S = 60;
+export const VOICE_DAYS = 30;
 let rec = null;
 function fmtDur(s) { s = Math.round(s); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
 function zoneHtml(zone) {
   const p = pending[zone];
-  if (rec && rec.zone === zone) return `<div class="rec"><span class="dot"></span>Enregistrement… <span data-timer>${fmtDur((Date.now() - rec.t0) / 1000)}</span></div>`;
-  if (p) return `<div class="row"><audio controls src="${p.url}" style="flex:1;min-width:0;height:40px"></audio><button type="button" class="ib sm" data-act="rec-del" data-zone="${zone}" aria-label="Supprimer le message vocal">${ic('trash', 18)}</button></div>`;
+  if (rec && rec.zone === zone) return `<div class="rec"><span class="dot"></span>Enregistrement… <span data-timer>${fmtDur((Date.now() - rec.t0) / 1000)}</span> / ${fmtDur(VOICE_MAX_S)}</div>`;
+  if (p) return `<div class="tiny mut b">Vocal de ${fmtDur(Math.min(p.dur, VOICE_MAX_S))} · supprimé automatiquement au bout de ${VOICE_DAYS} jours</div><div class="row"><audio controls src="${p.url}" style="flex:1;min-width:0;height:40px"></audio><button type="button" class="ib sm" data-act="rec-del" data-zone="${zone}" aria-label="Supprimer le message vocal">${ic('trash', 18)}</button></div>`;
   return '';
 }
 function paintZone(zone) {
@@ -170,7 +173,9 @@ ACT['rec'] = async (el) => {
   try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
   catch { toast('Micro refusé : autorisez le micro dans le navigateur'); return; }
   const type = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm', 'audio/ogg'].find((t) => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t));
-  const mr = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
+  const opts = { audioBitsPerSecond: 24000 };
+  if (type) opts.mimeType = type;
+  const mr = new MediaRecorder(stream, opts);
   const chunks = [];
   mr.ondataavailable = (e) => e.data.size && chunks.push(e.data);
   mr.onstop = () => {
@@ -182,7 +187,12 @@ ACT['rec'] = async (el) => {
     if (blob.size) pending[zone] = { blob, dur, url: URL.createObjectURL(blob) };
     paintZone(zone);
   };
-  rec = { mr, zone, t0: Date.now(), tick: setInterval(() => { const t = document.querySelector(`#${zone} [data-timer]`); if (t && rec) t.textContent = fmtDur((Date.now() - rec.t0) / 1000); }, 500) };
+  rec = { mr, zone, t0: Date.now(), tick: setInterval(() => {
+    if (!rec) return;
+    const s = (Date.now() - rec.t0) / 1000;
+    const t = document.querySelector(`#${zone} [data-timer]`); if (t) t.textContent = fmtDur(Math.min(s, VOICE_MAX_S));
+    if (s >= VOICE_MAX_S && rec.mr.state === 'recording') { rec.mr.stop(); toast('1 minute maximum : enregistrement arrêté'); }
+  }, 250) };
   mr.start();
   paintZone(zone);
 };

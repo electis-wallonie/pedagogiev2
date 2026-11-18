@@ -229,14 +229,24 @@ export function defaultObjectives(profId) { return DEFAULT_OBJ.map(([level, grou
 export async function purgeExpired() {
   if (!db) return false;
   const now = new Date().toISOString();
+  const voiceLimit = new Date(Date.now() - 30 * 864e5).toISOString(); // vocaux : 30 jours
   let changed = false;
   for (const n of db.notes) {
-    if (!n.files || !n.files.length) continue;
-    const keep = [];
-    for (const f of n.files) { if (f.until <= now) { await delAudio(f.id).catch(() => {}); changed = true; } else keep.push(f); }
-    n.files = keep;
+    if (n.files && n.files.length) {
+      const keep = [];
+      for (const f of n.files) { if (f.until <= now) { await delAudio(f.id).catch(() => {}); changed = true; } else keep.push(f); }
+      n.files = keep;
+    }
   }
-  if (changed) { db.notes = db.notes.filter((n) => n.text || n.audioId || (n.files && n.files.length)); save(); }
+  for (const list of [db.notes, db.snotes, db.announcements || []]) {
+    for (const x of list) if (x.audioId && (x.at || '') < voiceLimit) { await delAudio(x.audioId).catch(() => {}); x.audioId = null; x.audioGone = true; changed = true; }
+  }
+  if (changed) {
+    db.notes = db.notes.filter((n) => n.text || n.audioId || (n.files && n.files.length));
+    db.snotes = db.snotes.filter((n) => n.text || n.audioId);
+    db.announcements = (db.announcements || []).filter((a) => a.text || a.audioId);
+    save();
+  }
   return changed;
 }
 
