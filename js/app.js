@@ -24,7 +24,7 @@ function guard(role) {
 }
 const R = [
   [/^\/?$/, (m, q) => { if (mosq.teamHost()) { const u = d.me(); location.hash = u ? d.homeOf(u) : '#/login'; return null; } return mosq.prieres(q); }],
-  [/^\/mosquee$/, () => mosq.mosquee()],
+  [/^\/mosquee$/, () => { location.replace('#/'); return ''; }],
   [/^\/imam$/, (m, q) => mosq.imam(q)],
   [/^\/cours$/, () => pub.home()],
   [/^\/installer$/, () => pub.install()],

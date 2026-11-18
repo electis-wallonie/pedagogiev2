@@ -2,7 +2,7 @@
 
 Une application web installable (PWA), **la même pour toutes les mosquées**. Chaque mosquée reçoit sa propre copie de ce dépôt, configurée par un seul fichier : `mosquee.json`.
 
-- **Côté public, sans compte :** barre du bas Prières (reliées à Mawaqit) · Questions à l’imam · Cours (fiche d’un élève, enfant ou adulte) · Mosquée (infos, itinéraire, dons, contacts) ; bouton Contact en haut de chaque page.
+- **Côté public, sans compte :** barre du bas Prières (reliées à Mawaqit) · Questions à l’imam · Cours (fiche d’un élève, enfant ou adulte) ; bouton Contact en haut de chaque page.
 - **Bilingue français / arabe** partout (bouton langue), avec mise en page de droite à gauche en arabe.
 - **Côté équipe, avec identifiant :** méga administrateur, administrateurs, comptabilité, professeurs.
 

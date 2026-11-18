@@ -19,7 +19,7 @@ export const AR2 = {
   'La synchronisation avec Mawaqit n’a pas encore eu lieu.': 'لم تتم المزامنة مع مواقيت بعد.', 'Fermer': 'إغلاق', 'Annonces': 'الإعلانات',
   'Annonces de la mosquée': 'إعلانات المسجد',
   // mosquée
-  'Faire un don': 'تبرّع', 'Nous contacter': 'اتصل بنا', 'Les enseignants': 'الأساتذة', 'Aucun contact pour le moment.': 'لا توجد جهات اتصال حالياً.',
+  'Faire un don': 'تبرّع', 'Contacter la mosquée': 'اتصل بالمسجد', 'Nous contacter': 'اتصل بنا', 'Les enseignants': 'الأساتذة', 'Aucun contact pour le moment.': 'لا توجد جهات اتصال حالياً.',
   // questions à l'imam
   'Questions à l’imam': 'أسئلة للإمام', 'Thème': 'الموضوع', 'Prière': 'الصلاة', 'Jeûne / Ramadan': 'الصيام / رمضان', 'Zakat / aumône': 'الزكاة / الصدقة',
   'Famille / mariage': 'الأسرة / الزواج', 'Coran': 'القرآن', 'Vie quotidienne': 'الحياة اليومية', 'Autre': 'أخرى', 'Votre question': 'سؤالك',

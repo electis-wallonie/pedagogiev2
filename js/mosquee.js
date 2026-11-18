@@ -11,7 +11,7 @@ const logo = (s = 40) => `<span class="logo" style="width:${s}px;height:${s}px">
 const langBtn = () => `<button class="btn2 sm" data-act="lang" lang="${isAr ? 'fr' : 'ar'}" aria-label="${isAr ? 'Français' : 'العربية'}">${ic('globe', 18)}<span class="hide-sm" data-notr dir="auto">${isAr ? 'Français' : 'العربية'}</span></button>`;
 
 // ---------- navigation publique : 4 rubriques ----------
-const PUB = [['#/', 'clock', 'Prières'], ['#/imam', 'chat', 'Questions'], ['#/cours', 'book', 'Cours'], ['#/mosquee', 'home', 'Mosquée']];
+const PUB = [['#/', 'clock', 'Prières'], ['#/imam', 'chat', 'Questions'], ['#/cours', 'book', 'Cours']];
 // Connexion séparée : l'équipe se connecte sur « domaineEquipe » (ex. connexion.ma-mosquee.fr), le public ne voit jamais de bouton de connexion.
 export const teamHost = () => { const h = location.hostname; const c = (CFG && CFG.domaineEquipe) || ''; return (c && h === c) || /^connexion\./.test(h); };
 export const publicOnly = () => !!(CFG && CFG.domaineEquipe) && !teamHost();
@@ -88,7 +88,7 @@ const SERVICES = [['womenSpace', 'Espace femmes'], ['ablutions', 'Salle d’ablu
 setInterval(() => { const el = document.getElementById('np-in'); if (el) { const n = nextPrayer(); if (n) el.textContent = 'dans ' + inLabel(n.at); } }, 30000);
 export function prieres(q) {
   if (!MW && !MW_ERR) { loadMawaqit(); return pubShell(0, `<h1>Horaires de prière</h1><div class="ck pad"><p class="b">Chargement des horaires…</p></div>`); }
-  const tiles = [['#/imam', 'chat', 'Poser une question à l’imam', 'var(--mint)'], ['#/cours', 'book', 'Suivi des cours (code de l’élève)', 'var(--blue2)'], ['#/mosquee', 'home', 'La mosquée : contacts, itinéraire, dons', 'var(--pink)']];
+  const tiles = [['#/imam', 'chat', 'Poser une question à l’imam', 'var(--mint)'], ['#/cours', 'book', 'Suivi des cours (code de l’élève)', 'var(--blue2)'], ['#/contact', 'mail', 'Contacter la mosquée', 'var(--pink)']];
   const tilesHtml = `<div class="gridauto">${tiles.map(([h, i, l, bg]) => `<a href="${h}" class="ck pad col" style="gap:10px;text-decoration:none;color:var(--ink);background:${bg}">${ic(i, 28)}<span class="b" style="font-size:18px">${l}</span></a>`).join('')}</div>`;
   const now = new Date();
   const t = MW && dayTimes(now);
@@ -118,7 +118,7 @@ export function prieres(q) {
   ${month}
   ${(MW.announcements || []).length ? `<div class="ck pad col"><h2>${ic('mega', 20)} Annonces de la mosquée</h2>${MW.announcements.map((a) => `<div class="col" style="gap:4px"><span class="b" data-notr dir="auto">${esc(a.title || '')}</span><span style="white-space:pre-wrap" data-notr dir="auto">${esc(a.content || '')}</span></div>`).join('<hr style="border:0;border-top:2px solid var(--neutral);width:100%">')}</div>` : ''}
   ${tilesHtml}
-  ${SERVICES.some(([k]) => MW[k]) ? `<div class="ck pad col"><h2>Services de la mosquée</h2><div class="row wrap" style="gap:8px">${SERVICES.filter(([k]) => MW[k]).map(([, l]) => pill(`${ic('check', 14)} ${l}`, 'var(--neutral)')).join('')}</div>${MW.association ? `<p class="small mut b">${esc(MW.association)}</p>` : ''}${MW.latitude ? `<a class="btn2 sm" style="align-self:flex-start" href="https://www.google.com/maps/dir/?api=1&destination=${MW.latitude},${MW.longitude}" target="_blank" rel="noopener">${ic('arrow', 16)}Itinéraire</a>` : ''}</div>` : ''}
+  ${SERVICES.some(([k]) => MW[k]) ? `<div class="ck pad col"><h2>Services de la mosquée</h2><div class="row wrap" style="gap:8px">${SERVICES.filter(([k]) => MW[k]).map(([, l]) => pill(`${ic('check', 14)} ${l}`, 'var(--neutral)')).join('')}</div>${MW.association ? `<p class="small mut b">${esc(MW.association)}</p>` : ''}${MW.latitude ? `<a class="btn2 sm" style="align-self:flex-start" href="https://www.google.com/maps/dir/?api=1&destination=${MW.latitude},${MW.longitude}" target="_blank" rel="noopener">${ic('arrow', 16)}Itinéraire</a>` : ''}${MW.paymentWebsite ? `<a class="btn y sm" style="align-self:flex-start" href="${esc(MW.paymentWebsite)}" target="_blank" rel="noopener">${ic('star', 16)}Faire un don</a>` : ''}</div>` : ''}
   <p class="tiny mut b">Horaires repris de la page Mawaqit officielle de la mosquée${MW.updatedAt ? ` · mis à jour le ${new Date(MW.updatedAt).toLocaleDateString(locale)}` : ''}. <a href="${esc(MW.source || MW.url || 'https://mawaqit.net')}" target="_blank" rel="noopener">Voir sur Mawaqit</a></p>`);
 }
 
