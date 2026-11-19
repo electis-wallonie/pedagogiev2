@@ -481,15 +481,14 @@ function studentForm(u, s, classId) {
   <div class="field"><label class="lbl" for="sc">Classe</label><select id="sc" name="classId" class="inp" style="background:var(--blue2)">${cl.map((c) => `<option value="${c.id}" ${c.id === sel ? 'selected' : ''}>${clsLabel(c)}</option>`).join('')}</select>${s ? '<span class="hint">Changer de classe conserve tout le suivi.</span>' : ''}</div>
   <div class="grid2 stack"><div class="field"><label class="lbl" for="sn">Nom</label><input id="sn" name="nom" class="inp" required value="${esc(s ? s.nom : '')}" autocomplete="off"></div>
   <div class="field"><label class="lbl" for="sp">Prénom(s)</label><input id="sp" name="prenoms" class="inp" required value="${esc(s ? s.prenoms : '')}" autocomplete="off"><span class="hint">Tous les prénoms, séparés par un espace</span></div></div>
-  <div class="grid2 stack"><div class="field"><label class="lbl" for="sg">Âge</label><input id="sg" name="age" type="number" min="2" max="99" inputmode="numeric" class="inp" required value="${s ? d.ageOf(s) ?? '' : ''}"><span class="hint">L’âge se met à jour tout seul chaque année.</span></div>
+  <div class="grid2 stack"><div class="field"><label class="lbl" for="sb">Date de naissance</label><input id="sb" name="naissance" type="date" class="inp" required max="${todayISO()}" value="${s && s.naissance ? s.naissance : ''}"><span class="hint">${s && !s.naissance && d.ageOf(s) != null ? `À compléter (âge connu : ${d.ageOf(s)} ans). ` : ''}L’âge est calculé tout seul à partir de cette date.</span></div>
   <div class="field"><label class="lbl" for="sa">Prénom d’un parent</label><input id="sa" name="parent" class="inp" required value="${esc(s ? s.parent : '')}" autocomplete="off"></div></div>
   <div class="grid2 stack"><div class="field"><label class="lbl" for="stl">Téléphone du parent</label><input id="stl" name="tel" type="tel" inputmode="tel" class="inp code" required value="${esc(s ? s.tel || '' : '')}" autocomplete="off" placeholder="ex. +32 470 12 34 56"><span class="hint">Avec l’indicatif (+32, +33…), le bouton WhatsApp apparaît aussi.</span></div>
   <div class="field"><label class="lbl" for="sml">E-mail du parent</label><input id="sml" name="email" type="email" inputmode="email" class="inp" required value="${esc(s ? s.email || '' : '')}" autocomplete="off" autocapitalize="none" placeholder="ex. karim.benali@gmail.com"></div></div>
   <span class="hint" style="margin-top:-6px">Téléphone et e-mail : visibles seulement par les profs et l’admin, jamais sur la fiche des parents.</span>
   <details ${s && (s.rue || s.ville) ? 'open' : ''}><summary class="small b" style="cursor:pointer">Adresse (pour la fiche d’inscription)</summary><div class="col" style="gap:10px;margin-top:8px"><div class="field"><label class="lbl" for="sru">Rue et numéro</label><input id="sru" name="rue" class="inp" value="${esc(s ? s.rue || '' : '')}" autocomplete="off"></div>
   <div class="grid2"><div class="field"><label class="lbl" for="scp">Code postal</label><input id="scp" name="cp" class="inp" inputmode="numeric" value="${esc(s ? s.cp || '' : '')}" autocomplete="off"></div><div class="field"><label class="lbl" for="svi">Ville</label><input id="svi" name="ville" class="inp" value="${esc(s ? s.ville || '' : '')}" autocomplete="off"></div></div></div></details>
-  <details ${s && s.naissance ? 'open' : ''}><summary class="small b" style="cursor:pointer">Date de naissance précise (facultatif)</summary><div class="field" style="margin-top:8px"><label class="lbl" for="sb">Date de naissance</label><input id="sb" name="naissance" type="date" class="inp" value="${s && s.naissance ? s.naissance : ''}"><span class="hint">Si elle est remplie, l’âge est calculé à partir d’elle.</span></div></details>
-  ${s ? '' : '<div class="ck flat pad small b" style="background:var(--yellow);font-weight:600">Le code de suivi est créé automatiquement : classe, initiales, prénom du parent, âge, + 4 caractères de sécurité.</div>'}
+  ${s ? '' : '<div class="ck flat pad small b" style="background:var(--yellow);font-weight:600">Le code de suivi est créé automatiquement : classe, initiales, prénom du parent, date de naissance, + 4 caractères de sécurité.</div>'}
   <button class="btn full">${s ? 'Enregistrer' : 'Ajouter l’élève'}</button></form>`;
 }
 export function eleveNew(u, q) {
@@ -499,11 +498,11 @@ FORMS.student = (f, fd) => {
   const u = d.me();
   const id = f.dataset.id;
   const v = { classId: fd.get('classId'), nom: (fd.get('nom') || '').trim(), prenoms: (fd.get('prenoms') || '').trim().replace(/\s+/g, ' '), naissance: fd.get('naissance') || null, parent: (fd.get('parent') || '').trim(), tel: (fd.get('tel') || '').trim(), email: (fd.get('email') || '').trim().toLowerCase(), rue: (fd.get('rue') || '').trim(), cp: (fd.get('cp') || '').trim(), ville: (fd.get('ville') || '').trim() };
-  const age = parseInt(fd.get('age'), 10);
-  if (!v.nom || !v.prenoms || !v.parent || (!v.naissance && !(age > 0))) { toast('Merci de remplir tous les champs'); return; }
+  if (!v.nom || !v.prenoms || !v.parent || !v.naissance) { toast('Merci de remplir tous les champs'); return; }
+  const a0 = d.ageOf({ naissance: v.naissance }); if (!(a0 >= 2 && a0 < 100)) { toast('Vérifiez la date de naissance'); return; }
   if (v.tel.replace(/[^\d]/g, '').length < 8) { toast('Indiquez le numéro de téléphone du parent'); return; }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email)) { toast('Indiquez une adresse e-mail valide'); return; }
-  if (v.naissance) { v.age = null; v.ageAt = null; } else { v.age = age; v.ageAt = todayISO(); }
+  v.age = null; v.ageAt = null;
   const c = d.cls(v.classId);
   if (!d.canSeeClass(u, c)) return;
   if (id) { Object.assign(d.student(id), v); d.save(); toast('Élève enregistré'); go(`#/prof/eleve/${id}`); return; }
@@ -568,7 +567,7 @@ export function eleve(u, id, tab = 'coran', q = null) {
   const fam = s.familyId && d.family(s.familyId);
   const nx = d.nextCourse(c);
   return shell(u, 2, `<div class="page">
-  <div class="qd-h"><a href="#/prof/classe/${c.id}" class="ib" aria-label="Retour">${ic('back', 20)}</a><span class="q-av lg q-p0">${esc(initials(s))}</span><div class="grow" style="min-width:0"><h1>${esc(s.prenoms)} ${esc(s.nom)}</h1><div class="qd-sub"><a href="#/prof/classe/${c.id}" style="color:inherit;font-weight:400">${esc(c.name)}</a>${d.ageOf(s) != null ? ` · ${d.ageOf(s)} ans` : ''}${s.parent ? ` · parent : <bdi>${esc(s.parent)}</bdi>` : ''}${nx ? ` · prochain cours ${nextLabel(nx)}` : ''}</div></div>
+  <div class="qd-h"><a href="#/prof/classe/${c.id}" class="ib" aria-label="Retour">${ic('back', 20)}</a><span class="q-av lg q-p0">${esc(initials(s))}</span><div class="grow" style="min-width:0"><h1>${esc(s.prenoms)} ${esc(s.nom)}</h1><div class="qd-sub"><a href="#/prof/classe/${c.id}" style="color:inherit;font-weight:400">${esc(c.name)}</a>${d.ageOf(s) != null ? ` · ${d.ageOf(s)} ans` : ''}${s.naissance ? '' : ` · <a href="#/prof/eleve/${id}/edit" style="color:var(--q-warn);font-weight:500">date de naissance à compléter</a>`}${s.parent ? ` · parent : <bdi>${esc(s.parent)}</bdi>` : ''}${nx ? ` · prochain cours ${nextLabel(nx)}` : ''}</div></div>
   <span class="row wrap q-fe-acts" style="gap:8px">${s.tel ? `<a class="btn2 sm" href="tel:${tel}">${ic('phone', 16)}Appeler</a>${wa ? `<a class="btn2 sm" href="https://wa.me/${wa}" target="_blank" rel="noopener">${ic('chat', 16)}WhatsApp</a>` : `<a class="btn2 sm" href="sms:${tel}">${ic('chat', 16)}SMS</a>`}` : ''}${s.email ? `<a class="btn2 sm" href="mailto:${esc(s.email)}">${ic('mail', 16)}E-mail</a>` : ''}<a class="btn2 sm" href="#/prof/eleve/${id}/edit">${ic('edit', 16)}Modifier</a></span></div>
   <nav class="q-tabs" aria-label="Sections" style="overflow-x:auto">${ETABS.map(([k, l]) => `<a href="#/prof/eleve/${id}/${k}" class="${k === tab ? 'on' : ''}">${l}</a>`).join('')}</nav>
   <div class="q-split"><div class="q-main col" style="gap:14px">${body}</div>

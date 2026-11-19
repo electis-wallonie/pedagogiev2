@@ -473,6 +473,11 @@ export const AR3 = {
   "Aucune classe pour ces cours pour le moment : envoyez la demande, la mosquée vous recontactera.": "لا يوجد فصل لهذه الدروس حالياً : أرسل الطلب وسيتواصل معك المسجد.",
   "Quand ?": "متى؟",
   "Écrivez l’information": "اكتب الإعلان",
+  "L’âge est calculé tout seul à partir de cette date.": "يُحسب العمر تلقائياً انطلاقاً من هذا التاريخ.",
+  "date de naissance à compléter": "تاريخ الميلاد للإكمال",
+  "Le code de suivi est créé automatiquement : classe, initiales, prénom du parent, date de naissance, + 4 caractères de sécurité.": "يُنشأ رمز المتابعة تلقائياً : الفصل، الأحرف الأولى، اسم وليّ الأمر، تاريخ الميلاد، + 4 رموز أمان.",
+  "Naissance": "الميلاد",
+  "date de naissance": "تاريخ الميلاد",
   "salle(s)": "قاعة",
   "créneau(x)": "حصة",
   "créneau(x) par semaine": "حصة في الأسبوع",
@@ -567,4 +572,5 @@ export const RULES3 = [
   [/^Cours : (.+)$/, (m, tc) => `الدروس : ${tc(m[1])}`],
   [/^cours (.+)$/, (m, tc) => `دروس ${tc(m[1])}`],
   [/^(Dimanche|Lundi|Mardi|Mercredi|Jeudi|Vendredi|Samedi) · (\d{2}:\d{2})(?: – (\d{2}:\d{2}))?$/, (m, tc) => `${tc(m[1])} · ${m[2]}${m[3] ? " – " + m[3] : ""}`],
+  [/^À compléter \(âge connu : (\d+) ans\)\. L’âge est calculé tout seul à partir de cette date\.$/, (m, tc) => `للإكمال (العمر المعروف : ${m[1]} سنة). يُحسب العمر تلقائياً انطلاقاً من هذا التاريخ.`],
 ];

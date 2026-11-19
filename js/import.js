@@ -104,7 +104,7 @@ export const COLS = [
   ['Classe', true, 'Classe 1', 'Nom exact de la classe. Si elle n’existe pas encore, elle peut être créée à l’import.'],
   ['Nom', true, 'Benali', 'Nom de famille de l’élève.'],
   ['Prénom', true, 'Yasmine', 'Prénom(s) de l’élève.'],
-  ['Âge', true, '10', 'Âge en années (il se met à jour tout seul chaque année).'],
+  ['Date de naissance', true, '2016-05-03', 'Date de naissance de l’élève (JJ/MM/AAAA ou AAAA-MM-JJ). L’âge est calculé tout seul.'],
   ['Parent', true, 'Karim', 'Prénom d’un parent.'],
   ['Téléphone', true, '+32 470 12 34 56', 'Téléphone du parent, avec l’indicatif (+32, +33…) pour avoir le bouton WhatsApp.'],
   ['E-mail', true, 'karim.benali@gmail.com', 'E-mail du parent.'],
@@ -138,7 +138,7 @@ function analyse(rows, u) {
   if (hi < 0) return { error: 'Impossible de trouver la ligne de titres (Nom, Prénom, Parent…).' };
   const m = mapHeader(rows[hi]);
   const missing = ['nom', 'prenoms', 'parent', 'tel', 'email'].filter((k) => m[k] == null);
-  if (m.age == null && m.naissance == null) missing.push('age');
+  if (m.naissance == null) missing.push('naissance');
   const cls = d.myClasses(u);
   const out = [];
   for (const r of rows.slice(hi + 1)) {
@@ -155,7 +155,7 @@ function analyse(rows, u) {
     if (!x.nom) errs.push('nom');
     if (!x.prenoms) errs.push('prénom');
     if (!x.parent) errs.push('parent');
-    if (!x.naissance && !x.age) errs.push('âge');
+    if (!x.naissance) errs.push('date de naissance');
     if (String(x.tel).replace(/[^\d]/g, '').length < 8) errs.push('téléphone');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x.email)) errs.push('e-mail');
     x.err = errs.length ? 'Manque : ' + errs.join(', ') : '';
@@ -181,12 +181,12 @@ export function importView(u) {
     const noCls = ok.filter((r) => !r.classe).length;
     body = `${hero('Fichier · ' + esc(imp.name), `${ok.length} prêt(s) à importer`, { sub: `${imp.rows.length} ligne(s) lue(s)`, chip: imp.rows.filter((r) => r.err).length ? imp.rows.filter((r) => r.err).length + ' à corriger' : 'OK', shadow: ok.length ? 'var(--mint)' : 'var(--pink)' })}
     <div class="ck pad col">
-    ${imp.missing.length ? `<div class="err">Colonnes introuvables : ${imp.missing.map((k) => ({ nom: 'Nom', prenoms: 'Prénom', parent: 'Parent', age: 'Âge (ou Date de naissance)', tel: 'Téléphone', email: 'E-mail' }[k])).join(', ')}</div>` : ''}
+    ${imp.missing.length ? `<div class="err">Colonnes introuvables : ${imp.missing.map((k) => ({ nom: 'Nom', prenoms: 'Prénom', parent: 'Parent', naissance: 'Date de naissance', tel: 'Téléphone', email: 'E-mail' }[k])).join(', ')}</div>` : ''}
     <div class="row wrap" style="gap:8px">${pill(ok.length + ' prêt(s) à importer', 'var(--mint)')}${pill(imp.rows.filter((r) => r.err).length + ' incomplet(s)', 'var(--absent)', 'var(--onabsent)')}${pill(imp.rows.filter((r) => r.dup).length + ' déjà présent(s)', 'var(--prev)')}</div>
     ${noCls ? `<div class="field"><label class="lbl" for="impc">Classe pour les ${noCls} élève(s) sans classe</label><select id="impc" name="defaultClass" form="impf" class="inp">${cls.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}${cls.length ? '' : '<option value="">(créez d’abord une classe)</option>'}</select></div>` : ''}
     ${newCls.length ? `<div class="ck flat pad col" style="background:var(--hi)"><span class="b">Classes qui seront créées : ${newCls.map(esc).join(', ')}</span>${admin ? `<div class="field"><label class="lbl" for="impp">Professeur de ces nouvelles classes</label><select id="impp" name="prof" form="impf" class="inp">${d.profs().map((p) => `<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></div>` : ''}</div>` : ''}
     </div>
-    <div class="ck" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="background:var(--neutral);text-align:start">${['Classe', 'Nom', 'Prénom(s)', 'Âge', 'Parent', 'Téléphone', 'E-mail', 'État'].map((h) => `<th style="padding:10px;text-align:start">${h}</th>`).join('')}</tr></thead><tbody>
+    <div class="ck" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="background:var(--neutral);text-align:start">${['Classe', 'Nom', 'Prénom(s)', 'Naissance', 'Parent', 'Téléphone', 'E-mail', 'État'].map((h) => `<th style="padding:10px;text-align:start">${h}</th>`).join('')}</tr></thead><tbody>
     ${imp.rows.map((r) => `<tr style="border-top:2px solid var(--neutral)"><td style="padding:8px 10px">${esc(r.classe || '—')}${r.classe && !r.classId ? ' ' + pill('nouvelle', 'var(--hi)') : ''}</td><td style="padding:8px 10px" class="b">${esc(r.nom)}</td><td style="padding:8px 10px">${esc(r.prenoms)}</td><td style="padding:8px 10px">${r.naissance ? d.ageOf({ naissance: r.naissance }) : r.age ?? '—'}</td><td style="padding:8px 10px">${esc(r.parent)}</td><td style="padding:8px 10px" class="code">${esc(r.tel || '—')}</td><td style="padding:8px 10px">${esc(r.email || '—')}</td><td style="padding:8px 10px">${r.err ? pill(esc(r.err), 'var(--absent)', 'var(--onabsent)') : r.dup ? pill('Déjà présent', 'var(--prev)') : pill('OK', 'var(--mint)')}</td></tr>`).join('')}
     </tbody></table></div>
     <form id="impf" data-form="imp-go" class="row wrap"><button type="button" class="btn2" data-act="imp-reset">Annuler</button><span class="grow"></span><button class="btn" ${ok.length ? '' : 'disabled'}>${ic('upload', 20)}Importer ${ok.length} élève(s)</button></form>`;

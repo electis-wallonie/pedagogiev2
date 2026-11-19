@@ -38,7 +38,7 @@ export async function seed() {
   db.objectives = defaultObjectives(prof.id);
 
   const mk = (classe, nom, prenoms, naissance, parent, done, level = 1, acquiredCount = 0) => {
-    const st = { id: uid(), classId: classe.id, nom, prenoms, naissance: null, age: new Date().getFullYear() - +naissance.slice(0, 4), ageAt: daysAgo(0), parent, level, coran: {}, acquired: {}, createdAt: stamp(70) };
+    const st = { id: uid(), classId: classe.id, nom, prenoms, naissance, age: null, ageAt: null, parent, level, coran: {}, acquired: {}, createdAt: stamp(70) };
     // progression classique : Al-Fatiha, puis depuis An-Nas en remontant
     let w = 0;
     if (done > 0) { st.coran[1] = { s: 'v', start: daysAgo(80), end: daysAgo(75) }; w = 1; }
@@ -144,9 +144,9 @@ export async function seed() {
   ];
   { const t = new Date(), y = t.getMonth() >= 7 ? t.getFullYear() : t.getFullYear() - 1, Y0 = `${y}–${y + 1}`, Y1 = `${y + 1}–${y + 2}`;
     db.demandes = [
-      { id: uid(), at: stamp(1, 18), status: 'new', cours: 'Enfants', annee: Y0, prenoms: 'Inès', nom: 'Haddad', age: 8, parent: 'Samira Haddad', tel: '06 12 34 56 78', email: 'samira.haddad@gmail.com', message: 'Inès lit déjà un peu l’arabe.' },
-      { id: uid(), at: stamp(3, 20), status: 'new', cours: 'Adultes', annee: Y0, prenoms: 'Youssef', nom: 'Benali', age: 34, parent: 'Youssef Benali', tel: '07 98 76 54 32', email: 'y.benali@outlook.fr', message: '' },
-      { id: uid(), at: stamp(6, 11), status: 'new', cours: 'Enfants', annee: Y1, prenoms: 'Adam', nom: 'Karimi', age: 5, parent: 'Nadia Karimi', tel: '06 55 44 33 22', email: 'nadia.karimi@gmail.com', message: 'Pour la rentrée prochaine, il aura 6 ans.' },
+      { id: uid(), at: stamp(1, 18), status: 'new', cours: 'Enfants', annee: Y0, prenoms: 'Inès', nom: 'Haddad', naissance: '2018-09-18', parent: 'Samira Haddad', tel: '06 12 34 56 78', email: 'samira.haddad@gmail.com', message: 'Inès lit déjà un peu l’arabe.' },
+      { id: uid(), at: stamp(3, 20), status: 'new', cours: 'Adultes', annee: Y0, prenoms: 'Youssef', nom: 'Benali', naissance: '1992-08-17', parent: 'Youssef Benali', tel: '07 98 76 54 32', email: 'y.benali@outlook.fr', message: '' },
+      { id: uid(), at: stamp(6, 11), status: 'new', cours: 'Enfants', annee: Y1, prenoms: 'Adam', nom: 'Karimi', naissance: '2021-06-15', parent: 'Nadia Karimi', tel: '06 55 44 33 22', email: 'nadia.karimi@gmail.com', message: 'Pour la rentrée prochaine, il aura 6 ans.' },
     ]; }
   db.faq = [
     { id: uid(), at: stamp(10), freq: true, theme: 'Prière', q: 'Peut-on rattraper une prière manquée ?', r: 'Oui. La prière manquée (qada) se rattrape dès qu’on s’en souvient, dans l’ordre, de préférence avant la prière suivante. Pour toute situation particulière, venez en parler à l’imam après une prière.' },
