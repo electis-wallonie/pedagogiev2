@@ -33,7 +33,7 @@ const AR = {
   'Tapez le code donné par l’enseignant. Pas de compte, pas de mot de passe.': 'اكتب الرمز الذي أعطاك إياه الأستاذ. لا حساب ولا كلمة سر.',
   'Se souvenir de ce code sur cet appareil': 'تذكّر هذا الرمز على هذا الجهاز', 'Voir la fiche': 'عرض البطاقة', 'Mes fiches': 'بطاقاتي',
   'Oublier ces fiches sur cet appareil': 'نسيان هذه البطاقات على هذا الجهاز', 'Fiches oubliées sur cet appareil': 'تم نسيان البطاقات على هذا الجهاز',
-  'Installer l’app sur mon téléphone': 'تثبيت التطبيق على هاتفي', 'ex. CL2-YIB-KARIM-03052016-AB12': 'مثال : CL2-YIB-KARIM-03052016-AB12',
+  'Installer l’app sur mon téléphone': 'تثبيت التطبيق على هاتفي', 'ex. CL2-YIB-KARIM-3516-AB12': 'مثال : CL2-YIB-KARIM-3516-AB12',
   'Aucune fiche ne correspond à ce code. Vérifiez les tirets et les chiffres, ou demandez le code à l’enseignant.': 'لا توجد بطاقة بهذا الرمز. تحقّق من الشرطات والأرقام، أو اطلب الرمز من الأستاذ.',
   'Installer Suivi': 'تثبيت التطبيق', 'Installer maintenant': 'التثبيت الآن', 'Ouvrez le menu': 'افتح القائمة', 'Bouton Partager sur iPhone, ou ⋮ sur Android': 'زر المشاركة على iPhone، أو ⋮ على Android',
   'Choisissez': 'اختر', '« Sur l’écran d’accueil » / « Installer l’application »': '« إضافة إلى الشاشة الرئيسية » / « تثبيت التطبيق »', 'C’est prêt': 'كل شيء جاهز',

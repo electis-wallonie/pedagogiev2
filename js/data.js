@@ -204,7 +204,9 @@ export function genCode(st, c) {
   const ini = strip(st.prenoms).split(' ').filter(Boolean).map((w) => w[0]).join('') + strip(st.nom).replace(/ /g, '').slice(0, 1);
   const par = strip(st.parent).split(' ')[0] || 'P';
   const [y, m, d] = (st.naissance || '').split('-');
-  const datePart = st.naissance ? `${d}${m}${y}` : `${new Date().getFullYear() - (ageOf(st) ?? 0)}`; // sans date connue : l'année de naissance estimée
+  // date de naissance courte : jour + mois + 2 derniers chiffres de l'année, sans zéros (06/06/2011 → 6611, 06/06/2003 → 663)
+  const yy = st.naissance ? +y : new Date().getFullYear() - (ageOf(st) ?? 0);
+  const datePart = st.naissance ? `${+d}${+m}${yy % 100}` : `${yy % 100}`;
   const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code;
   do {

@@ -454,7 +454,7 @@ export const AR3 = {
   "parent :": "وليّ الأمر :",
   "Devoirs enregistrés sur les fiches": "تم حفظ الواجبات في البطاقات",
   "aucun e-mail de parent dans cette classe": "لا يوجد بريد لأولياء الأمور في هذا الفصل",
-  "ex. CL2-YB-KARIM-10ANS-7K2Q": "مثال : CL2-YB-KARIM-10ANS-7K2Q",
+  "ex. CL2-YB-KARIM-3516-7K2Q": "مثال : CL2-YB-KARIM-3516-7K2Q",
   "CL2-YIB-KARIM-…": "CL2-YIB-KARIM-…",
   "Devoirs enregistrés": "تم حفظ الواجبات",
   "ex. 2 ou -1,5": "مثال : 2 أو ‎-1,5",
