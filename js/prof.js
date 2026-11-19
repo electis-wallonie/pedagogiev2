@@ -237,8 +237,7 @@ function infoCard(c, sts, notes) {
   ${composer('devoir', 'zd', '', 'Ex : apprendre les versets 1 à 5 d’Al-Layl, exercice page 12…', true, pre)}
   <p class="small mut" style="margin:0">Les pièces jointes ne partent pas dans l’e-mail : elles restent visibles sur la fiche jusqu’au jour du cours (7 jours minimum).${sts.length > n ? ` ${sts.length - n} élève(s) sans e-mail de parent.` : ''}</p></div>
   <div data-di="info" class="col" style="gap:10px" ${dv ? 'hidden' : ''}><p class="small mut" style="margin:0">Une information simple, sans date, visible sur la fiche de chaque élève de ${esc(c.name)}.</p>
-  ${composer('note-class', 'zc', '', 'Ex : pas de cours samedi prochain…', true)}
-  <p class="small mut" style="margin:0">Photos et fichiers : visibles par les parents pendant 7 jours, puis supprimés automatiquement.</p></div>
+  ${composer('note-class', 'zc', '', 'Ex : pas de cours samedi prochain…', false, '', true)}</div>
   ${notes.length ? `<div class="col" style="gap:12px;border-top:1px solid var(--q-hair);padding-top:12px">${notes.map((x) => `<div class="col" style="gap:6px">${devoirTag(x)}${msgHtml(x, 'note-del')}</div>`).join('')}</div>` : ''}</div>`;
 }
 ACT['go-devoir'] = (el) => { diMode = 'devoir'; location.hash = `#/prof/classe/${el.dataset.id}`; setTimeout(() => { const e = document.getElementById('devoir-info'); if (e) { e.scrollIntoView({ behavior: 'smooth', block: 'start' }); const t = e.querySelector('textarea'); if (t) t.focus({ preventScroll: true }); } }, 250); };
@@ -267,11 +266,8 @@ FORMS.devoir = async (f, fd) => {
 };
 FORMS['note-class'] = async (f, fd) => {
   const text = (fd.get('text') || '').trim();
-  if (!text && !pending['zc'] && !(pendingFiles['zc'] || []).length) { toast('Écrivez une note, ajoutez une photo ou un vocal'); return; }
-  const audioId = await takePending('zc');
-  if (audioId === false) return;
-  const files = await takeFiles('zc');
-  d.D().notes.push({ id: d.uid(), profId: ctx.cls.profId, authorId: d.me().id, scope: 'class', classId: ctx.cls.id, studentId: null, at: new Date().toISOString(), text, audioId, files });
+  if (!text) { toast('Écrivez l’information'); return; }
+  d.D().notes.push({ id: d.uid(), profId: ctx.cls.profId, authorId: d.me().id, scope: 'class', classId: ctx.cls.id, studentId: null, at: new Date().toISOString(), text, audioId: null, files: [] });
   d.save(); toast('Information publiée'); rerender();
 };
 // ---------- appel ----------

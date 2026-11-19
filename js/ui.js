@@ -265,13 +265,13 @@ export async function takeFiles(zone, untilIso = null) {
   delete pendingFiles[zone];
   return out;
 }
-export function composer(form, zone, attrs = '', placeholder = 'Écrire une note…', withFiles = false, pre = '') {
+export function composer(form, zone, attrs = '', placeholder = 'Écrire une note…', withFiles = false, pre = '', textOnly = false) {
   return `<form class="composer bubble" data-form="${form}" ${attrs}>${pre}
   <label class="sr" for="${zone}-t">Note</label>
   <textarea id="${zone}-t" name="text" class="inp" placeholder="${esc(placeholder)}"></textarea>
   <div id="${zone}">${zoneHtml(zone)}</div>
   ${withFiles ? `<div id="${zone}-files">${filesHtml(zone)}</div><input id="${zone}-f" type="file" multiple class="sr" accept="image/*,application/pdf,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.txt" data-change="file-add" data-zone="${zone}" tabindex="-1">` : ''}
-  <div class="row wrap"><button type="button" class="btn2 sm mic" data-act="rec" data-zone="${zone}">${ic('mic', 20)}Vocal</button>${withFiles ? `<button type="button" class="btn2 sm" data-act="file-pick" data-zone="${zone}">${ic('clip', 20)}Photo / fichier</button>` : ''}<span class="grow"></span><button class="btn sm">${ic('send', 18)}Envoyer</button></div>
+  <div class="row wrap">${textOnly ? '' : `<button type="button" class="btn2 sm mic" data-act="rec" data-zone="${zone}">${ic('mic', 20)}Vocal</button>`}${withFiles ? `<button type="button" class="btn2 sm" data-act="file-pick" data-zone="${zone}">${ic('clip', 20)}Photo / fichier</button>` : ''}<span class="grow"></span><button class="btn sm">${ic('send', 18)}Envoyer</button></div>
   </form>`;
 }
 export const devoirTag = (m) => (m.kind === 'devoir' ? pill(`${ic('book', 14)} Devoir · pour le ${fdate(m.due, { weekday: 'long', day: 'numeric', month: 'long' })}`, 'var(--mint)') : m.scope === 'class' ? pill(`${ic('bell', 14)} Info`, 'var(--yellow)') : '');

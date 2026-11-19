@@ -479,3 +479,11 @@ body.q .pay-opt{border:1px solid var(--q-hair);border-radius:8px;color:#1A1A1A}
 body.q .pay-opt:has(input:checked){border-color:#050505;background:#FAFAF8}
 body.q .pay-opt input{accent-color:#050505}
 [hidden]{display:none!important}
+/* choix de la classe : d'abord quand, puis le niveau, puis les places */
+.dm-cls{align-items:flex-start;padding:12px 14px}
+.dm-cls input{margin-top:4px}
+.dm-when{font-size:18px;font-weight:800;line-height:1.25}
+.dm-lvl{font-size:14px;font-weight:700}
+.dm-meta{font-size:13px;font-weight:600;color:var(--muted)}
+.dm-opts.pubs{flex-direction:row;flex-wrap:wrap}
+.dm-opts.pubs .dm-opt{flex:1 1 140px}

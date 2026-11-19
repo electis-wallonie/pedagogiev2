@@ -36,12 +36,20 @@ export function gauge(c, y) {
 
 // ---------- Public : le formulaire en 4 étapes ----------
 const STEPS = ['Élève(s)', 'Classe', 'Coordonnées', 'Récapitulatif'];
+// publics des classes (Enfants, Sœurs, Adultes…) : le parent choisit d'abord pour qui sont les cours
+const publics = () => { const P = [...new Set(d.D().classes.map((c) => (c.public || '').trim()).filter(Boolean))]; return P; };
+const pubLabel = (p) => (/^adultes?$/i.test(p) ? 'Adultes (hommes)' : p);
+// créneaux d'une classe, triés : « Samedi · 09:00 – 12:00 »
+const ORDER_D = [1, 2, 3, 4, 5, 6, 0];
+const DAYS_FR = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+const slotLines = (c) => d.slotsOf(c).slice().sort((x, y) => ORDER_D.indexOf(+x.day) - ORDER_D.indexOf(+y.day) || String(x.time).localeCompare(y.time)).map((sl) => `${DAYS_FR[+sl.day]} · ${sl.time}${sl.end ? ' – ' + sl.end : ''}`);
 function kidBlock(k) {
   return `<div class="ck pad col dm-kid" data-k="${k}" style="gap:10px"><div class="row between"><span class="b dm-kt">${k ? `Élève ${k + 1}` : "L’élève"}</span>${k ? `<button type="button" class="btn2 sm" data-act="dm-delkid" data-k="${k}">${ic('trash', 16)}Retirer</button>` : ''}</div>
     <div class="grid2"><div class="field"><label class="lbl" for="kp${k}">Prénom(s)</label><input id="kp${k}" name="k${k}-prenoms" class="inp" required autocomplete="off"></div>
     <div class="field"><label class="lbl" for="kn${k}">Nom</label><input id="kn${k}" name="k${k}-nom" class="inp" required autocomplete="off"></div></div>
     <div class="field" style="max-width:240px"><label class="lbl" for="kb${k}">Date de naissance</label><input id="kb${k}" name="k${k}-naissance" class="inp" type="date" required max="${todayISO()}"></div>
-    <div class="field"><label class="lbl" for="kc${k}">Déjà inscrit(e) l’an dernier ? Entrez le code de suivi <span class="mut">(facultatif)</span></label><input id="kc${k}" name="k${k}-code" class="inp code" autocomplete="off" autocapitalize="characters" placeholder="ex. CL2-YB-KARIM-10ANS-7K2Q"><span class="hint">Sa progression (sourates, niveau) sera reprise.</span></div></div>`;
+    <div class="field"><label class="lbl" for="kc${k}">Déjà inscrit(e) l’an dernier ? Entrez le code de suivi <span class="mut">(facultatif)</span></label><input id="kc${k}" name="k${k}-code" class="inp code" autocomplete="off" autocapitalize="characters" placeholder="ex. CL2-YB-KARIM-10ANS-7K2Q"><span class="hint">Sa progression (sourates, niveau) sera reprise.</span></div>
+    ${publics().length > 1 ? `<fieldset class="dm-set" style="border:0;padding:0;margin:0"><legend class="lbl">Les cours pour…</legend><div class="dm-opts pubs">${publics().map((p) => `<label class="dm-opt"><input type="radio" name="k${k}-public" value="${esc(p)}" required><span class="b" dir="auto">${esc(pubLabel(p))}</span></label>`).join('')}</div></fieldset>` : ''}</div>`;
 }
 export function inscription(q) {
   if (q && q.get('ok')) {
@@ -64,7 +72,7 @@ export function inscription(q) {
     <span class="hint">L’élève peut être un enfant, un adolescent ou un adulte (cours pour adultes, cours pour les sœurs…). Vous inscrivez plusieurs personnes de la même famille ? Ajoutez-les ici : une seule demande, une seule cotisation.</span>
   </fieldset>
   <fieldset class="dm-step col" data-i="1" style="gap:12px;border:0;padding:0;margin:0" hidden><legend class="sr">Classe</legend>
-    ${years.length > 1 ? `<fieldset class="ck pad col dm-set"><legend class="b">Pour quelle année ?</legend><div class="dm-opts two">${years.map((y, i) => opt('annee', y, y === schoolYear(0) ? 'Cette année' : 'L’année prochaine', y, i === 0)).join('')}</div></fieldset>` : `<input type="hidden" name="annee" value="${years[0]}"><p class="small b" style="margin:0">Inscription pour l’année ${years[0]}</p>`}
+    ${years.length > 1 ? `<fieldset class="ck pad col dm-set"><legend class="b">Pour quelle année ?</legend><div class="dm-opts two" data-change="dm-year">${years.map((y, i) => opt('annee', y, y === schoolYear(0) ? 'Cette année' : 'L’année prochaine', y, i === 0)).join('')}</div></fieldset>` : `<input type="hidden" name="annee" value="${years[0]}"><p class="small b" style="margin:0">Inscription pour l’année ${years[0]}</p>`}
     <div id="dm-classes" class="col" style="gap:12px"></div>
   </fieldset>
   <fieldset class="dm-step col" data-i="2" style="gap:12px;border:0;padding:0;margin:0" hidden><legend class="sr">Parent et adresse</legend>
@@ -89,18 +97,21 @@ const fdOf = () => { const f = document.querySelector('form[data-form=demande]')
 const kidIdx = () => [...document.querySelectorAll('.dm-kid')].map((e) => +e.dataset.k);
 function classChoices(fd) {
   const y = fd.get('annee') || openYears()[0];
-  const cls = d.D().classes;
-  if (!cls.length) return '<p class="small b">La mosquée n’a pas encore publié ses classes. Envoyez la demande : elle vous proposera une classe.</p>';
+  const all = d.D().classes;
+  if (!all.length) return '<p class="small b">La mosquée n’a pas encore publié ses classes. Envoyez la demande : elle vous proposera une classe.</p>';
   return kidIdx().map((k) => {
     const prev = fd.get(`k${k}-class`);
+    const pub = fd.get(`k${k}-public`);
     const nm = (fd.get(`k${k}-prenoms`) || '').split(' ')[0] || `l’élève ${k + 1}`;
-    return `<fieldset class="ck pad col dm-set"><legend class="b">Classe pour ${esc(nm)}</legend><div class="dm-opts">${cls.map((c) => { const g = seats(c, y); const full = g.free <= 0 && prev !== c.id;
-      return `<label class="dm-opt ${full ? 'off' : ''}"><input type="radio" name="k${k}-class" value="${c.id}" ${prev === c.id ? 'checked' : ''} ${full ? 'disabled' : ''} required><span class="col grow" style="gap:2px"><span class="b" dir="auto">${esc(c.name)}${c.public ? ` · ${esc(c.public)}` : ''}</span><span class="tiny mut b">Niveau ${c.level || 1}${d.slotsOf(c).length ? ' · ' + schedLabel(d.slotsOf(c)) : ''}</span><span class="tiny b" style="color:${full ? 'var(--absent)' : 'inherit'}">${full ? 'Complet' : `${g.free} place(s) restante(s)`}</span></span></label>`; }).join('')}</div></fieldset>`;
+    const cls = pub ? all.filter((c) => (c.public || '').trim() === pub || !(c.public || '').trim()) : all;
+    return `<fieldset class="ck pad col dm-set"><legend class="b">Quand ${kidIdx().length > 1 ? `pour ${esc(nm)}` : ''} ?</legend>${pub ? `<span class="small mut b" style="margin-top:-6px">Cours : ${esc(pubLabel(pub))}</span>` : ''}<div class="dm-opts">${cls.length ? cls.map((c) => { const g = seats(c, y); const full = g.free <= 0 && prev !== c.id; const L = slotLines(c);
+      return `<label class="dm-opt dm-cls ${full ? 'off' : ''}"><input type="radio" name="k${k}-class" value="${c.id}" ${prev === c.id ? 'checked' : ''} ${full ? 'disabled' : ''} required><span class="col grow" style="gap:3px">${L.length ? L.map((l) => `<span class="dm-when">${l}</span>`).join('') : '<span class="dm-when">Horaire à confirmer</span>'}<span class="dm-lvl">Niveau ${c.level || 1}</span><span class="dm-meta"><span style="color:${full ? 'var(--absent)' : 'inherit'}">${full ? 'Complet' : `${g.free} place(s) restante(s)`}</span> · <span dir="auto">${esc(c.name)}</span></span></span></label>`; }).join('') : '<p class="small b">Aucune classe pour ces cours pour le moment : envoyez la demande, la mosquée vous recontactera.</p>'}</div></fieldset>`;
   }).join('');
 }
+CHANGE['dm-year'] = () => { const [, fd] = fdOf(); const box = document.getElementById('dm-classes'); if (box) box.innerHTML = classChoices(fd); };
 function recap(fd) {
   const cl = (id) => d.cls(id);
-  return `<div class="ck pad col" style="gap:8px"><span class="b">Élève(s) · ${esc(fd.get('annee') || '')}</span>${kidIdx().map((k) => { const c = cl(fd.get(`k${k}-class`)); return `<div class="small"><b dir="auto">${esc(fd.get(`k${k}-prenoms`))} ${esc(fd.get(`k${k}-nom`))}</b> · né(e) le ${fdate(fd.get(`k${k}-naissance`))}${c ? ` · ${esc(c.name)}` : ''}${fd.get(`k${k}-code`) ? ' · réinscription' : ''}</div>`; }).join('')}</div>
+  return `<div class="ck pad col" style="gap:8px"><span class="b">Élève(s) · ${esc(fd.get('annee') || '')}</span>${kidIdx().map((k) => { const c = cl(fd.get(`k${k}-class`)); return `<div class="small"><b dir="auto">${esc(fd.get(`k${k}-prenoms`))} ${esc(fd.get(`k${k}-nom`))}</b> · né(e) le ${fdate(fd.get(`k${k}-naissance`))}${fd.get(`k${k}-public`) ? ` · ${esc(pubLabel(fd.get(`k${k}-public`)))}` : ''}${c ? ` · ${slotLines(c).join(', ') || esc(c.name)} (${esc(c.name)})` : ''}${fd.get(`k${k}-code`) ? ' · réinscription' : ''}</div>`; }).join('')}</div>
   <div class="ck pad col" style="gap:4px"><span class="b">Parent</span><span class="small" dir="auto">${esc(fd.get('parent'))} · ${esc(fd.get('tel'))} · ${esc(fd.get('email'))}</span><span class="small" dir="auto">${esc(fd.get('rue'))}, ${esc(fd.get('cp'))} ${esc(fd.get('ville'))}</span>${fd.get('message') ? `<span class="small mut" dir="auto">« ${esc(fd.get('message'))} »</span>` : ''}</div>`;
 }
 function goStep(n) {
@@ -128,13 +139,12 @@ ACT['dm-prev'] = () => { const [f] = fdOf(); goStep(Math.max(0, +f.dataset.step 
 ACT['dm-addkid'] = () => { const ks = kidIdx(); const k = Math.max(...ks) + 1; const box = document.getElementById('dm-kids'); box.insertAdjacentHTML('beforeend', kidBlock(k)); const prev = box.querySelector(`[name="k${ks[ks.length - 1]}-nom"]`); const nn = box.querySelector(`[name="k${k}-nom"]`); if (prev && nn) nn.value = prev.value; box.querySelector(`[name="k${k}-prenoms"]`).focus(); relabel(); };
 const relabel = () => { const ks = [...document.querySelectorAll('.dm-kid')]; ks.forEach((e, i) => { const t = e.querySelector('.dm-kt'); if (t) t.textContent = tr(ks.length > 1 ? `Élève ${i + 1}` : 'L’élève'); }); };
 ACT['dm-delkid'] = (el) => { const e = document.querySelector(`.dm-kid[data-k="${el.dataset.k}"]`); if (e) e.remove(); relabel(); };
-CHANGE['dm-year'] = () => {};
 
 FORMS.demande = async (f, fd) => {
   if (+f.dataset.step !== 3) { ACT['dm-next'](); return; }
   const annee = fd.get('annee') || openYears()[0];
   if (!yearOpen(annee)) { toast(`Les inscriptions ${annee} sont fermées`); return; }
-  const kids = kidIdx().map((k) => ({ prenoms: (fd.get(`k${k}-prenoms`) || '').trim().replace(/\s+/g, ' '), nom: (fd.get(`k${k}-nom`) || '').trim(), naissance: fd.get(`k${k}-naissance`) || null, classId: fd.get(`k${k}-class`) || '', code: (fd.get(`k${k}-code`) || '').trim() }));
+  const kids = kidIdx().map((k) => ({ prenoms: (fd.get(`k${k}-prenoms`) || '').trim().replace(/\s+/g, ' '), nom: (fd.get(`k${k}-nom`) || '').trim(), naissance: fd.get(`k${k}-naissance`) || null, classId: fd.get(`k${k}-class`) || '', public: fd.get(`k${k}-public`) || '', code: (fd.get(`k${k}-code`) || '').trim() }));
   const v = { annee, kids, parent: (fd.get('parent') || '').trim(), tel: (fd.get('tel') || '').trim(), email: (fd.get('email') || '').trim().toLowerCase(), rue: (fd.get('rue') || '').trim(), cp: (fd.get('cp') || '').trim(), ville: (fd.get('ville') || '').trim(), message: (fd.get('message') || '').trim() };
   if (kids.some((k) => !k.prenoms || !k.nom || !k.naissance) || !v.parent || !v.rue || !v.cp || !v.ville) { toast('Merci de remplir tous les champs'); return; }
   if (v.tel.replace(/[^\d]/g, '').length < 8) { toast('Indiquez un numéro de téléphone'); return; }
@@ -193,7 +203,7 @@ function detail(x, u, pc, ini) {
   const ks = kidsOf(x);
   const done = (x.studentIds || (x.studentId ? [x.studentId] : [])).map((id) => d.student(id)).filter(Boolean);
   const kidRow = (k, i) => { const old = byCodeAny(k.code); const want = d.cls(k.classId);
-    return `<div class="col" style="gap:6px;padding:10px 0;border-top:1px solid var(--q-hair)"><span class="b" data-notr dir="auto">${esc(k.prenoms)} ${esc(k.nom)} <span class="mut" style="font-weight:400">· ${kidAge(k) ?? '—'} ans${k.naissance ? ` · né(e) le ${fdate(k.naissance)}` : ''}</span></span>
+    return `<div class="col" style="gap:6px;padding:10px 0;border-top:1px solid var(--q-hair)"><span class="b" data-notr dir="auto">${esc(k.prenoms)} ${esc(k.nom)} <span class="mut" style="font-weight:400">· ${kidAge(k) ?? '—'} ans${k.naissance ? ` · né(e) le ${fdate(k.naissance)}` : ''}${k.public ? ` · cours ${esc(pubLabel(k.public))}` : ''}</span></span>
     ${k.code ? `<span class="small">${old ? `<span class="q-st ok">Réinscription</span> fiche retrouvée : ${esc(old.s.prenoms)} ${esc(old.s.nom)} · ${Object.values(old.s.coran || {}).filter((v) => v.s === 'v').length} sourate(s)` : `<span class="q-st warn">Code inconnu</span> ${esc(k.code)} : une nouvelle fiche sera créée`}</span>` : ''}
     ${x.status === 'new' && cur ? `<div class="field" style="margin:0"><label class="lbl" for="dc-${x.id}-${i}">Classe${want ? ` · demandée : ${esc(want.name)}` : ''}</label><select id="dc-${x.id}-${i}" name="class${i}" class="inp" required>${classes.map((c) => `<option value="${c.id}" ${c.id === (k.classId || (old && old.s.classId)) ? 'selected' : ''}>${esc(c.name)} · ${seats(c).used}/${capOf(c)}</option>`).join('')}</select></div>` : want ? `<span class="small mut">Classe demandée : ${esc(want.name)}</span>` : ''}</div>`; };
   const actions = x.status !== 'new' ? `<div class="row wrap" style="gap:8px">${done.map((st) => `<a class="btn sm" href="#/prof/eleve/${st.id}">${ic('users', 16)}${esc(st.prenoms.split(' ')[0])}</a>`).join('')}<button class="btn2 sm" data-act="dem-del" data-id="${x.id}">${ic('trash', 16)}Supprimer la demande</button></div>`
