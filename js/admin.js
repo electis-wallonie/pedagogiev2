@@ -100,8 +100,8 @@ export function adminView(u) {
   ].filter(Boolean);
   return shell(u, 4, `<div class="page">
   ${qhead('Direction', `${fdate(today, { weekday: 'long', day: 'numeric', month: 'long' })} · ${d.roleLabel(u)}`, `<a class="btn sm" href="#/prof/eleve/new">${ic('plus', 18)}Ajouter un élève</a>`)}
-  <div class="q-card q-stats"><div><b>${sts.length}</b><span>élèves</span></div><div><b>${cls.length}</b><span>classes</span></div><div><b>${avg == null ? '—' : avg + ' %'}</b><span>présence moyenne</span></div><div><b>${dem.length}</b><span>demande(s) en attente</span></div></div>
-  ${todo.length ? `<div class="q-card q-pad"><div class="q-sec"><b>À traiter</b><span>${todo.length}</span></div>${todo.map(([pc, n, t, sub, h, btn]) => `<div class="q-lrow"><span class="q-av ${pc}">${n}</span><span class="t"><b>${t}</b><span>${sub}</span></span><a class="btn2 sm" href="${h}">${btn}</a></div>`).join('')}</div>` : ''}
+  <div class="q-card q-stats q-stats-link"><a href="#/prof/eleves"><b>${sts.length}</b><span>élèves</span></a><a href="#/prof/classes"><b>${cls.length}</b><span>classes</span></a><a href="#/prof/eleves"><b>${avg == null ? '—' : avg + ' %'}</b><span>présence moyenne</span></a><a href="#/admin/demandes"><b>${dem.length}</b><span>demande(s) en attente</span></a></div>
+  ${todo.length ? `<div class="q-card q-pad"><div class="q-sec"><b>À traiter</b><span>${todo.length}</span></div>${todo.map(([pc, n, t, sub, h, btn]) => `<a class="q-lrow q-link" href="${h}"><span class="q-av ${pc}">${n}</span><span class="t"><b>${t}</b><span>${sub}</span></span><span class="btn2 sm">${btn}</span></a>`).join('')}</div>` : ''}
   <div class="q-mods">
     ${modCard('#/admin/demandes', 'inbox', 'Demandes d’inscription', 'Reçues depuis l’onglet Cours', dem.length ? `${dem.length} en attente` : 'Aucune en attente', 'Traiter', dem.length > 0)}
     ${modCard('#/admin/equipe', 'users', 'Équipe &amp; comptes', 'Professeurs, administrateurs, trésorier', `${team.length} compte(s)${tmp ? ` · ${tmp} mot de passe temporaire` : ''}`, 'Gérer l’équipe')}

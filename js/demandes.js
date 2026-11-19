@@ -142,9 +142,12 @@ ACT['dem-del'] = (el) => { d.D().demandes = list().filter((x) => x.id !== el.dat
 // ---------- Comptabilité : les inscriptions en attente ----------
 export function comptaPending(full = false) {
   const p = list().filter((x) => x.status === 'new' || x.status === 'later').sort((a, b) => a.at.localeCompare(b.at));
-  if (!p.length) return full ? `<div class="ck pad col" style="gap:6px"><h2>${ic('users', 20)} Inscriptions en attente</h2><span class="small mut b">Aucune demande en attente.</span></div>` : '';
-  const rows = (full ? p : p.slice(0, 4)).map((x) => `<div class="li"><span class="grow col" style="gap:0"><span class="b" data-notr dir="auto">${esc(x.prenoms)} ${esc(x.nom)}</span><span class="tiny mut b">${esc(x.cours || '')}${x.cours ? ' · ' : ''}${esc(x.annee)}</span></span>${pill(x.status === 'new' ? 'En attente' : 'Retenue', x.status === 'new' ? 'var(--yellow)' : 'var(--blue2)')}</div>`).join('');
-  return `<div class="ck pad col" style="gap:6px"><div class="row between"><h2>${ic('users', 20)} Inscriptions en attente</h2>${pill(String(p.length), 'var(--yellow)')}</div>
-  <span class="small mut b" style="font-weight:600">Familles à venir : la cotisation sera à prévoir une fois l’inscription acceptée par la direction.</span>${rows}
-  ${!full && p.length > 4 ? '<a class="small b" href="#/compta/cotisations">Tout voir</a>' : ''}</div>`;
+  const adm = d.isAdmin(d.me());
+  if (!p.length) return full ? `<div class="q-card col" style="padding:18px 24px;gap:4px"><span class="b" style="font-size:16px">Inscriptions en attente</span><span class="small mut">Aucune demande en attente.</span></div>` : '';
+  const row = (x) => { const inner = `<span class="t"><b data-notr dir="auto">${esc(x.prenoms)} ${esc(x.nom)}</b><span>${esc(x.cours || '')}${x.cours ? ' · ' : ''}${esc(x.annee)} · reçue le ${fdate(x.at.slice(0, 10), { day: 'numeric', month: 'short' })}</span></span><span class="q-st ${x.status === 'new' ? 'warn' : 'neu'}">${x.status === 'new' ? 'En attente' : 'Plus tard'}</span>`;
+    return adm ? `<a class="q-lrow q-link" href="#/admin/demandes?v=${x.status}&s=${x.id}">${inner}${ic('chev', 16)}</a>` : `<div class="q-lrow">${inner}</div>`; };
+  return `<div class="q-card q-pad"><div class="row between" style="padding:18px 0 4px;gap:10px"><span class="b" style="font-size:16px">Inscriptions en attente <span class="mut" style="font-weight:400">${p.length}</span></span>${adm ? `<a class="btn2 sm" href="#/admin/demandes">Traiter les demandes ${ic('chev', 14)}</a>` : ''}</div>
+  <span class="small mut">${adm ? 'Touchez une demande pour l’accepter ou la refuser. ' : 'La direction accepte ou refuse les demandes. '}La cotisation sera à prévoir une fois l’inscription acceptée.</span>
+  ${(full ? p : p.slice(0, 4)).map(row).join('')}
+  ${!full && p.length > 4 ? `<div style="padding:12px 0"><a class="small b" href="${adm ? '#/admin/demandes' : '#/compta/cotisations'}">Tout voir (${p.length})</a></div>` : '<div style="height:6px"></div>'}</div>`;
 }
