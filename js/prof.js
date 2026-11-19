@@ -200,7 +200,7 @@ export function classe(u, id) {
   const acts = [[`#/prof/classe/${id}/appel`, 'check', 'Faire l’appel', 'var(--primary)', '#fff'], [`#/prof/eleve/new?c=${id}`, 'plus', 'Élève', 'var(--surface)', 'var(--ink)'], [`#/prof/classe/${id}/historique`, 'clock', 'Historique', 'var(--surface)', 'var(--ink)'], ['#notes-devoirs', 'book', 'Devoirs', 'var(--mint)', 'var(--ink)'], ['#notes-classe', 'note', 'Note classe', 'var(--surface)', 'var(--ink)'], [`#/prof/classe/${id}/objectifs`, 'star', 'Objectifs classe', 'var(--yellow)', 'var(--ink)']];
   const body = `<div class="page">${top(esc(c.name), `${sts.length} élève(s) · ${lastAppel(c)}`, '#/prof/classes', `<button class="ib" data-act="class-edit" data-id="${id}" aria-label="Modifier la classe">${ic('edit', 18)}</button>`)}
   ${courseCard(c)}
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:10px">${acts.map(([h, i, l, bg, fg]) => `<a href="${h}" class="ck col" style="gap:6px;align-items:center;padding:12px 4px;text-decoration:none;background:${bg};color:${fg};font-weight:800;font-size:13px;text-align:center">${ic(i, 24)}${l}</a>`).join('')}</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:10px">${acts.map(([h, i, l, bg, fg]) => `<a href="${h}" class="ck col ${bg === 'var(--primary)' ? 'act-pri' : ''}" style="gap:6px;align-items:center;padding:12px 4px;text-decoration:none;background:${bg};color:${fg};font-weight:800;font-size:13px;text-align:center">${ic(i, 24)}${l}</a>`).join('')}</div>
   <div class="ck pad" style="padding-top:4px;padding-bottom:4px"><div class="list">${sts.map((s, k) => {
     const p = d.presence(s); const kk = d.coranStats(s);
     return `<div class="li" style="position:relative">${av(initials(s), 42, ACC[k % 4], 14)}<a href="#/prof/eleve/${s.id}" class="grow" style="text-decoration:none;color:var(--ink)"><span class="b" style="display:block">${esc(s.prenoms)} ${esc(s.nom)}</span><span class="small mut b" style="font-weight:600">${kk.v} sourates · ${p.rate === null ? '—' : p.rate + ' %'} présence</span></a>${callBtn(s)}${ic('chev', 18)}</div>`;
@@ -284,18 +284,24 @@ export function appel(u, id, recId, q) {
   const sts = d.studentsOf(id);
   const cnt = (k) => sts.filter((s) => r[s.id] === k).length;
   const rest = sts.filter((s) => !r[s.id]).length;
-  const rows = sts.map((s) => `<div class="ck flat appel-row"><span class="grow b">${esc(s.prenoms.split(' ')[0])} ${esc(s.nom)}</span>
-  ${['P', 'A', 'E'].map((k) => `<button type="button" class="st-btn ${r[s.id] === k ? 'on-' + k : ''}" data-act="ap" data-sid="${s.id}" data-s="${k}" aria-pressed="${r[s.id] === k}" aria-label="${STATUS[k].l} : ${esc(s.prenoms.split(' ')[0])}">${ic(STATUS[k].icon, 20, 2.8)}<span class="lab">${k === 'E' ? 'Prévenu' : STATUS[k].l}</span></button>`).join('')}</div>`).join('');
+  const rate = (s) => { const p = d.presence(s); return p.rate == null ? '—' : p.rate + ' %'; };
+  const PALQ = ['q-p0', 'q-p1', 'q-p2', 'q-p3'];
+  const rows = sts.map((s, k) => `<div class="q-ap-r"><span class="q-who grow"><span class="q-av ${PALQ[k % 4]}">${esc(initials(s))}</span><span>${esc(s.prenoms.split(' ')[0])} ${esc(s.nom)}</span></span><span class="q-ap-y hm">${rate(s)}</span>
+  <span class="q-ap-b">${['P', 'A', 'E'].map((k) => `<button type="button" class="st-btn ${r[s.id] === k ? 'on-' + k : ''}" data-act="ap" data-sid="${s.id}" data-s="${k}" aria-pressed="${r[s.id] === k}" aria-label="${STATUS[k].l} : ${esc(s.prenoms.split(' ')[0])}">${ic(STATUS[k].icon, 20, 2.8)}<span class="lab">${k === 'E' ? 'Prévenu' : STATUS[k].l}</span></button>`).join('')}</span></div>`).join('');
   const body = `<div class="page">${top('L’appel', esc(c.name), `#/prof/classe/${id}`)}
-  ${hero(`Appel · ${esc(c.name)}`, whenLabel(rec), { chip: `${cnt('P')} / ${sts.length}`, chipSub: 'présents' })}
-  <div class="ck pad col" style="gap:8px">${byLine(rec)}
-  <details><summary class="small b" style="cursor:pointer">Corriger la date</summary><div class="row wrap" style="margin-top:8px"><label class="sr" for="ad">Date du cours</label><input id="ad" type="date" class="inp" value="${rec.date}" max="${todayISO()}" data-change="ap-when" data-k="date" style="max-width:200px"></div></details></div>
-  <div class="row wrap" style="gap:8px">${pill(cnt('P') + ' présent(s)', 'var(--present)', 'var(--onpresent)')}${pill(cnt('A') + ' absent(s)', 'var(--absent)', 'var(--onabsent)')}${pill(cnt('E') + ' prévenu(s)', 'var(--prev)')}${rest ? pill(rest + ' à marquer', 'var(--neutral)') : ''}</div>
-  ${rest ? `<button class="btn2 sm" data-act="ap-all" style="align-self:flex-start">${ic('check', 18)}Marquer les ${rest} restant(s) présents</button>` : ''}
-  <div class="col" style="gap:8px">${rows || '<p class="mut">Aucun élève dans cette classe.</p>'}</div>
-  <div class="row tiny mut b" style="justify-content:flex-end;gap:20px;padding-right:6px"><span>${ic('check', 14)} Présent</span><span>${ic('x', 14)} Absent</span><span>${ic('mail', 14)} Absent prévenu</span></div>
-  <a href="#/prof/classe/${id}/appel/${rec.id}/ok" class="btn full">Terminer l’appel</a>
-  <button class="btnd full" data-act="ap-del">${ic('trash', 18)}Supprimer cet appel</button></div>`;
+  <div class="qd-sub" style="margin-top:-8px">${whenLabel(rec)}</div>
+  <div class="q-split"><div class="q-main q-card q-pad">
+    <div class="q-ap-r q-ap-h"><span class="grow">Élève</span><span class="q-ap-y hm">Présence sur l’année</span><span class="q-ap-b">Aujourd’hui</span></div>
+    ${rows || '<p class="mut small" style="padding:16px 0">Aucun élève dans cette classe.</p>'}
+    <div class="row small mut" style="justify-content:flex-end;gap:18px;padding:12px 0;border-top:1px solid var(--q-hair)"><span>${ic('check', 14)} Présent</span><span>${ic('x', 14)} Absent</span><span>${ic('mail', 14)} Prévenu</span></div></div>
+  <aside class="q-card q-drawer" style="width:320px" aria-label="Résumé de l’appel"><span class="b" style="font-size:16px">Résumé</span>
+    <div class="q-kvs"><div><span>Présents</span><span>${cnt('P')} / ${sts.length}</span></div><div><span>Absents</span><span>${cnt('A')}</span></div><div><span>Prévenus</span><span>${cnt('E')}</span></div>${rest ? `<div><span>À marquer</span><span>${rest}</span></div>` : ''}</div>
+    ${rest ? `<button class="btn2 sm full" data-act="ap-all">${ic('check', 18)}Marquer les ${rest} restant(s) présents</button>` : ''}
+    <a href="#/prof/classe/${id}/appel/${rec.id}/ok" class="btn full">Terminer l’appel</a>
+    <span style="height:1px;background:var(--q-hair)"></span>
+    ${byLine(rec)}
+    <details><summary class="small b" style="cursor:pointer">Corriger la date</summary><div class="row wrap" style="margin-top:8px"><label class="sr" for="ad">Date du cours</label><input id="ad" type="date" class="inp" value="${rec.date}" max="${todayISO()}" data-change="ap-when" data-k="date" style="max-width:200px"></div></details>
+    <button class="btnd sm full" data-act="ap-del">${ic('trash', 16)}Supprimer cet appel</button></aside></div></div>`;
   return shell(u, 1, body);
 }
 // « Faire l'appel » : l'appel est créé tout de suite avec la date du jour (pas d'heure).
@@ -413,14 +419,42 @@ ACT['cobj-level'] = () => {
 };
 
 // ---------- élèves ----------
-export function eleves(u) {
+export function eleves(u, q) {
   const sts = d.myStudents(u).sort((a, b) => a.nom.localeCompare(b.nom));
-  const body = `<div class="page">${top('Élèves', `${sts.length} élève(s)`, null, `<a class="btn sm" href="#/prof/eleve/new">${ic('plus', 18)}Élève</a>`)}
+  const sel = sts.find((s) => s.id === (q && q.get('s'))) || sts[0];
+  const PALQ = ['q-p0', 'q-p1', 'q-p2', 'q-p3'];
+  const rate = (s) => { const p = d.presence(s); return p.rate == null ? '—' : p.rate + ' %'; };
+  const rows = sts.map((s, k) => { const cs = d.coranStats(s); return `<tr class="el-r ${sel && s.id === sel.id ? 'sel' : ''}" data-act="el-pick" data-id="${s.id}" data-q="${esc((s.prenoms + ' ' + s.nom + ' ' + s.parent + ' ' + (s.email || '') + ' ' + d.cls(s.classId).name).toLowerCase())}">
+    <td><span class="q-who"><span class="q-av ${PALQ[k % 4]}">${esc(initials(s))}</span><span class="col" style="gap:0"><span>${esc(s.prenoms.split(' ')[0])} ${esc(s.nom)}</span>${d.isAdmin(u) ? `<span class="small mut" style="font-weight:400">${famPill(s).replace(" · ", "")}</span>` : ''}</span></span></td>
+    <td class="hm">${esc(d.cls(s.classId).name)}</td><td class="hm">${d.ageOf(s) ?? '—'} ans</td><td class="hm">${cs.v}</td><td class="r">${rate(s)}</td></tr>`; }).join('');
+  const drawer = sel ? eleveDrawer(sel, sts.indexOf(sel), PALQ) : '';
+  const body = `<div class="page wide"><div class="qd-h"><div class="grow"><div class="qd-sub">${sts.length} élève(s)</div><h1>Élèves</h1></div><a class="btn sm" href="#/prof/eleve/new">${ic('plus', 18)}Nouvel élève</a></div>
   ${d.isAdmin(u) ? elevesSeg(0) : ''}
-  <div class="field"><label class="sr" for="q">Rechercher</label><input id="q" class="inp" placeholder="Rechercher un élève…" data-filter=".li"></div>
-  <div class="ck pad" style="padding-top:4px;padding-bottom:4px"><div class="list">${sts.map((s, k) => `<div class="li" data-q="${esc((s.prenoms + ' ' + s.nom + ' ' + s.parent + ' ' + (s.email || '') + ' ' + d.cls(s.classId).name).toLowerCase())}">${av(initials(s), 42, ACC[k % 4], 14)}<a href="#/prof/eleve/${s.id}" class="grow" style="text-decoration:none;color:var(--ink)"><span class="b" style="display:block">${esc(s.prenoms)} ${esc(s.nom)}</span><span class="small mut b" style="font-weight:600">${esc(d.cls(s.classId).name)} · Parent : ${esc(s.parent)}${d.isAdmin(u) ? famPill(s) : ''}</span></a>${callBtn(s)}${ic('chev', 18)}</div>`).join('') || '<p class="mut small" style="padding:12px 0">Aucun élève.</p>'}</div></div></div>`;
+  <div class="q-split"><div class="q-main col" style="gap:12px">
+    <label class="q-search">${ic('search', 18)}<span class="sr">Rechercher</span><input id="q" placeholder="Rechercher un élève, un parent, une classe…" data-filter=".el-r"></label>
+    <div class="q-card q-pad">${sts.length ? `<div style="overflow-x:auto"><table class="q-tbl"><thead><tr><th>Élève</th><th class="hm">Classe</th><th class="hm">Âge</th><th class="hm">Sourates</th><th class="r">Présence</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="mut small" style="padding:16px 0">Aucun élève.</p>'}</div>
+  </div>${drawer}</div></div>`;
   return shell(u, 2, body);
 }
+function eleveDrawer(s, k, PALQ) {
+  const cs = d.coranStats(s), p = d.presence(s), ec = d.enCours(s)[0];
+  return `<aside class="q-card q-drawer el-drawer" aria-label="Élève sélectionné">
+  <div class="row" style="gap:12px"><span class="q-av lg ${PALQ[k % 4]}">${esc(initials(s))}</span><div class="col grow" style="gap:2px;min-width:0"><span class="b" style="font-size:18px">${esc(s.prenoms)} ${esc(s.nom)}</span><span class="small mut">${esc(d.cls(s.classId).name)} · ${d.ageOf(s) ?? '—'} ans</span></div></div>
+  <div class="q-kvs"><div><span>Présence</span><span>${p.rate == null ? 'pas encore d’appel' : `${p.rate} % · ${p.P}/${p.total}`}</span></div>
+  <div><span>Sourates validées</span><span>${cs.v} / 114</span></div>
+  <div><span>En cours</span><span>${ec ? esc(d.sName(ec)) : '—'}</span></div>
+  <div><span>Parent</span><span><bdi>${esc(s.parent || '—')}</bdi></span></div>
+  ${s.tel ? `<div><span>Téléphone</span><span class="code" style="font-size:14px">${esc(s.tel)}</span></div>` : ''}
+  ${s.email ? `<div><span>E-mail</span><span style="word-break:break-all">${esc(s.email)}</span></div>` : ''}
+  <div><span>Code de suivi</span><span class="code" style="font-size:13px">${esc(s.code || '—')}</span></div></div>
+  <div class="row wrap" style="gap:8px"><a class="btn sm" href="#/prof/eleve/${s.id}">Ouvrir la fiche</a>${s.tel ? `<a class="btn2 sm" href="tel:${String(s.tel).replace(/[^\d+]/g, '')}">${ic('phone', 16)}Appeler</a>` : ''}<a class="btn2 sm" href="#/prof/eleve/${s.id}/edit">${ic('edit', 16)}Modifier</a></div></aside>`;
+}
+// clic sur une ligne : panneau à droite sur ordinateur, fiche directement sur téléphone
+ACT['el-pick'] = (el, ev) => {
+  if (ev && ev.target.closest('a,button')) return;
+  if (matchMedia('(max-width: 959px)').matches) { location.hash = `#/prof/eleve/${el.dataset.id}`; return; }
+  location.replace(`#/prof/eleves?s=${el.dataset.id}`);
+};
 function studentForm(u, s, classId) {
   const cl = d.myClasses(u);
   if (!cl.length) return `<div class="ck pad col" style="background:var(--hi)"><p class="b">Créez d’abord une classe.</p><a class="btn" href="#/prof/classes?new=1">Créer une classe</a></div>`;

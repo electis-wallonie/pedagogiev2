@@ -268,26 +268,46 @@ export function famPill(s) {
   const f = s.familyId && d.family(s.familyId);
   return f ? ` · ${esc(f.name)}` : '';
 }
+// Cotisations B : « À relancer » / « À jour » + barre d'encaissement (direction et compta)
+export function cotisB(F, { admin = false } = {}) {
+  const c = d.cotisations();
+  const pct = c.theo ? Math.round((c.real / c.theo) * 100) : 0;
+  const todo = F.filter((f) => f.status !== 'paid' && +f.cotisation);
+  const ok = F.filter((f) => !todo.includes(f));
+  const PALQ = ['q-p0', 'q-p1', 'q-p2', 'q-p3'];
+  const ini = (n) => String(n).replace(/^Famille\s+/i, '').trim().slice(0, 2).toUpperCase();
+  const q = (f, kids) => esc((f.name + ' ' + kids.map((k) => k.prenoms + ' ' + k.nom + ' ' + k.parent).join(' ')).toLowerCase());
+  const kidsLine = (kids) => kids.length ? kids.map((k) => admin ? `<a href="#/prof/eleve/${k.id}" style="color:inherit">${esc(k.prenoms.split(' ')[0])}</a>` : esc(k.prenoms.split(' ')[0])).join(', ') : 'aucun enfant';
+  const todoRows = todo.map((f, i) => {
+    const kids = d.familyKids(f.id), p = d.famPaid(f), rest = (+f.cotisation || 0) - p;
+    const tel = (kids.find((k) => k.tel) || {}).tel;
+    return `<div class="q-lrow fam" data-q="${q(f, kids)}"><span class="q-av ${PALQ[i % 4]}" style="width:34px;height:34px">${esc(ini(f.name))}</span><span class="t"><b>${esc(f.name)}</b><span>${p ? `${eur(rest)} restants sur ${eur(f.cotisation)}` : `${eur(f.cotisation)} · aucun paiement`} · ${kidsLine(kids)}</span></span>
+    <span class="row" style="gap:8px;flex:none">${tel ? `<a class="btn2 sm" href="sms:${String(tel).replace(/[^\d+]/g, '')}">${ic('chat', 16)}SMS</a>` : ''}<button type="button" class="btn sm" data-act="fam-pay" data-id="${f.id}">${ic('plus', 16)}Paiement</button>${admin ? `<button class="ib sm" data-act="fam-edit" data-id="${f.id}" aria-label="Modifier ${esc(f.name)}">${ic('edit', 16)}</button>` : ''}</span></div>`;
+  }).join('');
+  const okRows = ok.map((f, i) => {
+    const kids = d.familyKids(f.id);
+    return `<div class="q-lrow fam" data-q="${q(f, kids)}"><span class="q-av ${PALQ[(i + 1) % 4]}">${esc(ini(f.name))}</span><span class="t"><b>${esc(f.name)}</b><span>${+f.cotisation ? eur(f.cotisation) : 'pas de cotisation'} · ${kidsLine(kids)}</span></span>
+    <button type="button" class="q-st ${+f.cotisation ? 'ok' : 'neu'}" data-act="fam-pay" data-id="${f.id}" style="background:none;border:0;cursor:pointer;font:inherit">${+f.cotisation ? 'Payé' : '—'}</button>${admin ? `<button class="ib sm" data-act="fam-edit" data-id="${f.id}" aria-label="Modifier ${esc(f.name)}">${ic('edit', 16)}</button>` : ''}</div>`;
+  }).join('');
+  const sumTodo = todo.reduce((t, f) => t + (+f.cotisation || 0) - d.famPaid(f), 0);
+  return `<div class="q-card col" style="padding:20px 24px;gap:12px"><div class="row between wrap"><span class="b" style="font-size:16px">${eur(c.real)} encaissés sur ${eur(c.theo)}</span><span class="b" style="font-size:16px">${pct} %</span></div><span class="q-bar lg"><i style="width:${pct}%"></i></span><span class="small mut">Reste ${eur(c.rest)} à encaisser</span></div>
+  <label class="q-search">${ic('search', 18)}<span class="sr">Rechercher</span><input id="fq" placeholder="Rechercher une famille, un enfant, un parent…" data-filter=".fam"></label>
+  <div class="q-row2" style="align-items:flex-start">
+    <div class="q-card q-pad" style="flex:1.4;min-width:0;padding-top:6px;padding-bottom:6px"><div class="q-sec"><b>À relancer</b><span class="grow"></span><span>${todo.length} famille(s) · ${eur(sumTodo)}</span></div>${todoRows || '<p class="small mut" style="padding:12px 0">Personne à relancer. Tout est payé.</p>'}</div>
+    <div class="q-card q-pad" style="flex:1;min-width:0;padding-top:6px;padding-bottom:6px"><div class="q-sec"><b>À jour</b><span class="grow"></span><span>${ok.length} famille(s)</span></div>${okRows || '<p class="small mut" style="padding:12px 0">Aucune famille à jour pour l’instant.</p>'}</div>
+  </div>`;
+}
 export function famillesView(u) {
   if (!d.isAdmin(u)) { location.hash = '#/prof/eleves'; return null; }
   const F = d.D().families.slice().sort((a, b) => a.name.localeCompare(b.name, 'fr'));
   const lone = d.D().students.filter((s) => !s.familyId || !d.family(s.familyId)).sort((a, b) => a.nom.localeCompare(b.nom));
-  const c = d.cotisations();
-  const cards = F.map((f) => {
-    const kids = d.familyKids(f.id);
-    return `<div class="ck pad col fam" style="gap:10px" data-q="${esc((f.name + ' ' + kids.map((k) => k.prenoms + ' ' + k.nom + ' ' + k.parent).join(' ')).toLowerCase())}">
-    <div class="row between wrap" style="gap:8px"><span class="b" style="font-size:18px">${esc(f.name)}</span><span class="row wrap" style="gap:6px"><button type="button" class="btn2 sm" data-act="fam-pay" data-id="${f.id}" aria-label="Cotisation : ${eur(f.cotisation)}">${ic('euro', 16)}${eur(f.cotisation)}</button>${payBtn(f)}<button class="ib sm" data-act="fam-edit" data-id="${f.id}" aria-label="Modifier ${esc(f.name)}">${ic('edit', 16)}</button></span></div>
-    <div class="row wrap" style="gap:6px">${kids.map((k, i) => `<a class="pill" href="#/prof/eleve/${k.id}" style="background:${ACC[i % 4]};text-decoration:none;color:var(--ink)">${esc(k.prenoms.split(' ')[0])} · ${esc(d.cls(k.classId).name)}</a>`).join('') || '<span class="small mut">Aucun enfant</span>'}</div></div>`;
-  }).join('');
   return shell(u, 2, `<div class="page">${top('Élèves', `${F.length} famille(s) · ${d.D().students.length} élève(s)`, null, `<button class="btn sm" data-act="fam-new">${ic('plus', 18)}Famille</button>`)}
   ${elevesSeg(1)}
-  ${(() => { const pct = c.theo ? Math.round((c.real / c.theo) * 100) : 0; return hero('Cotisations encaissées', eur(c.real), { sub: `sur ${eur(c.theo)} prévus · reste ${eur(c.rest)}`, chip: pct + ' %', shadow: 'var(--mint)', extra: `<div class="hero-bar"><span style="width:${pct}%"></span></div>` }); })()}
-  <p class="small mut b" style="font-weight:600">Une famille regroupe les fiches des frères et sœurs déjà inscrits (pas de compte à créer). Bouton 1 : montant de la cotisation. Bouton 2 : où en est le paiement (rouge = rien, orange = en partie, vert = tout).</p>
+  <p class="small mut b" style="font-weight:600">Une famille regroupe les fiches des frères et sœurs déjà inscrits (pas de compte à créer). « Paiement » enregistre un versement ; le crayon modifie la famille (montant de la cotisation, enfants).</p>
   ${lone.length ? `<div class="ck pad col" style="background:var(--hi)"><div class="row between wrap"><h2>${lone.length} élève(s) sans famille</h2><button class="btn sm" data-act="fam-auto">${ic('users', 18)}Regrouper automatiquement</button></div>
     <p class="small b" style="font-weight:600">« Regrouper automatiquement » crée une famille par nom de famille + prénom du parent. Vous pourrez corriger ensuite.</p>
     <div class="list">${lone.map((s) => `<div class="li"><span class="grow"><span class="b" style="display:block">${esc(fullName(s))}</span><span class="small mut b" style="font-weight:600">${esc(d.cls(s.classId).name)} · Parent : ${esc(s.parent)}</span></span><button class="btn2 sm" data-act="fam-assign" data-sid="${s.id}">${ic('plus', 16)}Famille</button></div>`).join('')}</div></div>` : ''}
-  <div class="field"><label class="sr" for="fq">Rechercher</label><input id="fq" class="inp" placeholder="Rechercher une famille, un enfant, un parent…" data-filter=".fam"></div>
-  <div class="col">${cards || '<p class="mut">Aucune famille pour le moment.</p>'}</div></div>`);
+  ${F.length ? cotisB(F, { admin: true }) : '<p class="mut">Aucune famille pour le moment.</p>'}</div>`);
 }
 let fm = null;
 function famModal() {

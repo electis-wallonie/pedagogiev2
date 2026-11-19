@@ -3,7 +3,7 @@
 import * as d from './data.js';
 import { locale } from './i18n.js';
 import { ACT, esc, ic, av, pill, fdate, toast, openModal, todayISO, hero, band, bands, brandLogo } from './ui.js';
-import { eur, monthLabel, entryForm, entryList, teacherRows, PAY } from './gestion.js';
+import { eur, monthLabel, entryForm, entryList, teacherRows, PAY, cotisB } from './gestion.js';
 import { myContactCard } from './contact.js';
 import { comptaPending } from './demandes.js';
 
@@ -74,7 +74,7 @@ export function view(u, page, q) {
   const P = { bord, journal, recettes, depenses, cotisations, enseignants, rapports, compte, plus }[page] || bord;
   return comptaShell(u, page, `<div class="page">${P(u, m, months, q)}</div>`);
 }
-function bord(u, m, months) {
+function bord(u, m, months, q) {
   const s = d.financeSummary();
   const r = d.incomeTotal(m), e = d.monthExpenses(m);
   const c = d.cotisations();
@@ -82,26 +82,49 @@ function bord(u, m, months) {
   const unpaid = d.D().families.filter((f) => f.status !== 'paid' && f.cotisation).length;
   const noEnd = d.staff(m).reduce((t, p) => t + d.profHours(p.id, m).missing, 0);
   const expCats = d.byCat(d.expensesOf(m), d.EXPENSE_CATS).concat(e.profs ? [{ l: 'Enseignants de l’école', total: e.profs }] : []);
-  const recent = ops(m).slice(0, 6);
-  return `${top('Tableau de bord', `Bonjour ${esc(u.name)}`, `<div class="row wrap" style="gap:8px">${addBtns(m)}</div>`)}
+  const t = (q && q.get('t')) || 'all';
+  const all = ops(m), list = all.filter((o) => t === 'all' || (t === 'rec' ? o.type === 'R' : o.type === 'D')).slice(0, 8);
+  const mn = monthLabel(m).split(' ')[0];
+  const [ent, cts] = qSplit(s.solde);
+  const six = lastMonths(6).map((x) => ({ m: x, r: d.incomeTotal(x), e: d.monthExpenses(x).total }));
+  const mx = Math.max(1, ...six.flatMap((x) => [x.r, x.e]));
+  const h = (v) => Math.max(2, Math.round((v / mx) * 100));
+  return `<div class="qd-h"><div class="grow"><div class="qd-sub">Comptabilité · ${monthLabel(m)}</div><h1>Vue d’ensemble</h1></div><button class="btn2 sm" data-act="compta-csv" data-m="${m}">${ic('dl', 16)}Exporter</button></div>
   ${monthNav('bord', m, months)}
-  ${hero('Solde de l’association', sign(s.solde), { sub: 'depuis le début des comptes', shadow: s.solde >= 0 ? 'var(--mint)' : 'var(--pink)' })}
-  <div class="kpis">${kpi(`Recettes · ${monthLabel(m).split(' ')[0]}`, eur(r), 'var(--mint)')}${kpi(`Dépenses · ${monthLabel(m).split(' ')[0]}`, eur(e.total), 'var(--pink)')}${kpi('Résultat du mois', sign(r - e.total), r - e.total >= 0 ? 'var(--hi)' : 'var(--pink)')}</div>
+  <div class="q-row2">
+    <div class="q-dark" style="width:380px;flex:none;box-sizing:border-box;max-width:100%"><span class="q-l">Solde · Compte de l’association</span><span class="q-money">${s.solde < 0 ? '−' : ''}${ent}<span class="c">${cts}</span></span>
+      <span class="q-sep"></span>
+      <div class="q-kv"><span>Entrées · ${mn}</span><span class="q-amt" style="color:#7FE3B5">+ ${eur(r)}</span></div>
+      <div class="q-kv"><span>Sorties · ${mn}</span><span class="q-amt">− ${eur(e.total)}</span></div>
+      <div class="row wrap" style="gap:8px;margin-top:14px"><button class="q-btn-w" data-act="compta-add" data-k="inc" data-m="${m}">${ic('plus', 17)}Recette</button><button class="q-btn-g" data-act="compta-add" data-k="exp" data-m="${m}" style="background:none">${ic('plus', 17)}Dépense</button></div></div>
+    <div class="q-card q-chart"><div class="row between wrap"><span class="b" style="font-size:16px">Entrées et sorties · 6 mois</span><span class="q-leg"><span><i></i>Entrées</span><span><i class="g"></i>Sorties</span></span></div>
+      <div class="q-bars" role="img" aria-label="Entrées et sorties des 6 derniers mois">${six.map((x) => `<span><span class="q-bb"><i style="height:${h(x.r)}%" title="Entrées ${eur(x.r)}"></i><i style="height:${h(x.e)}%" title="Sorties ${eur(x.e)}"></i></span><small>${new Date(x.m + '-15').toLocaleDateString(locale, { month: 'short' })}</small></span>`).join('')}</div></div>
+  </div>
   ${comptaPending()}
-  <div class="ck pad col"><div class="row between wrap"><h2>${ic('pie', 20)} 12 derniers mois</h2><button class="btn2 sm" data-act="compta-csv" data-m="${m}">${ic('dl', 16)}Exporter le mois (Excel)</button></div>${chart(lastMonths(12))}</div>
+  <div class="row between wrap" style="align-items:flex-end;gap:12px"><h2 style="margin:0">Opérations</h2><nav class="q-tabs">${[['all', 'Tout'], ['rec', 'Entrées'], ['dep', 'Sorties']].map(([k, l]) => `<a href="#/compta/bord?m=${m}&t=${k}" class="${t === k ? 'on' : ''}">${l}</a>`).join('')}</nav></div>
+  <div class="q-card q-pad">${qOps(list)}<div style="padding:12px 0;border-top:1px solid var(--q-hair)"><a class="small b" href="#/compta/journal?m=${m}">Tout le journal (${all.length})</a></div></div>
   <div class="grid2 stack" style="align-items:start">
-    <div class="ck pad col"><div class="row between"><h2>Dépenses du mois</h2><a class="small b" href="#/compta/depenses?m=${m}">Détail</a></div>${bars(expCats, '#FF5A5F')}</div>
-    <div class="ck pad col"><div class="row between"><h2>Recettes du mois</h2><a class="small b" href="#/compta/recettes?m=${m}">Détail</a></div>${bars(d.byCat(d.incomesOf(m), d.INCOME_CATS), '#2BB673')}</div>
+    <a class="q-card col" href="#/compta/cotisations" style="padding:20px 24px;text-decoration:none;color:var(--ink);gap:10px"><div class="row between"><span class="b" style="font-size:16px">Cotisations de l’école</span>${ic('chev', 18)}</div><div class="row between"><span class="q-amt">${eur(c.real)} encaissés</span><span class="mut small">sur ${eur(c.theo)}</span></div><span class="q-bar"><i style="width:${pct}%"></i></span><span class="small mut">${pct} % · reste ${eur(c.rest)}${unpaid ? ` · ${unpaid} famille(s) à relancer` : ''}</span></a>
+    <div class="q-card col" style="padding:20px 24px;gap:0"><span class="b" style="font-size:16px;padding-bottom:6px">À vérifier</span>
+      ${unpaid ? `<a class="q-lrow" href="#/compta/cotisations?s=todo" style="text-decoration:none;color:var(--ink)"><span class="q-st warn"></span><span class="t"><b>${unpaid} famille(s) n’ont pas tout payé</b></span>${ic('chev', 18)}</a>` : ''}
+      ${noEnd ? `<a class="q-lrow" href="#/compta/enseignants?m=${m}" style="text-decoration:none;color:var(--ink)"><span class="q-st warn"></span><span class="t"><b>${noEnd} cours sans heure de fin</b><span>heures non comptées</span></span>${ic('chev', 18)}</a>` : ''}
+      ${!d.incomesOf(m).length ? `<div class="q-lrow"><span class="q-st neu"></span><span class="t"><b>Aucune recette saisie ce mois-ci</b><span>quêtes, dons…</span></span></div>` : ''}
+      ${!unpaid && !noEnd && d.incomesOf(m).length ? '<div class="q-lrow"><span class="q-st ok">Tout est en ordre</span></div>' : ''}</div>
   </div>
   <div class="grid2 stack" style="align-items:start">
-    <a class="ck pad col" href="#/compta/cotisations" style="text-decoration:none;color:var(--ink)"><div class="row between"><h2>${ic('users', 20)} Cotisations de l’école</h2>${ic('chev', 18)}</div><div class="row between b"><span>${eur(c.real)} encaissés</span><span class="mut">sur ${eur(c.theo)}</span></div><div class="prog"><span style="width:${pct}%"></span></div><span class="small b">${pct} % · reste ${eur(c.rest)}${unpaid ? ` · ${unpaid} famille(s) à relancer` : ''}</span></a>
-    <div class="ck pad col"><h2>${ic('alert', 20)} À vérifier</h2>
-      ${unpaid ? `<a class="li" href="#/compta/cotisations?s=todo" style="text-decoration:none;color:var(--ink)"><span class="grow b">${unpaid} famille(s) n’ont pas tout payé</span>${ic('chev', 18)}</a>` : ''}
-      ${noEnd ? `<a class="li" href="#/compta/enseignants?m=${m}" style="text-decoration:none;color:var(--ink)"><span class="grow b">${noEnd} cours sans heure de fin (heures non comptées)</span>${ic('chev', 18)}</a>` : ''}
-      ${!d.incomesOf(m).length ? `<div class="li"><span class="grow b">Aucune recette saisie ce mois-ci (quêtes, dons…)</span></div>` : ''}
-      ${!unpaid && !noEnd && d.incomesOf(m).length ? '<p class="small mut b">Tout est en ordre.</p>' : ''}</div>
-  </div>
-  <div class="ck pad col"><div class="row between"><h2>${ic('list', 20)} Dernières opérations</h2><a class="small b" href="#/compta/journal?m=${m}">Tout le journal</a></div>${opsTable(recent)}</div>`;
+    <div class="q-card col" style="padding:20px 24px"><div class="row between"><span class="b" style="font-size:16px">Sorties du mois</span><a class="small b" href="#/compta/depenses?m=${m}">Détail</a></div>${bars(expCats, '#050505')}</div>
+    <div class="q-card col" style="padding:20px 24px"><div class="row between"><span class="b" style="font-size:16px">Entrées du mois</span><a class="small b" href="#/compta/recettes?m=${m}">Détail</a></div>${bars(d.byCat(d.incomesOf(m), d.INCOME_CATS), '#0A7F4F')}</div>
+  </div>`;
+}
+// montant découpé « 4 812 » + « ,40 € » pour la grande carte
+function qSplit(n) { const t = eur(Math.abs(n)); const i = t.search(/[,.]\d\d/); return i > 0 ? [t.slice(0, i), t.slice(i)] : [t, '']; }
+const PAL = ['q-p0', 'q-p1', 'q-p2', 'q-p3'];
+const pal = (s) => PAL[[...String(s)].reduce((a, ch) => a + ch.charCodeAt(0), 0) % 4];
+const ini = (s) => String(s || '?').replace(/[^\p{L}\s]/gu, ' ').trim().split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase() || '·';
+function qOps(list) {
+  if (!list.length) return '<p class="small mut" style="padding:16px 0">Aucune opération.</p>';
+  return `<div style="overflow-x:auto"><table class="q-tbl"><thead><tr><th>Date</th><th>Intitulé</th><th class="hm">Catégorie</th><th class="r">Montant</th></tr></thead><tbody>
+  ${list.map((o) => `<tr><td class="mut" style="white-space:nowrap">${o.monthly ? 'mensuel' : fdate(o.date, { day: 'numeric', month: 'short' })}</td><td><span class="q-who"><span class="q-av ${pal(o.cat)}">${ini(o.label || o.cat)}</span><span>${esc(o.label || o.cat)}${o.auto ? ' <span class="small mut">· auto</span>' : ''}</span></span></td><td class="hm mut">${esc(o.cat)}</td><td class="r"><span class="q-amt ${o.type === 'R' ? 'pos' : ''}">${o.type === 'R' ? '+' : '−'} ${eur(o.amount)}</span></td></tr>`).join('')}</tbody></table></div>`;
 }
 function opsTable(list, withDel = false) {
   if (!list.length) return '<p class="small mut">Aucune opération.</p>';
@@ -140,20 +163,11 @@ function depenses(u, m, months) {
   ${bands([band('Enseignants de l’école', { sub: 'heures × taux', right: eur(e.profs), href: `#/compta/enseignants?m=${m}`, bg: 'var(--blue2)', icon: 'clock' })])}`;
 }
 function cotisations(u, m, months, q) {
-  const s = q.get('s') || 'all';
-  const c = d.cotisations();
   const F = d.D().families.slice().sort((a, b) => a.name.localeCompare(b.name, 'fr'));
-  const list = F.filter((f) => s === 'all' || (s === 'todo' ? f.status !== 'paid' && f.cotisation : f.status === s));
-  const pct = c.theo ? Math.round((c.real / c.theo) * 100) : 0;
-  return `${top('Cotisations de l’école', `${F.length} famille(s)`)}
-  ${hero('Encaissé', eur(c.real), { sub: `sur ${eur(c.theo)} prévus · reste ${eur(c.rest)}`, chip: pct + ' %', shadow: 'var(--mint)', extra: `<div class="hero-bar"><span style="width:${pct}%"></span></div>` })}
+  return `<div class="qd-h"><div class="grow"><div class="qd-sub">${F.length} famille(s)</div><h1>Cotisations de l’école</h1></div></div>
   ${comptaPending(true)}
-  <div class="seg" style="overflow-x:auto">${[['all', 'Toutes'], ['todo', 'À relancer'], ['unpaid', 'Pas payé'], ['partial', 'Partiel'], ['paid', 'Payé']].map(([k, l]) => `<a href="#/compta/cotisations?s=${k}" class="${s === k ? 'on' : ''}">${l}</a>`).join('')}</div>
-  <div class="field"><label class="sr" for="cq">Rechercher</label><input id="cq" class="inp" placeholder="Rechercher une famille…" data-filter=".fr"></div>
-  <div class="ck pad"><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Famille</th><th>Élèves</th><th style="text-align:end">Cotisation</th><th style="text-align:end">Payé</th><th style="text-align:end">Reste</th><th>État</th></tr></thead><tbody>
-  ${list.map((f) => { const [l, bg, fg] = PAY[f.status] || PAY.unpaid; const p = d.famPaid(f); return `<tr class="fr" data-q="${esc(f.name.toLowerCase())}"><td class="b">${esc(f.name)}</td><td>${d.familyKids(f.id).length}</td><td style="text-align:end">${eur(f.cotisation)}</td><td style="text-align:end">${eur(p)}</td><td style="text-align:end" class="b">${eur((+f.cotisation || 0) - p)}</td><td><button class="btn2 sm" data-act="fam-pay" data-id="${f.id}" style="background:${bg};color:${fg};min-height:34px">${l}</button></td></tr>`; }).join('') || '<tr><td colspan="6" class="mut">Aucune famille.</td></tr>'}
-  </tbody></table></div></div>
-  <p class="tiny mut b">Touchez l’état pour enregistrer un paiement. Les familles sont créées par l’école (Élèves → Familles &amp; cotisations).</p>`;
+  ${F.length ? cotisB(F) : '<p class="mut">Aucune famille.</p>'}
+  <p class="small mut">Touchez « Paiement » ou « Payé » pour enregistrer un paiement. Les familles sont créées par l’école (Élèves → Familles &amp; cotisations).</p>`;
 }
 function enseignants(u, m, months) {
   const P = d.staff(m);

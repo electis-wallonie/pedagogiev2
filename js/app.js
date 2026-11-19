@@ -50,7 +50,7 @@ const R = [
   [/^\/prof\/classe\/(\w+)\/appel\/(\w+)\/ok$/, (m) => { const u = guard('prof'); return u && prof.appelOk(u, m[1], m[2]); }],
   [/^\/prof\/classe\/(\w+)\/objectifs$/, (m, q) => { const u = guard('prof'); return u && prof.classeObjectifs(u, m[1], q); }],
   [/^\/prof\/classe\/(\w+)\/historique$/, (m) => { const u = guard('prof'); return u && prof.historique(u, m[1]); }],
-  [/^\/prof\/eleves$/, () => { const u = guard('prof'); return u && prof.eleves(u); }],
+  [/^\/prof\/eleves$/, (m, q) => { const u = guard('prof'); return u && prof.eleves(u, q); }],
   [/^\/prof\/eleve\/new$/, (m, q) => { const u = guard('prof'); return u && prof.eleveNew(u, q); }],
   [/^\/prof\/eleve\/(\w+)\/cree$/, (m) => { const u = guard('prof'); return u && prof.eleveCree(u, m[1]); }],
   [/^\/prof\/eleve\/(\w+)\/edit$/, (m) => { const u = guard('prof'); return u && prof.eleveEdit(u, m[1]); }],
@@ -80,6 +80,7 @@ function render(keep) {
   if (html === null) return; // redirection en cours
   const samePage = keep === true || path === lastPath;
   const y = window.scrollY;
+  document.body.classList.toggle('q', TEAM.test(path));
   app.innerHTML = demoBar() + html;
   if (samePage) window.scrollTo(0, y); else window.scrollTo(0, 0);
   lastPath = path;
