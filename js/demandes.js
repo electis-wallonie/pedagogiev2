@@ -3,6 +3,7 @@
 import * as d from './data.js';
 import { ACT, FORMS, CHANGE, esc, ic, pill, fdate, toast, todayISO, hero, schedLabel } from './ui.js';
 import { pubShell, config } from './mosquee.js';
+import { tr } from './i18n.js';
 import { shell } from './prof.js';
 
 // Année scolaire : de septembre à août. offset 0 = l'année en cours, 1 = la suivante.
@@ -34,13 +35,13 @@ export function gauge(c, y) {
 }
 
 // ---------- Public : le formulaire en 4 étapes ----------
-const STEPS = ['Élève(s)', 'Classe', 'Parent et adresse', 'Récapitulatif'];
+const STEPS = ['Élève(s)', 'Classe', 'Coordonnées', 'Récapitulatif'];
 function kidBlock(k) {
-  return `<div class="ck pad col dm-kid" data-k="${k}" style="gap:10px"><div class="row between"><span class="b">Enfant ${k + 1}</span>${k ? `<button type="button" class="btn2 sm" data-act="dm-delkid" data-k="${k}">${ic('trash', 16)}Retirer</button>` : ''}</div>
+  return `<div class="ck pad col dm-kid" data-k="${k}" style="gap:10px"><div class="row between"><span class="b dm-kt">${k ? `Élève ${k + 1}` : "L’élève"}</span>${k ? `<button type="button" class="btn2 sm" data-act="dm-delkid" data-k="${k}">${ic('trash', 16)}Retirer</button>` : ''}</div>
     <div class="grid2"><div class="field"><label class="lbl" for="kp${k}">Prénom(s)</label><input id="kp${k}" name="k${k}-prenoms" class="inp" required autocomplete="off"></div>
     <div class="field"><label class="lbl" for="kn${k}">Nom</label><input id="kn${k}" name="k${k}-nom" class="inp" required autocomplete="off"></div></div>
     <div class="field" style="max-width:240px"><label class="lbl" for="kb${k}">Date de naissance</label><input id="kb${k}" name="k${k}-naissance" class="inp" type="date" required max="${todayISO()}"></div>
-    <div class="field"><label class="lbl" for="kc${k}">Votre enfant était déjà inscrit ? Entrez son code de suivi <span class="mut">(facultatif)</span></label><input id="kc${k}" name="k${k}-code" class="inp code" autocomplete="off" autocapitalize="characters" placeholder="ex. CL2-YB-KARIM-10ANS-7K2Q"><span class="hint">Sa progression (sourates, niveau) sera reprise.</span></div></div>`;
+    <div class="field"><label class="lbl" for="kc${k}">Déjà inscrit(e) l’an dernier ? Entrez le code de suivi <span class="mut">(facultatif)</span></label><input id="kc${k}" name="k${k}-code" class="inp code" autocomplete="off" autocapitalize="characters" placeholder="ex. CL2-YB-KARIM-10ANS-7K2Q"><span class="hint">Sa progression (sourates, niveau) sera reprise.</span></div></div>`;
 }
 export function inscription(q) {
   if (q && q.get('ok')) {
@@ -59,15 +60,15 @@ export function inscription(q) {
   <ol class="dm-steps">${STEPS.map((l, i) => `<li class="${i === 0 ? 'on' : ''}" data-i="${i}"><span>${i + 1}</span>${l}</li>`).join('')}</ol>
   <fieldset class="dm-step col" data-i="0" style="gap:12px;border:0;padding:0;margin:0"><legend class="sr">Élève(s)</legend>
     <div id="dm-kids" class="col" style="gap:12px">${kidBlock(0)}</div>
-    <button type="button" class="btn2 full" data-act="dm-addkid">${ic('plus', 18)}Ajouter un autre enfant</button>
-    <span class="hint">Inscrivez toute la famille en une seule demande : les frères et sœurs partageront la même cotisation. Pour un adulte qui s’inscrit lui-même, indiquez vos propres nom et date de naissance.</span>
+    <button type="button" class="btn2 full" data-act="dm-addkid">${ic('plus', 18)}Inscrire une autre personne</button>
+    <span class="hint">L’élève peut être un enfant, un adolescent ou un adulte (cours pour adultes, cours pour les sœurs…). Vous inscrivez plusieurs personnes de la même famille ? Ajoutez-les ici : une seule demande, une seule cotisation.</span>
   </fieldset>
   <fieldset class="dm-step col" data-i="1" style="gap:12px;border:0;padding:0;margin:0" hidden><legend class="sr">Classe</legend>
     ${years.length > 1 ? `<fieldset class="ck pad col dm-set"><legend class="b">Pour quelle année ?</legend><div class="dm-opts two">${years.map((y, i) => opt('annee', y, y === schoolYear(0) ? 'Cette année' : 'L’année prochaine', y, i === 0)).join('')}</div></fieldset>` : `<input type="hidden" name="annee" value="${years[0]}"><p class="small b" style="margin:0">Inscription pour l’année ${years[0]}</p>`}
     <div id="dm-classes" class="col" style="gap:12px"></div>
   </fieldset>
   <fieldset class="dm-step col" data-i="2" style="gap:12px;border:0;padding:0;margin:0" hidden><legend class="sr">Parent et adresse</legend>
-    <div class="ck pad col dm-set" style="gap:10px"><span class="b">Parent ou responsable</span>
+    <div class="ck pad col dm-set" style="gap:10px"><span class="b">Parent ou responsable</span><span class="hint" style="margin-top:-6px">Pour un adulte qui s’inscrit lui-même, indiquez vos propres nom et coordonnées.</span>
     <div class="field"><label class="lbl" for="dpar">Nom et prénom</label><input id="dpar" name="parent" class="inp" required autocomplete="name"></div>
     <div class="grid2"><div class="field"><label class="lbl" for="dt">Téléphone</label><input id="dt" name="tel" class="inp" type="tel" inputmode="tel" required autocomplete="tel"></div>
     <div class="field"><label class="lbl" for="de">E-mail</label><input id="de" name="email" class="inp" type="email" inputmode="email" required autocomplete="email" autocapitalize="none"></div></div></div>
@@ -92,7 +93,7 @@ function classChoices(fd) {
   if (!cls.length) return '<p class="small b">La mosquée n’a pas encore publié ses classes. Envoyez la demande : elle vous proposera une classe.</p>';
   return kidIdx().map((k) => {
     const prev = fd.get(`k${k}-class`);
-    const nm = (fd.get(`k${k}-prenoms`) || '').split(' ')[0] || `Enfant ${k + 1}`;
+    const nm = (fd.get(`k${k}-prenoms`) || '').split(' ')[0] || `l’élève ${k + 1}`;
     return `<fieldset class="ck pad col dm-set"><legend class="b">Classe pour ${esc(nm)}</legend><div class="dm-opts">${cls.map((c) => { const g = seats(c, y); const full = g.free <= 0 && prev !== c.id;
       return `<label class="dm-opt ${full ? 'off' : ''}"><input type="radio" name="k${k}-class" value="${c.id}" ${prev === c.id ? 'checked' : ''} ${full ? 'disabled' : ''} required><span class="col grow" style="gap:2px"><span class="b" dir="auto">${esc(c.name)}${c.public ? ` · ${esc(c.public)}` : ''}</span><span class="tiny mut b">Niveau ${c.level || 1}${d.slotsOf(c).length ? ' · ' + schedLabel(d.slotsOf(c)) : ''}</span><span class="tiny b" style="color:${full ? 'var(--absent)' : 'inherit'}">${full ? 'Complet' : `${g.free} place(s) restante(s)`}</span></span></label>`; }).join('')}</div></fieldset>`;
   }).join('');
@@ -124,8 +125,9 @@ function stepValid(n) {
 }
 ACT['dm-next'] = () => { const [f] = fdOf(); const n = +f.dataset.step; if (stepValid(n)) goStep(n + 1); };
 ACT['dm-prev'] = () => { const [f] = fdOf(); goStep(Math.max(0, +f.dataset.step - 1)); };
-ACT['dm-addkid'] = () => { const ks = kidIdx(); const k = Math.max(...ks) + 1; const box = document.getElementById('dm-kids'); box.insertAdjacentHTML('beforeend', kidBlock(k)); const prev = box.querySelector(`[name="k${ks[ks.length - 1]}-nom"]`); const nn = box.querySelector(`[name="k${k}-nom"]`); if (prev && nn) nn.value = prev.value; box.querySelector(`[name="k${k}-prenoms"]`).focus(); };
-ACT['dm-delkid'] = (el) => { const e = document.querySelector(`.dm-kid[data-k="${el.dataset.k}"]`); if (e) e.remove(); };
+ACT['dm-addkid'] = () => { const ks = kidIdx(); const k = Math.max(...ks) + 1; const box = document.getElementById('dm-kids'); box.insertAdjacentHTML('beforeend', kidBlock(k)); const prev = box.querySelector(`[name="k${ks[ks.length - 1]}-nom"]`); const nn = box.querySelector(`[name="k${k}-nom"]`); if (prev && nn) nn.value = prev.value; box.querySelector(`[name="k${k}-prenoms"]`).focus(); relabel(); };
+const relabel = () => { const ks = [...document.querySelectorAll('.dm-kid')]; ks.forEach((e, i) => { const t = e.querySelector('.dm-kt'); if (t) t.textContent = tr(ks.length > 1 ? `Élève ${i + 1}` : 'L’élève'); }); };
+ACT['dm-delkid'] = (el) => { const e = document.querySelector(`.dm-kid[data-k="${el.dataset.k}"]`); if (e) e.remove(); relabel(); };
 CHANGE['dm-year'] = () => {};
 
 FORMS.demande = async (f, fd) => {
@@ -170,7 +172,7 @@ export function demandesView(u, q) {
   const ini = (x) => { const k = kidsOf(x)[0]; return ((k.prenoms || '?')[0] + (k.nom || '')[0]).toUpperCase(); };
   const Y = [schoolYear(0), schoolYear(1)];
   const gy = Y.includes(q.get('g')) ? q.get('g') : Y[0];
-  const rows = shown.map((x, k) => { const ks = kidsOf(x); return `<tr class="${sel && x.id === sel.id ? 'sel' : ''}" data-act="dem-pick" data-id="${x.id}" data-v="${f}"><td><span class="q-who"><span class="q-av ${PALQ[k % 4]}">${esc(ini(x))}</span><span class="col" style="gap:0"><span data-notr dir="auto">${esc(ks[0].prenoms)} ${esc(ks[0].nom)}</span>${ks.length > 1 ? `<span class="small mut">+ ${ks.length - 1} autre(s) enfant(s)</span>` : ''}</span></span></td><td>${kidAge(ks[0]) ?? '—'} ans</td><td class="hm">${esc(x.annee)}</td><td class="hm mut" data-notr dir="auto">${esc(x.parent)}</td><td class="r mut" style="white-space:nowrap">${fdate(x.at.slice(0, 10), { day: 'numeric', month: 'short' })}</td></tr>`; }).join('');
+  const rows = shown.map((x, k) => { const ks = kidsOf(x); return `<tr class="${sel && x.id === sel.id ? 'sel' : ''}" data-act="dem-pick" data-id="${x.id}" data-v="${f}"><td><span class="q-who"><span class="q-av ${PALQ[k % 4]}">${esc(ini(x))}</span><span class="col" style="gap:0"><span data-notr dir="auto">${esc(ks[0].prenoms)} ${esc(ks[0].nom)}</span>${ks.length > 1 ? `<span class="small mut">+ ${ks.length - 1} autre(s) élève(s)</span>` : ''}</span></span></td><td>${kidAge(ks[0]) ?? '—'} ans</td><td class="hm">${esc(x.annee)}</td><td class="hm mut" data-notr dir="auto">${esc(x.parent)}</td><td class="r mut" style="white-space:nowrap">${fdate(x.at.slice(0, 10), { day: 'numeric', month: 'short' })}</td></tr>`; }).join('');
   return shell(u, 4, `<div class="page">
   <div class="qd-h"><a class="ib" href="#/admin" aria-label="Retour">${ic('back', 20)}</a><div class="grow"><h1>Demandes d’inscription</h1><div class="qd-sub">${n('new')} en attente · envoyées depuis l’onglet Cours du site</div></div></div>
   <div class="q-card col" style="padding:18px 22px;gap:14px"><div class="row between wrap" style="gap:10px"><span class="b" style="font-size:16px">Ouverture des inscriptions</span><span class="small mut">Une année fermée disparaît du formulaire du site.</span></div>
@@ -179,7 +181,7 @@ export function demandesView(u, q) {
     ${d.D().classes.length ? `<div class="q-gauges">${d.D().classes.map((c) => gauge(c, gy)).join('')}</div><span class="tiny mut">Une place est comptée dès l’envoi de la demande. Une classe pleine n’est plus proposée. Capacité : Classes → la classe → Modifier.</span>` : '<span class="small mut">Aucune classe pour le moment.</span>'}
   </div>
   <nav class="q-tabs">${TABS.map(([k, l]) => `<a href="#/admin/demandes?v=${k}" class="${f === k ? 'on' : ''}">${l} <span class="mut">${n(k)}</span></a>`).join('')}</nav>
-  ${shown.length ? `<div class="q-split"><div class="q-main q-card q-pad"><div style="overflow-x:auto"><table class="q-tbl"><thead><tr><th>Enfant(s)</th><th>Âge</th><th class="hm">Année</th><th class="hm">Parent</th><th class="r">Reçue</th></tr></thead><tbody>${rows}</tbody></table></div></div>
+  ${shown.length ? `<div class="q-split"><div class="q-main q-card q-pad"><div style="overflow-x:auto"><table class="q-tbl"><thead><tr><th>Élève(s)</th><th>Âge</th><th class="hm">Année</th><th class="hm">Parent</th><th class="r">Reçue</th></tr></thead><tbody>${rows}</tbody></table></div></div>
   ${sel ? detail(sel, u, PALQ[shown.indexOf(sel) % 4], ini(sel)) : ''}</div>` : `<div class="q-card small mut" style="padding:20px 24px">${f === 'new' ? 'Aucune demande en attente.' : 'Rien à afficher.'}</div>`}
   <p class="small mut">Accepter une demande crée les élèves (ou reprend la fiche d’un ancien élève grâce à son code de suivi), leur code de suivi et leur famille (cotisation « pas payée »).</p></div>`);
 }
@@ -195,11 +197,11 @@ function detail(x, u, pc, ini) {
     ${k.code ? `<span class="small">${old ? `<span class="q-st ok">Réinscription</span> fiche retrouvée : ${esc(old.s.prenoms)} ${esc(old.s.nom)} · ${Object.values(old.s.coran || {}).filter((v) => v.s === 'v').length} sourate(s)` : `<span class="q-st warn">Code inconnu</span> ${esc(k.code)} : une nouvelle fiche sera créée`}</span>` : ''}
     ${x.status === 'new' && cur ? `<div class="field" style="margin:0"><label class="lbl" for="dc-${x.id}-${i}">Classe${want ? ` · demandée : ${esc(want.name)}` : ''}</label><select id="dc-${x.id}-${i}" name="class${i}" class="inp" required>${classes.map((c) => `<option value="${c.id}" ${c.id === (k.classId || (old && old.s.classId)) ? 'selected' : ''}>${esc(c.name)} · ${seats(c).used}/${capOf(c)}</option>`).join('')}</select></div>` : want ? `<span class="small mut">Classe demandée : ${esc(want.name)}</span>` : ''}</div>`; };
   const actions = x.status !== 'new' ? `<div class="row wrap" style="gap:8px">${done.map((st) => `<a class="btn sm" href="#/prof/eleve/${st.id}">${ic('users', 16)}${esc(st.prenoms.split(' ')[0])}</a>`).join('')}<button class="btn2 sm" data-act="dem-del" data-id="${x.id}">${ic('trash', 16)}Supprimer la demande</button></div>`
-    : cur ? `<button class="btn full" ${classes.length ? '' : 'disabled'}>${ic('check', 18)}Accepter et inscrire ${ks.length > 1 ? `les ${ks.length} enfants` : ''}</button>
+    : cur ? `<button class="btn full" ${classes.length ? '' : 'disabled'}>${ic('check', 18)}Accepter et inscrire ${ks.length > 1 ? `les ${ks.length} élèves` : ''}</button>
       <div class="grid2" style="gap:8px"><button type="button" class="btn2 sm" data-act="dem-later" data-id="${x.id}">Plus tard</button><button type="button" class="btn2 sm" data-act="dem-no" data-id="${x.id}">Refuser</button></div>`
       : `<button type="button" class="btn full" data-act="dem-later" data-id="${x.id}">${ic('check', 18)}Retenir pour ${esc(x.annee)}</button><button type="button" class="btn2 sm full" data-act="dem-no" data-id="${x.id}">Refuser</button>`;
   const adr = [x.rue, [x.cp, x.ville].filter(Boolean).join(' ')].filter(Boolean).join(', ');
-  return `<aside class="q-card q-drawer" id="dem-d" aria-label="Demande sélectionnée"><div class="row" style="gap:12px"><span class="q-av lg ${pc}">${esc(ini)}</span><div class="col" style="gap:2px"><span class="b" style="font-size:18px" data-notr dir="auto">${ks.length > 1 ? `Famille ${esc(ks[0].nom)} · ${ks.length} enfants` : `${esc(ks[0].prenoms)} ${esc(ks[0].nom)}`}</span><span class="small mut">Demande du ${fdate(x.at.slice(0, 10), { day: 'numeric', month: 'short' })} · ${esc(x.annee)}${cur ? ' · cette année' : ' · année prochaine'}</span></div></div>
+  return `<aside class="q-card q-drawer" id="dem-d" aria-label="Demande sélectionnée"><div class="row" style="gap:12px"><span class="q-av lg ${pc}">${esc(ini)}</span><div class="col" style="gap:2px"><span class="b" style="font-size:18px" data-notr dir="auto">${ks.length > 1 ? `Famille ${esc(ks[0].nom)} · ${ks.length} élèves` : `${esc(ks[0].prenoms)} ${esc(ks[0].nom)}`}</span><span class="small mut">Demande du ${fdate(x.at.slice(0, 10), { day: 'numeric', month: 'short' })} · ${esc(x.annee)}${cur ? ' · cette année' : ' · année prochaine'}</span></div></div>
   <div class="q-kvs"><div><span>Parent</span><span data-notr dir="auto">${esc(x.parent)}</span></div><div><span>Téléphone</span><span><a href="tel:${esc(String(x.tel).replace(/\s/g, ''))}" class="q-amt" style="color:inherit">${esc(x.tel)}</a></span></div><div><span>E-mail</span><span style="word-break:break-all"><a href="mailto:${esc(x.email)}" style="color:inherit">${esc(x.email)}</a></span></div>${adr ? `<div><span>Adresse</span><span data-notr dir="auto">${esc(adr)}</span></div>` : ''}${x.cours ? `<div><span>Cours</span><span>${esc(x.cours)}</span></div>` : ''}${x.message ? `<div><span>Remarque</span><span data-notr dir="auto" style="white-space:pre-wrap">${esc(x.message)}</span></div>` : ''}</div>
   <form class="col" style="gap:10px" data-form="dem-ok" data-id="${x.id}">${ks.map(kidRow).join('')}${actions}</form></aside>`;
 }
@@ -209,7 +211,7 @@ FORMS['dem-ok'] = (f, fd) => {
   const x = find(f.dataset.id); if (!x) return;
   const ks = kidsOf(x);
   const cls = ks.map((k, i) => d.cls(fd.get('class' + i)));
-  if (cls.some((c) => !c)) { toast('Choisissez une classe pour chaque enfant'); return; }
+  if (cls.some((c) => !c)) { toast('Choisissez une classe pour chaque élève'); return; }
   const digits = (t) => (t || '').replace(/[^\d]/g, '');
   const D = d.D();
   // une seule famille pour tous les enfants de la demande
@@ -227,7 +229,7 @@ FORMS['dem-ok'] = (f, fd) => {
     D.students.push(s); return s.id;
   });
   Object.assign(x, { status: 'ok', studentId: ids[0], studentIds: ids, doneAt: new Date().toISOString() });
-  d.save(); toast(ks.length > 1 ? `${ks.length} enfants inscrits` : `${ks[0].prenoms} est inscrit·e en ${cls[0].name}`);
+  d.save(); toast(ks.length > 1 ? `${ks.length} élèves inscrits` : `${ks[0].prenoms} est inscrit·e en ${cls[0].name}`);
   location.hash = `#/prof/eleve/${ids[0]}/cree${ids.length > 1 ? `?autres=${ids.slice(1).join(',')}` : ''}`;
 };
 const setSt = (id, status) => { const x = find(id); if (x) { Object.assign(x, { status, doneAt: new Date().toISOString() }); d.save(); window.dispatchEvent(new CustomEvent('soft-render')); } };
