@@ -22,7 +22,8 @@ export function comptaShell(u, active, body) {
 const top = (title, sub, right = '') => `<div class="top"><div class="grow">${sub ? `<div class="small mut b">${sub}</div>` : ''}<h1>${title}</h1></div>${right}</div>`;
 function monthNav(page, m, months) {
   const i = months.indexOf(m);
-  return `<div class="row between ck flat" style="padding:6px"><a class="ib ${i < months.length - 1 ? '' : 'hide'}" href="#/compta/${page}?m=${months[i + 1]}" aria-label="Mois précédent">${ic('back', 20)}</a><span class="b" style="font-size:18px">${monthLabel(m)}${m === d.curMonth() ? ' · en cours' : ''}</span><a class="ib ${i > 0 ? '' : 'hide'}" href="#/compta/${page}?m=${months[i - 1]}" aria-label="Mois suivant">${ic('chev', 20)}</a></div>`;
+  const prev = i < months.length - 1 ? months[i + 1] : null, next = i > 0 ? months[i - 1] : null;
+  return `<div class="q-month">${prev ? `<a class="ib sm" href="#/compta/${page}?m=${prev}" aria-label="Mois précédent">${ic('back', 18)}</a>` : '<span class="ib sm" style="visibility:hidden"></span>'}<span class="b">${monthLabel(m)}${m === d.curMonth() ? ' <span class="mut" style="font-weight:400">· en cours</span>' : ''}</span>${next ? `<a class="ib sm" href="#/compta/${page}?m=${next}" aria-label="Mois suivant">${ic('chev', 18)}</a>` : '<span class="ib sm" style="visibility:hidden"></span>'}</div>`;
 }
 const kpi = (label, value, bg, sub = '') => `<div class="ck pad col" style="gap:4px;background:${bg}"><span class="small b">${label}</span><span class="kpi">${value}</span>${sub ? `<span class="tiny b">${sub}</span>` : ''}</div>`;
 const sign = (n) => `${n >= 0 ? '▲' : '▼'} ${eur(Math.abs(n))}`;
@@ -66,7 +67,7 @@ ACT['compta-add'] = (el) => {
   const kind = el.dataset.k, m = el.dataset.m;
   openModal(() => `<div class="row between"><h2>${kind === 'inc' ? 'Nouvelle recette' : 'Nouvelle dépense'}</h2><button class="ib" data-act="close-modal" aria-label="Fermer">${ic('x', 20)}</button></div>${entryForm(kind, m, kind === 'inc' ? d.INCOME_CATS : d.EXPENSE_CATS)}`);
 };
-const addBtns = (m) => `<button class="btn sm" data-act="compta-add" data-k="inc" data-m="${m}" style="background:var(--mint);color:var(--ink)">${ic('plus', 18)}Recette</button><button class="btn sm" data-act="compta-add" data-k="exp" data-m="${m}" style="background:var(--absent);color:var(--onabsent)">${ic('plus', 18)}Dépense</button>`;
+const addBtns = (m) => `<button class="btn sm" data-act="compta-add" data-k="inc" data-m="${m}">${ic('plus', 18)}Recette</button><button class="btn2 sm" data-act="compta-add" data-k="exp" data-m="${m}">${ic('plus', 18)}Dépense</button>`;
 
 export function view(u, page, q) {
   const months = d.financeMonths();
@@ -121,10 +122,10 @@ function qSplit(n) { const t = eur(Math.abs(n)); const i = t.search(/[,.]\d\d/);
 const PAL = ['q-p0', 'q-p1', 'q-p2', 'q-p3'];
 const pal = (s) => PAL[[...String(s)].reduce((a, ch) => a + ch.charCodeAt(0), 0) % 4];
 const ini = (s) => String(s || '?').replace(/[^\p{L}\s]/gu, ' ').trim().split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase() || '·';
-function qOps(list) {
+function qOps(list, withDel = false, noCat = false) {
   if (!list.length) return '<p class="small mut" style="padding:16px 0">Aucune opération.</p>';
-  return `<div style="overflow-x:auto"><table class="q-tbl"><thead><tr><th>Date</th><th>Intitulé</th><th class="hm">Catégorie</th><th class="r">Montant</th></tr></thead><tbody>
-  ${list.map((o) => `<tr><td class="mut" style="white-space:nowrap">${o.monthly ? 'mensuel' : fdate(o.date, { day: 'numeric', month: 'short' })}</td><td><span class="q-who"><span class="q-av ${pal(o.cat)}">${ini(o.label || o.cat)}</span><span>${esc(o.label || o.cat)}${o.auto ? ' <span class="small mut">· auto</span>' : ''}</span></span></td><td class="hm mut">${esc(o.cat)}</td><td class="r"><span class="q-amt ${o.type === 'R' ? 'pos' : ''}">${o.type === 'R' ? '+' : '−'} ${eur(o.amount)}</span></td></tr>`).join('')}</tbody></table></div>`;
+  return `<div style="overflow-x:auto"><table class="q-tbl"><thead><tr><th>Date</th><th>Intitulé</th>${noCat ? '' : '<th class="hm">Catégorie</th>'}<th class="r">Montant</th>${withDel ? '<th></th>' : ''}</tr></thead><tbody>
+  ${list.map((o) => `<tr class="op" data-q="${esc((o.cat + ' ' + (o.label || '')).toLowerCase())}"><td class="mut" style="white-space:nowrap">${o.monthly ? 'mensuel' : fdate(o.date, { day: 'numeric', month: 'short' })}</td><td><span class="q-who"><span class="q-av ${pal(o.cat)}">${ini(o.label || o.cat)}</span><span>${esc(o.label || o.cat)}${o.auto ? ' <span class="small mut">· auto</span>' : ''}</span></span></td>${noCat ? '' : `<td class="hm mut">${esc(o.cat)}</td>`}<td class="r"><span class="q-amt ${o.type === 'R' ? 'pos' : ''}">${o.type === 'R' ? '+' : '−'} ${eur(o.amount)}</span></td>${withDel ? `<td class="r" style="width:44px">${o.del ? `<button class="ib sm" data-act="${o.del}" data-id="${o.id}" aria-label="Supprimer">${ic('trash', 14)}</button>` : ''}</td>` : ''}</tr>`).join('')}</tbody></table></div>`;
 }
 function opsTable(list, withDel = false) {
   if (!list.length) return '<p class="small mut">Aucune opération.</p>';
@@ -136,32 +137,29 @@ function journal(u, m, months, q) {
   const all = ops(m);
   const list = all.filter((o) => t === 'all' || (t === 'rec' ? o.type === 'R' : o.type === 'D'));
   const tr = all.filter((o) => o.type === 'R').reduce((a, o) => a + o.amount, 0), td = all.filter((o) => o.type === 'D').reduce((a, o) => a + o.amount, 0);
-  return `${top('Journal', 'Toutes les opérations du mois', `<div class="row wrap" style="gap:8px">${addBtns(m)}</div>`)}
+  return `<div class="qd-h"><div class="grow"><h1>Journal</h1><div class="qd-sub">${monthLabel(m)} · ${all.length} opération(s)</div></div><button class="btn2 sm" data-act="compta-csv" data-m="${m}">${ic('dl', 16)}Exporter (Excel)</button><span class="row" style="gap:8px">${addBtns(m)}</span></div>
   ${monthNav('journal', m, months)}
-  ${hero('Résultat du mois', sign(tr - td), { sub: `+ ${eur(tr)} d’entrées · − ${eur(td)} de sorties`, shadow: tr - td >= 0 ? 'var(--mint)' : 'var(--pink)' })}
-  <div class="row wrap" style="gap:8px"><div class="seg" style="flex:1 1 280px">${[['all', 'Tout'], ['rec', 'Recettes'], ['dep', 'Dépenses']].map(([k, l]) => `<a href="#/compta/journal?m=${m}&t=${k}" class="${t === k ? 'on' : ''}">${l}</a>`).join('')}</div><button class="btn2 sm" data-act="compta-csv" data-m="${m}">${ic('dl', 16)}Exporter (Excel)</button></div>
-  <div class="field"><label class="sr" for="jq">Rechercher</label><input id="jq" class="inp" placeholder="Rechercher une opération…" data-filter=".op"></div>
-  <div class="ck pad">${opsTable(list, true)}</div>
-  <p class="tiny mut b">« auto » : calculé à partir des heures des enseignants. Les lignes mensuelles (loyer, électricité…) apparaissent chaque mois.</p>`;
+  <div class="q-card q-stats" style="grid-template-columns:repeat(3,1fr)"><div><b style="color:var(--q-pos)">+ ${eur(tr)}</b><span>entrées</span></div><div><b>− ${eur(td)}</b><span>sorties</span></div><div><b>${tr - td >= 0 ? '+' : '−'} ${eur(Math.abs(tr - td))}</b><span>résultat du mois</span></div></div>
+  <div class="row wrap" style="gap:12px;align-items:center"><label class="q-search">${ic('search', 18)}<span class="sr">Rechercher</span><input id="jq" placeholder="Rechercher une opération…" data-filter=".op"></label><nav class="q-tabs" style="border:0">${[['all', 'Tout'], ['rec', 'Entrées'], ['dep', 'Sorties']].map(([k, l]) => `<a href="#/compta/journal?m=${m}&t=${k}" class="${t === k ? 'on' : ''}">${l}</a>`).join('')}</nav></div>
+  <div class="q-card q-pad">${qOps(list, true)}</div>
+  <p class="small mut">« auto » : calculé à partir des heures des enseignants. Les lignes mensuelles (loyer, électricité…) apparaissent chaque mois.</p>`;
 }
-function recettes(u, m, months) {
-  return `${top('Recettes', 'Dons, quêtes, zakat, cotisations…')}
-  ${monthNav('recettes', m, months)}
-  ${hero(`Recettes · ${monthLabel(m)}`, eur(d.incomeTotal(m)), { sub: `${d.incomesOf(m).length} opération(s)`, shadow: 'var(--mint)' })}
-  <div class="bcard col"><span class="w1-blob" aria-hidden="true"></span><h2>${ic('plus', 20)} Nouvelle recette</h2>${entryForm('inc', m, d.INCOME_CATS)}</div>
-  <h2 class="sec-t">Ce mois-ci</h2>
-  <div class="ck pad col" style="gap:0">${entryList(d.incomesOf(m), d.INCOME_CATS, 'inc-del')}</div>`;
-}
-function depenses(u, m, months) {
+function saisie(kind, u, m, months) {
+  const inc = kind === 'inc';
+  const list = ops(m).filter((o) => o.type === (inc ? 'R' : 'D'));
+  const tot = list.reduce((t, o) => t + o.amount, 0);
   const e = d.monthExpenses(m);
-  return `${top('Dépenses', 'Loyer, énergie, entretien, personnel…')}
-  ${monthNav('depenses', m, months)}
-  ${hero(`Total des dépenses · ${monthLabel(m)}`, eur(e.total), { sub: `${eur(e.other)} saisies · ${eur(e.profs)} enseignants`, shadow: 'var(--pink)' })}
-  <div class="bcard col"><span class="w1-blob" aria-hidden="true"></span><h2>${ic('plus', 20)} Nouvelle dépense</h2>${entryForm('exp', m, d.EXPENSE_CATS)}</div>
-  <h2 class="sec-t">Ce mois-ci</h2>
-  <div class="ck pad col" style="gap:0">${entryList(d.expensesOf(m), d.EXPENSE_CATS, 'exp-del')}</div>
-  ${bands([band('Enseignants de l’école', { sub: 'heures × taux', right: eur(e.profs), href: `#/compta/enseignants?m=${m}`, bg: 'var(--blue2)', icon: 'clock' })])}`;
+  const page = inc ? 'recettes' : 'depenses';
+  return `<div class="qd-h"><div class="grow"><h1>${inc ? 'Recettes' : 'Dépenses'}</h1><div class="qd-sub">${monthLabel(m)} · <span class="q-amt">${eur(tot)}</span>${inc ? '' : ` · dont <span class="q-amt">${eur(e.profs)}</span> enseignants`}</div></div><button class="btn sm" data-act="compta-add" data-k="${kind}" data-m="${m}">${ic('plus', 18)}${inc ? 'Nouvelle recette' : 'Nouvelle dépense'}</button></div>
+  ${monthNav(page, m, months)}
+  <div class="q-split"><div class="q-main q-card q-pad">${qOps(list, true, true)}</div>
+  <aside class="q-card q-drawer q-entry-aside" aria-label="${inc ? 'Nouvelle recette' : 'Nouvelle dépense'}"><span class="b" style="font-size:18px">${inc ? 'Nouvelle recette' : 'Nouvelle dépense'}</span>
+    <div class="segq"><a href="#/compta/recettes?m=${m}" class="${inc ? 'on' : ''}">Recette</a><a href="#/compta/depenses?m=${m}" class="${inc ? '' : 'on'}">Dépense</a></div>
+    ${entryForm(kind, m, inc ? d.INCOME_CATS : d.EXPENSE_CATS)}</aside></div>
+  <p class="small mut">${inc ? 'Dons, quêtes, zakat, cotisations…' : 'Loyer, énergie, entretien, fournitures… La ligne « Enseignants » est calculée à partir des heures (page Enseignants).'} Les lignes « mensuel » apparaissent chaque mois.</p>`;
 }
+const recettes = (u, m, months) => saisie('inc', u, m, months);
+const depenses = (u, m, months) => saisie('exp', u, m, months);
 function cotisations(u, m, months, q) {
   const F = d.D().families.slice().sort((a, b) => a.name.localeCompare(b.name, 'fr'));
   return `<div class="qd-h"><div class="grow"><div class="qd-sub">${F.length} famille(s)</div><h1>Cotisations de l’école</h1></div></div>
@@ -171,12 +169,15 @@ function cotisations(u, m, months, q) {
 }
 function enseignants(u, m, months) {
   const P = d.staff(m);
-  return `${top('Enseignants de l’école', 'Heures de cours et montants')}
+  const PALQ = ['q-p0', 'q-p1', 'q-p2', 'q-p3'];
+  const H = P.map((p) => ({ p, h: d.profHours(p.id, m), cost: d.profCost(p, m) }));
+  const tmin = H.reduce((t, x) => t + x.h.min, 0), miss = H.reduce((t, x) => t + x.h.missing, 0);
+  return `<div class="qd-h"><div class="grow"><h1>Enseignants</h1><div class="qd-sub">${monthLabel(m)} · heures comptées depuis les appels</div></div></div>
   ${monthNav('enseignants', m, months)}
-  ${hero(`À verser · ${monthLabel(m)}`, eur(d.monthExpenses(m).profs), { sub: `${P.length} enseignant(s)`, shadow: 'var(--mint)' })}
-  <div class="ck pad col">
-  <div class="list">${P.map((p) => { const h = d.profHours(p.id, m); return `<button type="button" class="li" data-act="hours-detail" data-id="${p.id}" data-m="${m}" style="background:none;border:0;border-bottom:2px solid var(--neutral);width:100%;text-align:start;cursor:pointer;font:inherit;color:var(--ink)"><span class="grow"><span class="b" style="display:block">${esc(p.name)}</span><span class="small mut b" style="font-weight:600">${h.n} cours · ${d.fmtH(h.min)}${h.missing ? ` · ${h.missing} sans heure de fin` : ''} · voir le détail</span></span><span class="b">${eur(d.profCost(p, m))}</span>${ic('chev', 18)}</button>`; }).join('') || '<p class="small mut">Aucun enseignant.</p>'}</div></div>
-  <div class="ck pad col"><h2>Taux et montants</h2>${teacherRows(m)}</div>`;
+  <div class="q-card q-stats"><div><b>${eur(d.monthExpenses(m).profs)}</b><span>à verser ce mois</span></div><div><b>${d.fmtH(tmin)}</b><span>heures du mois</span></div><div><b>${P.length}</b><span>enseignant(s)</span></div><div><b style="${miss ? 'color:var(--q-warn)' : ''}">${miss}</b><span>cours sans heure de fin</span></div></div>
+  <div class="q-card q-pad">${H.length ? `<div style="overflow-x:auto"><table class="q-tbl"><thead><tr><th>Enseignant</th><th class="hm">Cours</th><th>Heures</th><th class="hm">Taux</th><th class="r">Montant</th><th></th></tr></thead><tbody>
+  ${H.map(({ p, h, cost }, k) => `<tr data-act="hours-detail" data-id="${p.id}" data-m="${m}"><td><span class="q-who"><span class="q-av ${PALQ[k % 4]}">${esc(p.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase())}</span><span>${esc(p.name)}${p.role === 'admin' ? ' <span class="mut small">· admin</span>' : ''}</span></span></td><td class="hm mut">${h.n}${h.missing ? ` <span style="color:var(--q-warn)">· ${h.missing} sans fin</span>` : ''}</td><td><span class="q-amt" style="font-weight:400">${d.fmtH(h.min)}</span></td><td class="hm mut"><span class="q-amt" style="font-weight:400">${eur(d.profRate(p))}/h</span></td><td class="r"><span class="q-amt">${eur(cost)}</span></td><td class="r" style="width:30px">${ic('chev', 16)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="small mut" style="padding:16px 0">Aucun enseignant.</p>'}</div>
+  <div class="q-card col q-rates" style="padding:20px 24px;gap:12px"><span class="b" style="font-size:16px">Taux et montants</span>${teacherRows(m)}</div>`;
 }
 function rapports(u, m, months, q) {
   const years = [...new Set(months.map((x) => x.slice(0, 4)))];
@@ -193,18 +194,24 @@ function rapports(u, m, months, q) {
   const c = d.cotisations();
   if (c.real) inc['Cotisations de l’école (encaissées)'] = c.real;
   const ti = Object.values(inc).reduce((a, b) => a + b, 0), te = Object.values(exp).reduce((a, b) => a + b, 0);
-  const rows = (o) => Object.entries(o).sort((a, b) => b[1] - a[1]).map(([l, v]) => `<tr><td>${esc(l)}</td><td style="text-align:end">${eur(v)}</td></tr>`).join('');
-  return `${top('Rapports', 'Compte de résultat simplifié', `<div class="row wrap" style="gap:8px"><button class="btn2 sm" data-act="compta-csv" data-y="${y}">${ic('dl', 16)}Journal ${y} (Excel)</button><button class="btn2 sm" data-act="print">${ic('note', 16)}Imprimer</button></div>`)}
-  <div class="seg">${years.map((x) => `<a href="#/compta/rapports?y=${x}" class="${x === y ? 'on' : ''}">Année ${x}</a>`).join('')}</div>
-  ${hero(`Résultat ${y}`, sign(ti - te), { sub: `+ ${eur(ti)} de recettes · − ${eur(te)} de dépenses`, shadow: ti - te >= 0 ? 'var(--mint)' : 'var(--pink)' })}
-  <div class="kpis">${kpi('Total recettes', eur(ti), 'var(--mint)')}${kpi('Total dépenses', eur(te), 'var(--pink)')}</div>
-  <div class="grid2 stack" style="align-items:start">
-    <div class="ck pad col"><h2>Recettes ${y}</h2><table class="tbl"><tbody>${rows(inc) || '<tr><td class="mut">—</td></tr>'}<tr class="b"><td>Total</td><td style="text-align:end">${eur(ti)}</td></tr></tbody></table></div>
-    <div class="ck pad col"><h2>Dépenses ${y}</h2><table class="tbl"><tbody>${rows(exp) || '<tr><td class="mut">—</td></tr>'}<tr class="b"><td>Total</td><td style="text-align:end">${eur(te)}</td></tr></tbody></table></div>
-  </div>
-  <div class="ck pad col"><h2>Mois par mois</h2><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Mois</th><th style="text-align:end">Recettes</th><th style="text-align:end">Dépenses</th><th style="text-align:end">Résultat</th></tr></thead><tbody>
-  ${ms.slice().reverse().map((mm) => { const r = d.incomeTotal(mm), e = d.monthExpenses(mm).total; return `<tr><td><a href="#/compta/journal?m=${mm}">${monthLabel(mm)}</a></td><td style="text-align:end" class="pos">${eur(r)}</td><td style="text-align:end" class="neg">${eur(e)}</td><td style="text-align:end" class="b">${sign(r - e)}</td></tr>`; }).join('')}</tbody></table></div></div>
-  <p class="tiny mut b">Les cotisations de l’école sont annuelles : elles comptent dans le total, pas dans les mois. Document utile pour l’assemblée générale.</p>`;
+  const catCard = (title, o, col) => { const E = Object.entries(o).sort((a, b) => b[1] - a[1]); const mx = Math.max(1, ...E.map((x) => x[1])); const tot = E.reduce((t, x) => t + x[1], 0);
+    return `<div class="q-card col" style="padding:20px 24px;gap:12px;flex:1;min-width:0"><div class="row between"><span class="b" style="font-size:16px">${title}</span><span class="q-amt">${eur(tot)}</span></div>${E.map(([l, v]) => `<div class="col" style="gap:6px"><div class="row between small" style="gap:10px"><span>${esc(l)}</span><span class="q-amt">${eur(v)} <span class="mut" style="font-weight:400">· ${tot ? Math.round((v / tot) * 100) : 0} %</span></span></div><span class="q-bar"><i style="width:${Math.max(2, (v / mx) * 100)}%;background:${col}"></i></span></div>`).join('') || '<p class="small mut">—</p>'}</div>`; };
+  const all = ms.map((mm) => ({ m: mm, r: d.incomeTotal(mm), e: d.monthExpenses(mm).total }));
+  const f0 = all.findIndex((x) => x.r || x.e);
+  const data = f0 < 0 ? all.slice(-1) : all.slice(f0);
+  const mx = Math.max(1, ...data.flatMap((x) => [x.r, x.e]));
+  const hh = (v) => Math.max(2, Math.round((v / mx) * 100));
+  const sg = (n) => `${n >= 0 ? '+' : '−'} ${eur(Math.abs(n))}`;
+  return `<div class="qd-h"><div class="grow"><h1>Rapports</h1><div class="qd-sub">Année ${y} · compte de résultat simplifié pour l’assemblée générale</div></div>
+  <nav class="q-tabs" style="border:0">${years.map((x) => `<a href="#/compta/rapports?y=${x}" class="${x === y ? 'on' : ''}">${x}</a>`).join('')}</nav><button class="btn2 sm" data-act="print">${ic('note', 16)}Imprimer</button><button class="btn sm" data-act="compta-csv" data-y="${y}">${ic('dl', 16)}Exporter (Excel)</button></div>
+  <div class="q-card q-stats"><div><b style="color:var(--q-pos)">${eur(ti)}</b><span>recettes</span></div><div><b>${eur(te)}</b><span>dépenses</span></div><div><b>${sg(ti - te)}</b><span>résultat ${y}</span></div><div><b>${eur(d.financeSummary().solde)}</b><span>solde actuel</span></div></div>
+  <div class="q-row2" style="align-items:flex-start">${catCard('Recettes par catégorie', inc, '#050505')}${catCard('Dépenses par catégorie', exp, '#8A8A86')}</div>
+  <div class="q-card q-chart"><div class="row between wrap"><span class="b" style="font-size:16px">Évolution sur l’année</span><span class="q-leg"><span><i></i>Recettes</span><span><i class="g"></i>Dépenses</span></span></div>
+    <div class="q-bars" role="img" aria-label="Recettes et dépenses par mois">${data.map((x) => `<span><span class="q-bb"><i style="height:${hh(x.r)}%" title="Recettes ${eur(x.r)}"></i><i style="height:${hh(x.e)}%" title="Dépenses ${eur(x.e)}"></i></span><small>${new Date(x.m + '-15').toLocaleDateString(locale, { month: 'short' })}</small></span>`).join('')}</div></div>
+  <div class="q-card q-pad"><div class="q-sec"><b>Mois par mois</b></div><div style="overflow-x:auto"><table class="q-tbl q-tbl-static"><thead><tr><th>Mois</th><th class="r">Recettes</th><th class="r">Dépenses</th><th class="r">Résultat</th></tr></thead><tbody>
+  ${data.slice().reverse().map((x) => `<tr><td><a href="#/compta/journal?m=${x.m}" style="color:inherit">${monthLabel(x.m)}</a></td><td class="r"><span class="q-amt pos">${eur(x.r)}</span></td><td class="r"><span class="q-amt">${eur(x.e)}</span></td><td class="r"><span class="q-amt">${sg(x.r - x.e)}</span></td></tr>`).join('')}
+  <tr><td class="b">Total ${y}</td><td class="r"><span class="q-amt pos" style="font-weight:600">${eur(ti)}</span></td><td class="r"><span class="q-amt" style="font-weight:600">${eur(te)}</span></td><td class="r"><span class="q-amt" style="font-weight:600">${sg(ti - te)}</span></td></tr></tbody></table></div></div>
+  <p class="small mut">Les cotisations de l’école sont annuelles : elles comptent dans le total, pas dans les mois.</p>`;
 }
 ACT.print = () => window.print();
 const MBG = ['var(--mint)', 'var(--blue2)', 'var(--yellow)', 'var(--pink)', 'var(--mint)', 'var(--blue2)', 'var(--yellow)'];

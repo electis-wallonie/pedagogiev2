@@ -3,7 +3,7 @@ import * as d from './data.js';
 import { ACT, FORMS, esc, ic, av, pill, fdate, toast, openModal, closeModal, copyText, todayISO, takePending , ask, askText } from './ui.js';
 import { shell } from './prof.js';
 import { langBtn } from './public.js';
-import { locauxTile, financeTile, hoursPill } from './gestion.js';
+import { locauxTile, financeTile, hoursPill, locauxSummary, eur } from './gestion.js';
 import { contactFields, readContact } from './contact.js';
 import { publicTile, teamHost, mosqueName, loadMawaqit, mawaqitData } from './mosquee.js';
 import { demandesTile, pending } from './demandes.js';
@@ -67,51 +67,103 @@ const roleKey = (u) => (d.isSuper(u) ? 'super' : u.role);
 // le méga administrateur crée tous les comptes ; un administrateur crée les professeurs
 const creatable = (me) => (d.isSuper(me) ? [['prof', 'Professeur'], ['admin', 'Administrateur'], ['compta', 'Comptabilité']] : [['prof', 'Professeur']]);
 const canManage = (me, u) => u.id !== me.id && !d.isSuper(u) && (d.isSuper(me) || u.role === 'prof');
+const PALQ = ['q-p0', 'q-p1', 'q-p2', 'q-p3'];
+const RPAL = { super: 'q-p3', admin: 'q-p2', compta: 'q-p1', prof: 'q-p0' };
+const ini2 = (n) => n.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+const qhead = (title, sub, right = '', back = '') => `<div class="qd-h">${back ? `<a href="${back}" class="ib" aria-label="Retour">${ic('back', 20)}</a>` : ''}<div class="grow"><h1>${title}</h1>${sub ? `<div class="qd-sub">${sub}</div>` : ''}</div>${right}</div>`;
+const sortTeam = () => d.D().users.slice().sort((a, b) => (['super', 'admin', 'compta', 'prof'].indexOf(roleKey(a)) - ['super', 'admin', 'compta', 'prof'].indexOf(roleKey(b))) || a.name.localeCompare(b.name));
+const annState = (a, today = todayISO()) => (a.to < today ? ['Terminé', 'neu'] : a.from > today ? ['À venir', 'warn'] : ['En ligne', 'ok']);
+const modCard = (href, icon, title, sub, info, btn, pri = false) => `<a class="q-card q-mod" href="${href}"><span class="row between"><span class="q-glyph">${ic(icon, 18)}</span>${ic('chev', 18)}</span>
+  <span class="col" style="gap:2px"><span class="b" style="font-size:16px">${title}</span><span class="small mut">${sub}</span></span><span class="q-mod-sep"></span><span class="small">${info}</span><span class="${pri ? 'btn' : 'btn2'} sm full">${btn}</span></a>`;
+
+// ---------- direction : le hub ----------
 export function adminView(u) {
-  const team = d.D().users.slice().sort((a, b) => (['super', 'admin', 'compta', 'prof'].indexOf(roleKey(a)) - ['super', 'admin', 'compta', 'prof'].indexOf(roleKey(b))) || a.name.localeCompare(b.name));
-  const rows = team.map((p) => {
-    const info = p.role === 'prof' ? ` · ${d.classesOf(p.id).length} classe(s) · ${d.studentsOfProf(p.id).length} élève(s)` : '';
-    return `<div class="li" style="align-items:flex-start">${av(p.name.split(' ').map((w) => w[0]).join('').slice(0, 2), 44, ROLE_BG[roleKey(p)], 14)}
-    <div class="grow"><div class="row wrap" style="gap:6px"><span class="b">${esc(p.name)}${p.id === u.id ? ' (moi)' : ''}</span>${pill(d.roleLabel(p), ROLE_BG[roleKey(p)])}</div>
-    <div class="small mut b" style="font-weight:600">Identifiant : <b>${esc(p.login)}</b>${info} ${p.role === 'prof' || d.profHours(p.id).n ? hoursPill(p) : ''}${p.mustChange ? ' · ' + pill('Mot de passe temporaire', 'var(--hi)') : ''}</div>
-    <div class="small b" style="font-weight:600;word-break:break-all">${p.tel || p.email ? `${esc(p.tel || '')}${p.tel && p.email ? ' · ' : ''}${esc(p.email || '')}` : '<span style="color:var(--absent)">Téléphone et e-mail à compléter</span>'}</div></div>
-    ${canManage(u, p) || p.id === u.id ? `<button class="ib sm" data-act="user-contact" data-id="${p.id}" aria-label="Coordonnées de ${esc(p.name)}">${ic('phone', 18)}</button>` : ''}
-    ${canManage(u, p) ? `<button class="ib sm" data-act="prof-reset" data-id="${p.id}" aria-label="Réinitialiser le mot de passe de ${esc(p.name)}">${ic('key', 18)}</button><button class="ib sm" data-act="prof-del" data-id="${p.id}" aria-label="Supprimer ${esc(p.name)}">${ic('trash', 18)}</button>` : ''}</div>`;
-  }).join('');
+  const team = d.D().users;
+  const sts = d.D().students, cls = d.D().classes;
+  const rates = sts.map((x) => d.presence(x).rate).filter((x) => x != null);
+  const avg = rates.length ? Math.round(rates.reduce((a, b) => a + b, 0) / rates.length) : null;
+  const dem = pending();
   const today = todayISO();
-  const ann = (d.D().announcements || []).slice().sort((a, b) => b.from.localeCompare(a.from));
-  const annRows = ann.map((a) => {
-    const st = a.to < today ? ['Terminé', 'var(--neutral)'] : a.from > today ? ['À venir', 'var(--blue2)'] : ['En ligne', 'var(--mint)'];
-    return `<div class="li" style="align-items:flex-start"><div class="grow col" style="gap:6px"><div class="row wrap" style="gap:8px">${pill(st[0], st[1])}<span class="small b">${fdate(a.from)} → ${fdate(a.to)}</span></div>${a.text ? `<div data-notr dir="auto" style="white-space:pre-wrap;font-weight:500">${esc(a.text)}</div>` : ''}${a.audioId ? `<audio controls preload="none" data-audio="${a.audioId}" style="width:100%;height:40px"></audio>` : ''}</div><button class="ib sm" data-act="ann-del" data-id="${a.id}" aria-label="Supprimer le message">${ic('trash', 16)}</button></div>`;
-  }).join('');
-  const in7 = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
-  const roles = creatable(u);
+  const ann = d.D().announcements || [];
+  const live = ann.filter((a) => annState(a)[1] === 'ok').length, soon = ann.filter((a) => annState(a)[1] === 'warn').length;
+  const tmp = team.filter((x) => x.mustChange).length, noCt = team.filter((x) => !x.tel && !x.email).length;
+  const L = locauxSummary(), fin = d.financeSummary(), c = d.cotisations();
+  const pct = c.theo ? Math.round((c.real / c.theo) * 100) : 0;
+  const todoF = d.D().families.filter((f) => f.status !== 'paid' && +f.cotisation);
+  const resteF = todoF.reduce((t, f) => t + (+f.cotisation || 0) - d.famPaid(f), 0);
+  const todo = [
+    dem.length && ['q-p3', dem.length, `${dem.length} demande(s) d’inscription`, 'Envoyées depuis l’onglet Cours du site', '#/admin/demandes', 'Traiter'],
+    todoF.length && ['q-p2', todoF.length, `${todoF.length} famille(s) à relancer`, `${eur(resteF)} de cotisations en attente`, '#/prof/familles', 'Relancer'],
+    tmp && ['q-p1', tmp, `${tmp} compte(s) avec mot de passe temporaire`, 'Pas encore connecté(s) une première fois', '#/admin/equipe', 'Voir'],
+    noCt && ['q-p0', noCt, `${noCt} membre(s) sans coordonnées`, 'Téléphone et e-mail à compléter', '#/admin/equipe', 'Compléter'],
+    L.conflicts && ['q-p1', L.conflicts, `${L.conflicts} conflit(s) de salle`, 'Deux classes au même moment dans le même local', '#/admin/locaux', 'Voir'],
+  ].filter(Boolean);
   return shell(u, 4, `<div class="page">
-  <div class="top"><span class="logo">${ic('shield', 22, 2.6)}</span><div class="grow"><div class="small mut b">${d.roleLabel(u)}</div><h1>Direction</h1></div></div>
-  ${(() => { const p = pending(); return hero('Demandes d’inscription', p.length ? `${p.length} en attente` : 'Aucune en attente', { sub: 'Envoyées depuis l’onglet Cours du site', shadow: 'var(--pink)', extra: `<a class="btn y full" href="#/admin/demandes">${ic('users', 18)}Voir les demandes</a>` }); })()}
-  <div class="gridauto">${publicTile()}${locauxTile()}${financeTile()}</div>
-  <div class="ck pad col" id="messages" style="box-shadow:5px 5px 0 var(--blue2)"><h2 class="sec-t" style="margin:0">${ic('mega', 24)} Message de la direction</h2>
-  <p class="small mut b" style="font-weight:600">Affiché en haut de toutes les fiches élèves et des tableaux de bord de l’équipe, entre les deux dates choisies.</p>
-  <form class="col composer bubble" data-form="ann">
-    <div class="grid2"><div class="field"><label class="lbl" for="af">Visible du</label><input id="af" name="from" type="date" class="inp" value="${today}" required></div><div class="field"><label class="lbl" for="at">Jusqu’au</label><input id="at" name="to" type="date" class="inp" value="${in7}" required></div></div>
-    <label class="sr" for="za-t">Message</label><textarea id="za-t" name="text" class="inp" placeholder="Ex : l’école sera fermée samedi prochain…"></textarea>
-    <div id="za"></div>
-    <div class="row"><button type="button" class="btn2 sm mic" data-act="rec" data-zone="za">${ic('mic', 20)}Vocal</button><span class="grow"></span><button class="btn sm">${ic('send', 18)}Publier</button></div>
-  </form>
-  <div class="list">${annRows || '<p class="small mut">Aucun message pour le moment.</p>'}</div></div>
-  <div class="grid2 stack" style="align-items:start">
-  <form class="bcard col" data-form="new-prof"><span class="w1-blob" aria-hidden="true"></span>
-    <h2>${ic('plus', 20)} Nouveau compte</h2>
+  ${qhead('Direction', `${fdate(today, { weekday: 'long', day: 'numeric', month: 'long' })} · ${d.roleLabel(u)}`, `<a class="btn sm" href="#/prof/eleve/new">${ic('plus', 18)}Ajouter un élève</a>`)}
+  <div class="q-card q-stats"><div><b>${sts.length}</b><span>élèves</span></div><div><b>${cls.length}</b><span>classes</span></div><div><b>${avg == null ? '—' : avg + ' %'}</b><span>présence moyenne</span></div><div><b>${dem.length}</b><span>demande(s) en attente</span></div></div>
+  ${todo.length ? `<div class="q-card q-pad"><div class="q-sec"><b>À traiter</b><span>${todo.length}</span></div>${todo.map(([pc, n, t, sub, h, btn]) => `<div class="q-lrow"><span class="q-av ${pc}">${n}</span><span class="t"><b>${t}</b><span>${sub}</span></span><a class="btn2 sm" href="${h}">${btn}</a></div>`).join('')}</div>` : ''}
+  <div class="q-mods">
+    ${modCard('#/admin/demandes', 'inbox', 'Demandes d’inscription', 'Reçues depuis l’onglet Cours', dem.length ? `${dem.length} en attente` : 'Aucune en attente', 'Traiter', dem.length > 0)}
+    ${modCard('#/admin/equipe', 'users', 'Équipe &amp; comptes', 'Professeurs, administrateurs, trésorier', `${team.length} compte(s)${tmp ? ` · ${tmp} mot de passe temporaire` : ''}`, 'Gérer l’équipe')}
+    ${modCard('#/admin/message', 'bell', 'Message de la direction', 'En haut des fiches et des tableaux de bord', `${live} en ligne · ${soon} à venir`, 'Écrire un message')}
+    ${modCard('#/admin/public', 'moon', 'Mosquée &amp; espace public', 'Nom, horaires, contact, questions à l’imam', `${(d.D().contacts || []).length} destinataire(s) · ${(d.D().faq || []).length} réponse(s) publiée(s)`, 'Modifier')}
+    ${modCard('#/admin/locaux', 'door', 'Locaux', 'Salles et emploi du temps', `${L.n} salle(s) · ${L.used} créneau(x) · ${L.conflicts ? L.conflicts + ' conflit(s)' : 'aucun conflit'}`, 'Voir les locaux')}
+    ${modCard('#/compta', 'euro', 'Finances', 'Comptabilité de l’association', `Solde <span class="q-amt">${eur(fin.solde)}</span> · cotisations ${pct} %`, 'Ouvrir la compta')}
+  </div></div>`);
+}
+
+// ---------- équipe & comptes ----------
+const ROLES_TAB = [['all', 'Tous'], ['prof', 'Professeurs'], ['admin', 'Administration'], ['compta', 'Comptabilité']];
+export function equipeView(u, q) {
+  const r = (q && q.get('r')) || 'all';
+  const team = sortTeam();
+  const inTab = (p, k) => k === 'all' || (k === 'admin' ? p.role === 'admin' || d.isSuper(p) : p.role === k && !d.isSuper(p));
+  const list = team.filter((p) => inTab(p, r));
+  const rows = list.map((p) => {
+    const info = p.role === 'prof' ? `${d.classesOf(p.id).length} classe(s) · ${d.studentsOfProf(p.id).length} élève(s)` : d.roleLabel(p);
+    const h = d.profHours(p.id);
+    return `<tr><td><span class="q-who"><span class="q-av ${RPAL[roleKey(p)]}">${esc(ini2(p.name))}</span><span class="col" style="gap:0"><span>${esc(p.name)}${p.id === u.id ? ' <span class="mut small">(moi)</span>' : ''}</span>${p.mustChange ? '<span class="small" style="color:var(--q-warn)">Mot de passe temporaire</span>' : ''}</span></span></td>
+    <td class="hm">${esc(d.roleLabel(p))}</td><td class="hm mut">${esc(p.login)}</td><td class="hm mut">${p.role === 'prof' ? info + (h.n ? ` · ${d.fmtH(h.min)} ce mois` : '') : '—'}</td>
+    <td class="hm">${p.tel || p.email ? `<span class="col" style="gap:0"><span class="q-amt" style="font-weight:400">${esc(p.tel || '')}</span><span class="small mut" style="word-break:break-all">${esc(p.email || '')}</span></span>` : '<span style="color:var(--q-neg)">à compléter</span>'}</td>
+    <td class="r" style="white-space:nowrap">${canManage(u, p) || p.id === u.id ? `<button class="ib sm" data-act="user-contact" data-id="${p.id}" aria-label="Coordonnées de ${esc(p.name)}">${ic('phone', 16)}</button>` : ''}
+    ${canManage(u, p) ? `<button class="ib sm" data-act="prof-reset" data-id="${p.id}" aria-label="Réinitialiser le mot de passe de ${esc(p.name)}">${ic('key', 16)}</button><button class="ib sm" data-act="prof-del" data-id="${p.id}" aria-label="Supprimer ${esc(p.name)}">${ic('trash', 16)}</button>` : ''}</td></tr>`;
+  }).join('');
+  return shell(u, 4, `<div class="page">
+  ${qhead('Équipe &amp; comptes', `${team.length} compte(s) · seuls les administrateurs voient cette page`, `<a class="btn2 sm" href="#/prof/annuaire">${ic('users', 16)}Annuaire</a><button class="btn sm" data-act="acct-new">${ic('plus', 18)}Nouveau compte</button>`, '#/admin')}
+  <nav class="q-tabs">${ROLES_TAB.map(([k, l]) => `<a href="#/admin/equipe?r=${k}" class="${r === k ? 'on' : ''}">${l} <span class="mut">${team.filter((p) => inTab(p, k)).length}</span></a>`).join('')}</nav>
+  <div class="q-card q-pad"><div style="overflow-x:auto"><table class="q-tbl q-tbl-static"><thead><tr><th>Membre</th><th class="hm">Rôle</th><th class="hm">Identifiant</th><th class="hm">Classes</th><th class="hm">Coordonnées</th><th class="r">Actions</th></tr></thead><tbody>${rows || '<tr><td colspan="6" class="mut">Personne ici.</td></tr>'}</tbody></table></div></div>
+  <p class="small mut">${ic('phone', 14)} coordonnées · ${ic('key', 14)} nouveau mot de passe temporaire · ${ic('trash', 14)} supprimer le compte</p></div>`);
+}
+ACT['acct-new'] = () => {
+  const roles = creatable(d.me());
+  openModal(() => `<div class="row between"><h2>Nouveau compte</h2><button class="ib" data-act="close-modal" aria-label="Fermer">${ic('x', 20)}</button></div>
+  <form class="col" data-form="new-prof">
     ${roles.length > 1 ? `<fieldset style="border:0;padding:0;margin:0"><legend class="lbl">Type de compte</legend><div class="seg roles">${roles.map(([k, l], i) => `<label style="flex:1"><input type="radio" name="role" value="${k}" class="sr" ${i === 0 ? 'checked' : ''}><span class="rolebtn">${l}</span></label>`).join('')}</div></fieldset>
-    <p class="tiny mut b">Professeur : ses classes et ses élèves. Administrateur : gère toute l’école et la direction. Comptabilité : uniquement l’espace comptable (recettes, dépenses, cotisations, rapports).</p>` : '<input type="hidden" name="role" value="prof">'}
+    <p class="small mut">Professeur : ses classes et ses élèves. Administrateur : toute l’école et la direction. Comptabilité : uniquement l’espace comptable.</p>` : '<input type="hidden" name="role" value="prof">'}
     <div class="field"><label class="lbl" for="np-n">Nom affiché</label><input id="np-n" name="name" class="inp" placeholder="ex. Imam Youssef" required></div>
     ${contactFields({}, 'np')}
     <div class="field"><label class="lbl" for="np-l">Identifiant de connexion</label><input id="np-l" name="login" class="inp" autocapitalize="none" placeholder="ex. youssef" pattern="[a-zA-Z0-9._\\-]{3,30}" required><span class="hint">Lettres, chiffres, point ou tiret, 3 caractères minimum</span></div>
-    <div class="field"><label class="lbl" for="np-p">Mot de passe temporaire</label><div class="row"><input id="np-p" name="pw" class="inp" value="${d.randomPw()}" required minlength="8"><button type="button" class="ib" data-act="gen-pw" aria-label="Générer un autre mot de passe">${ic('refresh', 18)}</button></div><span class="hint">À changer à la première connexion.</span></div>
-    <button class="btn full">${ic('plus', 20)}Créer le compte</button>
+    <div class="field"><label class="lbl" for="np-p">Mot de passe temporaire</label><div class="row"><input id="np-p" name="pw" class="inp code" value="${d.randomPw()}" required minlength="8"><button type="button" class="btn2 sm" data-act="gen-pw">${ic('refresh', 16)}Générer</button></div><span class="hint">À changer à la première connexion.</span></div>
+    <button class="btn full">${ic('plus', 20)}Créer le compte</button></form>`);
+};
+
+// ---------- message de la direction ----------
+export function messageView(u) {
+  const today = todayISO();
+  const in7 = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
+  const ann = (d.D().announcements || []).slice().sort((a, b) => b.from.localeCompare(a.from));
+  const rows = ann.map((a) => { const [l, k] = annState(a, today); return `<div class="q-lrow" style="align-items:flex-start"><span class="q-glyph">${ic(a.audioId ? 'mic' : 'bell', 16)}</span><span class="t">${a.text ? `<b data-notr dir="auto" style="white-space:pre-wrap">${esc(a.text)}</b>` : '<b>Message vocal</b>'}<span>${fdate(a.from)} → ${fdate(a.to)}${a.audioId ? ' · avec vocal' : ''}</span>${a.audioId ? `<audio controls preload="none" data-audio="${a.audioId}" style="width:100%;height:40px;margin-top:6px"></audio>` : ''}</span><span class="col" style="gap:8px;align-items:flex-end"><button class="ib sm" data-act="ann-del" data-id="${a.id}" aria-label="Supprimer le message">${ic('trash', 16)}</button><span class="q-st ${k}">${l}</span></span></div>`; }).join('');
+  return shell(u, 4, `<div class="page">
+  ${qhead('Message de la direction', 'Un message affiché en haut des fiches élèves et des tableaux de bord de l’équipe', '', '#/admin')}
+  <div class="q-row2" style="align-items:flex-start">
+  <form class="q-card col" data-form="ann" style="width:440px;max-width:100%;flex:none;box-sizing:border-box;padding:20px 24px;gap:12px"><span class="b" style="font-size:16px">Nouveau message</span>
+    <span class="small mut">Visible entre les deux dates choisies.</span>
+    <div class="grid2"><div class="field"><label class="lbl" for="af">Visible du</label><input id="af" name="from" type="date" class="inp" value="${today}" required></div><div class="field"><label class="lbl" for="at">Jusqu’au</label><input id="at" name="to" type="date" class="inp" value="${in7}" required></div></div>
+    <div class="field"><label class="lbl" for="za-t">Message</label><textarea id="za-t" name="text" class="inp" rows="4" placeholder="Ex : l’école sera fermée samedi prochain…"></textarea></div>
+    <div id="za"></div>
+    <div class="row"><button type="button" class="btn2 sm mic" data-act="rec" data-zone="za">${ic('mic', 18)}Vocal</button><span class="grow"></span><button class="btn sm">${ic('send', 18)}Publier</button></div>
   </form>
-  <div class="ck pad col" style="box-shadow:5px 5px 0 var(--yellow)"><div class="row between"><h2 class="sec-t" style="margin:0">L’équipe</h2>${pill(team.length + ' compte(s)', 'var(--neutral)')}</div>
-  <div class="list">${rows}</div><a class="btn2 sm" href="#/prof/annuaire" style="align-self:flex-start">${ic('users', 16)}Annuaire de l’équipe</a></div>
+  <div class="col grow" style="gap:12px;min-width:0"><h2 style="margin:0">Messages</h2><div class="q-card q-pad">${rows || '<p class="small mut" style="padding:16px 0">Aucun message pour le moment.</p>'}</div></div>
   </div></div>`);
 }
 FORMS.ann = async (f, fd) => {
@@ -122,14 +174,14 @@ FORMS.ann = async (f, fd) => {
   if (audioId === false) return;
   if (!text && !audioId) { toast('Écrivez un message ou enregistrez un vocal'); return; }
   d.D().announcements.push({ id: d.uid(), text, audioId, from, to, at: new Date().toISOString(), authorId: d.me().id });
-  d.save(); toast('Message publié'); go('#/admin');
+  d.save(); toast('Message publié'); go('#/admin/message');
 };
 ACT['ann-del'] = async (el) => {
   if (!ask('Supprimer ce message ?')) return;
   const a = d.D().announcements.find((x) => x.id === el.dataset.id);
   if (a && a.audioId) await d.delAudio(a.audioId).catch(() => {});
   d.D().announcements = d.D().announcements.filter((x) => x.id !== el.dataset.id);
-  d.save(); go('#/admin');
+  d.save(); go('#/admin/message');
 };
 ACT['gen-pw'] = () => { document.getElementById('np-p').value = d.randomPw(); };
 function credsModal(title, name, login, pw) {
@@ -153,7 +205,7 @@ FORMS['new-prof'] = async (f, fd) => {
   const u = await d.makeUser(role, login, name, pw, true);
   Object.assign(u, ct);
   d.D().users.push(u); if (role === 'prof') d.D().objectives.push(...d.defaultObjectives(u.id)); d.save();
-  go('#/admin');
+  closeModal(); go('#/admin/equipe');
   credsModal('Compte créé', name, login, pw);
 };
 ACT['prof-reset'] = async (el) => {
@@ -161,7 +213,7 @@ ACT['prof-reset'] = async (el) => {
   if (!u || !canManage(d.me(), u) || !ask(`Réinitialiser le mot de passe de ${u.name} ?`)) return;
   const pw = d.randomPw();
   await d.setPassword(u, pw, true);
-  go('#/admin');
+  go('#/admin/equipe');
   credsModal('Nouveau mot de passe', u.name, u.login, pw);
 };
 ACT['prof-del'] = async (el) => {
@@ -170,5 +222,5 @@ ACT['prof-del'] = async (el) => {
   if (!ask(`Supprimer le compte de ${u.name} ?${u.role === 'prof' ? '\n\nToutes ses classes, ses élèves et leur suivi seront effacés définitivement.' : ''}`)) return;
   if (u.role === 'prof') await d.deleteProf(u.id); else { d.D().users = d.D().users.filter((x) => x.id !== u.id); d.save(); }
   toast('Compte supprimé');
-  go('#/admin');
+  go('#/admin/equipe');
 };

@@ -197,19 +197,27 @@ export function classe(u, id) {
   ctx = { cls: c };
   const sts = d.studentsOf(id);
   const notes = d.D().notes.filter((n) => n.scope === 'class' && n.classId === id).sort((a, b) => b.at.localeCompare(a.at));
-  const acts = [[`#/prof/classe/${id}/appel`, 'check', 'Faire l’appel', 'var(--primary)', '#fff'], [`#/prof/eleve/new?c=${id}`, 'plus', 'Élève', 'var(--surface)', 'var(--ink)'], [`#/prof/classe/${id}/historique`, 'clock', 'Historique', 'var(--surface)', 'var(--ink)'], ['#notes-devoirs', 'book', 'Devoirs', 'var(--mint)', 'var(--ink)'], ['#notes-classe', 'note', 'Note classe', 'var(--surface)', 'var(--ink)'], [`#/prof/classe/${id}/objectifs`, 'star', 'Objectifs classe', 'var(--yellow)', 'var(--ink)']];
-  const body = `<div class="page">${top(esc(c.name), `${sts.length} élève(s) · ${lastAppel(c)}`, '#/prof/classes', `<button class="ib" data-act="class-edit" data-id="${id}" aria-label="Modifier la classe">${ic('edit', 18)}</button>`)}
-  ${courseCard(c)}
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:10px">${acts.map(([h, i, l, bg, fg]) => `<a href="${h}" class="ck col ${bg === 'var(--primary)' ? 'act-pri' : ''}" style="gap:6px;align-items:center;padding:12px 4px;text-decoration:none;background:${bg};color:${fg};font-weight:800;font-size:13px;text-align:center">${ic(i, 24)}${l}</a>`).join('')}</div>
-  <div class="ck pad" style="padding-top:4px;padding-bottom:4px"><div class="list">${sts.map((s, k) => {
-    const p = d.presence(s); const kk = d.coranStats(s);
-    return `<div class="li" style="position:relative">${av(initials(s), 42, ACC[k % 4], 14)}<a href="#/prof/eleve/${s.id}" class="grow" style="text-decoration:none;color:var(--ink)"><span class="b" style="display:block">${esc(s.prenoms)} ${esc(s.nom)}</span><span class="small mut b" style="font-weight:600">${kk.v} sourates · ${p.rate === null ? '—' : p.rate + ' %'} présence</span></a>${callBtn(s)}${ic('chev', 18)}</div>`;
-  }).join('') || `<div class="col" style="padding:14px 0"><p class="mut small">Pas encore d’élève dans cette classe.</p><a class="btn" href="#/prof/eleve/new?c=${id}">${ic('plus', 20)}Ajouter un élève</a></div>`}</div></div>
+  const sl = d.slotsOf(c), nn = sl.length && d.nextCourse(c);
+  const prof = d.user(c.profId);
+  const PALQ = ['q-p0', 'q-p1', 'q-p2', 'q-p3'];
+  const doneToday = d.attendanceOfClass(c.id).some((a) => a.date === todayISO());
+  const rows = sts.map((s, k) => { const p = d.presence(s), kk = d.coranStats(s), ec = d.enCours(s)[0];
+    return `<tr data-act="row-go" data-href="#/prof/eleve/${s.id}"><td><span class="q-who"><span class="q-av ${PALQ[k % 4]}">${esc(initials(s))}</span><span>${esc(s.prenoms.split(' ')[0])} ${esc(s.nom)}</span></span></td><td class="hm mut">${d.ageOf(s) ?? '—'} ans</td><td class="hm">${kk.v}${ec ? ` <span class="mut">· ${esc(d.sName(ec))}</span>` : ''}</td><td class="r"><span class="q-amt">${p.rate === null ? '—' : p.rate + ' %'}</span></td><td class="r" style="width:84px">${callBtn(s)}</td></tr>`; }).join('');
+  const body = `<div class="page">
+  <div class="qd-h"><a href="#/prof/classes" class="ib" aria-label="Retour">${ic('back', 20)}</a><span class="q-av lg ${PALQ[d.D().classes.indexOf(c) % 4]}">${esc(c.name.replace(/[^\dA-Za-z]/g, '').replace(/^Classe/i, 'C').slice(0, 3))}</span><div class="grow"><h1>${esc(c.name)}</h1><div class="qd-sub">${prof ? esc(prof.name) + ' · ' : ''}${sl.length ? schedLabel(sl) + ' · ' : ''}${esc(localLine(c))} · ${sts.length} élève(s)</div></div>
+  <button class="btn2 sm" data-act="class-edit" data-id="${id}">${ic('edit', 16)}Modifier</button><a class="btn2 sm" href="#/prof/classe/${id}/historique">${ic('clock', 16)}Historique</a><a class="btn2 sm" href="#/prof/classe/${id}/objectifs">${ic('star', 16)}Objectifs</a></div>
+  <div class="q-dark q-appel"><div class="col grow" style="gap:4px;min-width:0"><span class="q-l">${nn ? 'Prochain cours' : 'Cours'}${doneToday ? ' · appel déjà fait aujourd’hui' : ''}</span><span class="q-money" style="font-size:28px">${nn ? nextLabel(nn) : sl.length ? schedLabel(sl) : 'Horaires à compléter'}</span><span class="q-l">${nn ? untilLabel(nn) + ' avant le cours · ' : ''}${lastAppel(c)}</span></div>
+    <a class="q-btn-w q-appel-btn" href="#/prof/classe/${id}/appel">${ic('check', 22)}${doneToday ? 'Reprendre l’appel' : 'Faire l’appel'}</a></div>
+  ${!sl.length ? `<div class="q-card row wrap" style="padding:14px 20px;gap:10px">${ic('cal', 18)}<span class="grow small">Horaires des cours à compléter</span><button class="btn2 sm" data-act="class-edit" data-id="${c.id}">${ic('edit', 16)}Ajouter les horaires</button></div>` : ''}
+  <div class="q-row2" style="align-items:flex-start">
+  <div class="col" style="flex:1.25;min-width:0;gap:12px"><div class="row between"><h2 style="margin:0">Élèves</h2><a class="btn2 sm" href="#/prof/eleve/new?c=${id}">${ic('plus', 16)}Ajouter un élève</a></div>
+  <div class="q-card q-pad">${sts.length ? `<div style="overflow-x:auto"><table class="q-tbl"><thead><tr><th>Élève</th><th class="hm">Âge</th><th class="hm">Coran</th><th class="r">Présence</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>` : `<div class="col" style="padding:16px 0"><p class="mut small">Pas encore d’élève dans cette classe.</p><a class="btn sm" href="#/prof/eleve/new?c=${id}" style="align-self:flex-start">${ic('plus', 18)}Ajouter un élève</a></div>`}</div></div>
+  <div class="col" style="flex:1;min-width:0;gap:16px">
   ${devoirsCard(c, sts)}
-  <div class="ck pad col" id="notes-classe" style="box-shadow:5px 5px 0 var(--pink)"><h2 class="sec-t" style="margin:0">${ic('note', 24)} Notes pour la classe</h2><p class="small mut b" style="font-weight:600">Visibles sur la fiche de chaque élève de ${esc(c.name)}.</p>
+  <div class="q-card col" id="notes-classe" style="padding:20px 24px;gap:10px"><span class="b" style="font-size:16px">Notes pour la classe</span><p class="small mut" style="margin:0">Visibles sur la fiche de chaque élève de ${esc(c.name)}.</p>
   ${composer('note-class', 'zc', '', 'Ex : pas de cours samedi prochain…', true)}
-  <p class="tiny mut b">Photos et fichiers : visibles par les parents pendant 7 jours, puis supprimés automatiquement.</p>
-  <div class="col">${notes.map((n) => `<div class="col" style="gap:6px">${devoirTag(n)}${msgHtml(n, 'note-del')}</div>`).join('')}</div></div></div>`;
+  <p class="small mut" style="margin:0">Photos et fichiers : visibles par les parents pendant 7 jours, puis supprimés automatiquement.</p>
+  <div class="col">${notes.map((n) => `<div class="col" style="gap:6px">${devoirTag(n)}${msgHtml(n, 'note-del')}</div>`).join('')}</div></div></div></div></div>`;
   return shell(u, 1, body);
 }
 // ---------- devoirs : enregistrés sur la fiche de chaque élève + e-mail prêt pour tous les parents de la classe ----------
@@ -221,10 +229,10 @@ function devoirsCard(c, sts) {
   const due = nx ? localISO(nx.when) : todayISO();
   const n = parentMails(c.id).length;
   const pre = `<div class="field"><label class="lbl" for="zd-due">Devoirs pour le cours du</label><input id="zd-due" name="due" type="date" class="inp" value="${due}" min="${todayISO()}" required style="max-width:220px"></div>`;
-  return `<div class="ck pad col" id="notes-devoirs" style="box-shadow:5px 5px 0 var(--mint)"><h2 class="sec-t" style="margin:0">${ic('book', 24)} Devoirs</h2>
-  <p class="small b" style="font-weight:600">La date du prochain cours est remplie toute seule. En envoyant, les devoirs s’affichent sur la fiche de chaque élève, et votre e-mail s’ouvre avec ${n ? `les ${n} parent(s) de la classe en destinataires` : 'les parents de la classe en destinataires'} : il ne reste qu’à envoyer.</p>
+  return `<div class="q-card col" id="notes-devoirs" style="padding:20px 24px;gap:10px"><span class="b" style="font-size:16px">Devoirs</span>
+  <p class="small mut" style="margin:0">La date du prochain cours est remplie toute seule. En envoyant, les devoirs s’affichent sur la fiche de chaque élève, et votre e-mail s’ouvre avec ${n ? `les ${n} parent(s) de la classe en destinataires` : 'les parents de la classe en destinataires'} : il ne reste qu’à envoyer.</p>
   ${composer('devoir', 'zd', '', 'Ex : apprendre les versets 1 à 5 d’Al-Layl, exercice page 12…', true, pre)}
-  <p class="tiny mut b">Les pièces jointes ne peuvent pas partir dans l’e-mail : elles sont visibles sur la fiche de l’élève jusqu’au jour du cours (7 jours minimum). L’e-mail l’indique aux parents.${sts.length > n ? ` ${sts.length - n} élève(s) sans e-mail de parent.` : ''}</p></div>`;
+  <p class="small mut" style="margin:0">Les pièces jointes ne peuvent pas partir dans l’e-mail : elles sont visibles sur la fiche de l’élève jusqu’au jour du cours (7 jours minimum). L’e-mail l’indique aux parents.${sts.length > n ? ` ${sts.length - n} élève(s) sans e-mail de parent.` : ''}</p></div>`;
 }
 FORMS.devoir = async (f, fd) => {
   const c = ctx.cls, u = d.me();
@@ -320,6 +328,7 @@ function appelStart(u, c, q) {
   <a class="btn2 full" href="#/prof/classe/${c.id}/appel?nouveau=1">${ic('plus', 20)}Faire un 2e appel aujourd’hui</a></div></div>`);
 }
 const softRender = () => window.dispatchEvent(new CustomEvent('soft-render'));
+ACT['row-go'] = (el, ev) => { if (ev && ev.target.closest('a,button')) return; location.hash = el.dataset.href; };
 ACT.ap = (el) => { ctx.rec.records[el.dataset.sid] = el.dataset.s; d.save(); softRender(); };
 ACT['ap-all'] = () => {
   d.studentsOf(ctx.cls.id).forEach((s) => { if (!ctx.rec.records[s.id]) ctx.rec.records[s.id] = 'P'; });
@@ -342,23 +351,27 @@ export function appelOk(u, id, recId) {
   const cnt = (k) => sts.filter((s) => r[s.id] === k).length;
   const abs = sts.filter((s) => r[s.id] === 'A' || r[s.id] === 'E');
   const rest = sts.filter((s) => !r[s.id]);
-  const body = `<div class="page narrow"><div class="col center" style="align-items:center;padding-top:20px">
-  <span class="av" style="width:76px;height:76px;background:var(--mint)">${ic('check', 38, 3.4)}</span><h1>Appel enregistré</h1>
-  <p class="mut b">${esc(c.name)} · ${whenLabel(rec)}</p><p class="small b">${ic('clock', 14)} ${(() => { const by = d.user(d.recBy(rec)); const m = d.slotMin(d.recSlot(rec)); return `${m ? d.fmtH(m) + ' ajoutée(s)' : 'Cours compté'} au compteur de ${esc(by ? by.name : '—')}`; })()}</p></div>
-  <div class="grid3"><div class="ck stat" style="background:var(--present);color:var(--onpresent)"><div class="v">${cnt('P')}</div><div class="l">présents</div></div><div class="ck stat" style="background:var(--absent);color:var(--onabsent)"><div class="v">${cnt('A')}</div><div class="l">absents</div></div><div class="ck stat" style="background:var(--prev)"><div class="v">${cnt('E')}</div><div class="l">prévenus</div></div></div>
+  const by = d.user(d.recBy(rec)); const mn = d.slotMin(d.recSlot(rec));
+  const PALQ = ['q-p0', 'q-p1', 'q-p2', 'q-p3'];
+  const tel = (s) => String(s.tel || '').replace(/[^\d+]/g, '');
+  const body = `<div class="page narrow" style="max-width:720px"><div class="q-card col" style="padding:24px 28px;gap:16px">
+  <div class="row" style="gap:14px"><span class="q-ok">${ic('check', 22, 2.6)}</span><div class="col" style="gap:2px"><h1 style="font-size:20px;margin:0">Appel enregistré · ${esc(c.name)}</h1><span class="small mut">${whenLabel(rec)} · ${mn ? d.fmtH(mn) + ' comptée(s)' : 'cours compté'} pour ${esc(by ? by.name : '—')}</span></div></div>
+  <div class="q-card q-stats" style="grid-template-columns:repeat(3,1fr);padding:16px 0"><div><b style="color:var(--q-pos)">${cnt('P')}</b><span>présent(s)</span></div><div><b style="color:var(--q-neg)">${cnt('A')}</b><span>absent(s)</span></div><div><b style="color:var(--q-warn)">${cnt('E')}</b><span>prévenu(s)</span></div></div>
   ${rest.length ? `<div class="err">${rest.length} élève(s) pas encore marqué(s) : ${rest.map((s) => esc(s.prenoms.split(' ')[0])).join(', ')}</div>` : ''}
-  ${abs.length ? `<div class="ck pad col"><h2>Absents ce jour</h2>${abs.map((s) => `<div class="row between"><span class="b grow">${esc(fullName(s))}</span>${pill(r[s.id] === 'A' ? 'Absent' : 'Prévenu', STATUS[r[s.id]].bg, STATUS[r[s.id]].fg)}${callBtn(s)}</div>`).join('')}<p class="small mut b" style="font-weight:600">C’est déjà visible sur leur fiche.</p></div>` : ''}
-  <a class="btn full" href="#/prof/classe/${id}">Retour à la classe</a><a class="btn2 full" href="#/prof/classe/${id}/appel/${rec.id}">Modifier l’appel</a></div>`;
+  ${abs.length ? `<div class="col" style="gap:0"><span class="b small">Absents ce jour · déjà visible sur leur fiche</span>${abs.map((s, k) => `<div class="q-lrow"><span class="q-av ${PALQ[k % 4]}">${esc(initials(s))}</span><span class="t"><b>${esc(fullName(s))} <span class="q-st ${r[s.id] === 'A' ? 'bad' : 'warn'}" style="font-weight:400;margin-left:6px">${r[s.id] === 'A' ? 'Absent' : 'Prévenu'}</span></b><span>Parent : ${esc(s.parent || '—')}${s.tel ? ' · ' + esc(s.tel) : ''}</span></span>${s.tel ? `<span class="row" style="gap:8px"><a class="btn2 sm" href="sms:${tel(s)}">${ic('chat', 16)}SMS</a><a class="btn2 sm" href="tel:${tel(s)}">${ic('phone', 16)}Appeler</a></span>` : ''}</div>`).join('')}</div>` : ''}
+  <div class="grid2" style="gap:8px"><a class="btn2" href="#/prof/classe/${id}/appel/${rec.id}">${ic('edit', 16)}Modifier l’appel</a><a class="btn" href="#/prof/classe/${id}">Retour à la classe</a></div></div></div>`;
   return shell(u, 1, body);
 }
 export function historique(u, id) {
   const c = d.cls(id);
   const list = d.attendanceOfClass(id);
-  const body = `<div class="page">${top('Historique des appels', esc(c.name), `#/prof/classe/${id}`)}
-  ${list.length ? bands(list.map((a, k) => { const v = Object.values(a.records); const by = d.user(d.recBy(a)); const p = v.filter((x) => x === 'P').length;
-    const sub = `${p} présent(s) · ${v.filter((x) => x === 'A').length} absent(s) · ${esc(by ? by.name : '—')}${by && by.id !== c.profId ? ' (remplacement)' : ''}`;
-    return d.recDone(a) ? band(whenLabel(a), { past: true, k, sub, href: `#/prof/classe/${id}/appel/${a.id}` }) : band(whenLabel(a), { k, bg: 'var(--yellow)', sub: sub + ' · pas terminé', href: `#/prof/classe/${id}/appel/${a.id}` }); })) : '<p class="mut small" style="padding:12px 0">Aucun appel pour le moment.</p>'}
-  <p class="tiny mut b">Touchez une date pour corriger l’appel. En jaune : appel commencé mais pas terminé.</p></div>`;
+  const rows = list.map((a) => { const v = Object.values(a.records); const by = d.user(d.recBy(a)); const n = (k) => v.filter((x) => x === k).length; const done = d.recDone(a);
+    const t = a.at ? new Date(a.at) : null;
+    return `<tr data-act="row-go" data-href="#/prof/classe/${id}/appel/${a.id}"><td class="b">${fdate(a.date, { weekday: 'short', day: 'numeric', month: 'short' })}${done ? '' : ' <span class="q-st warn" style="font-weight:400;margin-left:6px">pas terminé</span>'}</td><td class="hm mut">${t && !isNaN(t) ? String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0') : '—'}</td><td><span class="q-amt" style="color:var(--q-pos)">${n('P')}</span></td><td><span class="q-amt" style="color:${n('A') ? 'var(--q-neg)' : 'var(--muted)'}">${n('A')}</span></td><td><span class="q-amt" style="color:${n('E') ? 'var(--q-warn)' : 'var(--muted)'}">${n('E')}</span></td><td class="hm mut">${esc(by ? by.name : '—')}${by && by.id !== c.profId ? ' (remplacement)' : ''}</td><td class="r hm"><a class="ib sm" href="#/prof/classe/${id}/appel/${a.id}" aria-label="Corriger l’appel">${ic('edit', 16)}</a></td></tr>`; }).join('');
+  const body = `<div class="page">
+  <div class="qd-h"><a href="#/prof/classe/${id}" class="ib" aria-label="Retour">${ic('back', 20)}</a><div class="grow"><h1>Historique des appels · ${esc(c.name)}</h1><div class="qd-sub">${list.length} appel(s)</div></div></div>
+  <div class="q-card q-pad">${list.length ? `<div style="overflow-x:auto"><table class="q-tbl"><thead><tr><th>Date</th><th class="hm">Heure de l’appel</th><th>Présents</th><th>Absents</th><th>Prévenus</th><th class="hm">Fait par</th><th class="hm"></th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="mut small" style="padding:16px 0">Aucun appel pour le moment.</p>'}</div>
+  <p class="small mut">Touchez une ligne pour corriger l’appel.</p></div>`;
   return shell(u, 1, body);
 }
 
@@ -522,13 +535,23 @@ export function eleve(u, id, tab = 'coran', q = null) {
   else if (tab === 'langue') body = F.objectives(s, true, q && q.get('n'), `#/prof/eleve/${id}/langue`);
   else if (tab === 'presence') body = F.presence(s);
   else body = F.notes(s, true);
+  const tel = String(s.tel || '').replace(/[^\d+]/g, ''), wa = waNum(s.tel);
+  const fam = s.familyId && d.family(s.familyId);
+  const nx = d.nextCourse(c);
   return shell(u, 2, `<div class="page">
-  <div class="top"><a href="#/prof/classe/${c.id}" class="ib" aria-label="Retour">${ic('back', 20)}</a>${av(initials(s), 56, 'var(--yellow)', 19)}<div class="grow"><h1 style="font-size:24px">${esc(s.prenoms)} ${esc(s.nom)}</h1><div class="row wrap" style="gap:8px;margin-top:4px">${pill(esc(c.name), colorOf(c))}${d.ageOf(s) != null ? pill(`${d.ageOf(s)} ans`, 'var(--surface)') : ''}${d.nextCourse(c) ? `<span class="small b">Prochain cours : ${nextLabel(d.nextCourse(c))}</span>` : ''}</div></div>
-  <a class="ib" href="#/prof/eleve/${id}/edit" aria-label="Modifier l’élève">${ic('edit', 18)}</a></div>
-  ${contactCard(s)}
-  <div class="ck flat row" style="padding:8px 8px 8px 14px"><span class="grow code small">${esc(s.code)}</span><button class="ib sm" data-act="copy" data-t="${esc(s.code)}" aria-label="Copier le code">${ic('copy', 16)}</button><button class="ib sm" data-act="share" data-id="${s.id}" aria-label="Partager le lien de la fiche">${ic('share', 16)}</button><a class="ib sm" href="#/f/${encodeURIComponent(s.code)}" aria-label="Voir comme un parent">${ic('users', 16)}</a></div>
-  <div class="seg" role="navigation" aria-label="Sections" style="overflow-x:auto">${ETABS.map(([k, l]) => `<a href="#/prof/eleve/${id}/${k}" class="${k === tab ? 'on' : ''}">${l}</a>`).join('')}</div>
-  <div class="col" style="gap:14px">${body}</div></div>`);
+  <div class="qd-h"><a href="#/prof/classe/${c.id}" class="ib" aria-label="Retour">${ic('back', 20)}</a><span class="q-av lg q-p0">${esc(initials(s))}</span><div class="grow" style="min-width:0"><h1>${esc(s.prenoms)} ${esc(s.nom)}</h1><div class="qd-sub">${esc(c.name)}${d.ageOf(s) != null ? ` · ${d.ageOf(s)} ans` : ''}${s.parent ? ` · parent : <bdi>${esc(s.parent)}</bdi>` : ''}${nx ? ` · prochain cours ${nextLabel(nx)}` : ''}</div></div>
+  <span class="row wrap q-fe-acts" style="gap:8px">${s.tel ? `<a class="btn2 sm" href="tel:${tel}">${ic('phone', 16)}Appeler</a>${wa ? `<a class="btn2 sm" href="https://wa.me/${wa}" target="_blank" rel="noopener">${ic('chat', 16)}WhatsApp</a>` : `<a class="btn2 sm" href="sms:${tel}">${ic('chat', 16)}SMS</a>`}` : ''}${s.email ? `<a class="btn2 sm" href="mailto:${esc(s.email)}">${ic('mail', 16)}E-mail</a>` : ''}<a class="btn2 sm" href="#/prof/eleve/${id}/edit">${ic('edit', 16)}Modifier</a></span></div>
+  <nav class="q-tabs" aria-label="Sections" style="overflow-x:auto">${ETABS.map(([k, l]) => `<a href="#/prof/eleve/${id}/${k}" class="${k === tab ? 'on' : ''}">${l}</a>`).join('')}</nav>
+  <div class="q-split"><div class="q-main col" style="gap:14px">${body}</div>
+  <aside class="col q-fe-side" style="gap:16px;width:340px;flex:none">
+    <div class="q-card col" style="padding:18px 22px;gap:10px"><span class="small mut">Code de suivi</span><span class="code" style="font-size:15px;word-break:break-all">${esc(s.code)}</span>
+      <div class="grid2" style="gap:8px"><button class="btn2 sm" data-act="copy" data-t="${esc(s.code)}">${ic('copy', 16)}Copier</button><button class="btn2 sm" data-act="share" data-id="${s.id}">${ic('share', 16)}Partager</button></div>
+      <a class="small" href="#/f/${encodeURIComponent(s.code)}" style="color:var(--ink)">${ic('eye', 14)} Voir la fiche comme un parent</a>
+      ${fam ? `<span class="small mut">${esc(fam.name)} · ${d.familyKids(fam.id).length} enfant(s) · cotisation ${fam.status === 'paid' ? 'payée' : fam.status === 'partial' ? 'en partie payée' : 'pas payée'}</span>` : ''}</div>
+    <div class="q-card q-pad"><div class="q-sec"><b>Contact du parent</b></div>
+      <div class="q-kvs"><div><span>Parent</span><span><bdi>${esc(s.parent || '—')}</bdi></span></div><div><span>Téléphone</span><span class="q-amt" style="font-weight:500">${s.tel ? esc(s.tel) : '<a href="#/prof/eleve/' + id + '/edit">à ajouter</a>'}</span></div><div><span>E-mail</span><span style="word-break:break-all">${s.email ? esc(s.email) : '<a href="#/prof/eleve/' + id + '/edit">à ajouter</a>'}</span></div></div>
+      <p class="small mut" style="margin:6px 0 16px">Visible seulement par les profs et l’admin.</p></div>
+  </aside></div></div>`);
 }
 ACT.sour = (el) => openModal(() => F.sourateSheet(ctx.st, +el.dataset.n, true));
 async function wipeNotes(sid, n) {

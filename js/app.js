@@ -42,6 +42,8 @@ const R = [
   [/^\/admin\/locaux\/pdf$/, () => { const u = guard('admin'); return u && gest.locauxPdf(u); }],
   [/^\/admin\/finances$/, () => { location.hash = '#/compta'; return null; }],
   [/^\/prof\/familles$/, () => { const u = guard('prof'); return u && gest.famillesView(u); }],
+  [/^\/admin\/equipe$/, (m, q) => { const u = guard('admin'); return u && adm.equipeView(u, q); }],
+  [/^\/admin\/message$/, () => { const u = guard('admin'); return u && adm.messageView(u); }],
   [/^\/admin$/, () => { const u = guard('admin'); return u && adm.adminView(u); }],
   [/^\/prof$/, () => { const u = guard('prof'); return u && prof.dashboard(u); }],
   [/^\/prof\/classes$/, (m, q) => { const u = guard('prof'); return u && prof.classes(u, q); }],
@@ -92,7 +94,8 @@ window.addEventListener('soft-render', () => render(true));
 
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-act]');
-  if (el && ACT[el.dataset.act]) { e.preventDefault(); ACT[el.dataset.act](el, e); return; }
+  const inner = el && e.target.closest('a,button,input,select,textarea,label');
+  if (el && ACT[el.dataset.act] && !(inner && inner !== el && el.contains(inner))) { e.preventDefault(); ACT[el.dataset.act](el, e); return; }
   const m = document.getElementById('modal');
   if (m && e.target === m) closeModal();
   const a = e.target.closest('a[href^="#notes-"]');

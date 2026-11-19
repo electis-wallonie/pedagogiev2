@@ -89,19 +89,36 @@ function card(x, u) {
   ${x.message ? `<div class="small" style="white-space:pre-wrap;background:var(--bg);border-radius:10px;padding:8px 10px" data-notr dir="auto">${esc(x.message)}</div>` : ''}
   <div class="row wrap" style="gap:8px">${actions}${x.status !== 'new' ? `<button class="ib sm" data-act="dem-del" data-id="${x.id}" aria-label="Supprimer la demande">${ic('trash', 16)}</button>` : ''}</div></div>`;
 }
+const TABS = [['new', 'En attente'], ['later', 'Plus tard'], ['ok', 'Acceptées'], ['no', 'Refusées']];
 export function demandesView(u, q) {
-  const f = q.get('v') || 'new';
+  const f = TABS.some(([k]) => k === q.get('v')) ? q.get('v') : 'new';
   const all = list().slice().sort((a, b) => b.at.localeCompare(a.at));
-  const shown = all.filter((x) => (f === 'new' ? x.status === 'new' : f === 'done' ? x.status !== 'new' : true));
-  const n = (k) => all.filter((x) => (k === 'new' ? x.status === 'new' : x.status !== 'new')).length;
+  const shown = all.filter((x) => x.status === f);
+  const n = (k) => all.filter((x) => x.status === k).length;
+  const sel = shown.find((x) => x.id === q.get('s')) || shown[0];
+  const PALQ = ['q-p3', 'q-p1', 'q-p2', 'q-p0'];
+  const ini = (x) => ((x.prenoms || '?')[0] + (x.nom || '')[0]).toUpperCase();
+  const rows = shown.map((x, k) => `<tr class="${sel && x.id === sel.id ? 'sel' : ''}" data-act="dem-pick" data-id="${x.id}" data-v="${f}"><td><span class="q-who"><span class="q-av ${PALQ[k % 4]}">${esc(ini(x))}</span><span data-notr dir="auto">${esc(x.prenoms)} ${esc(x.nom)}</span></span></td><td>${x.age} ans</td><td class="hm">${esc(x.annee)}</td><td class="hm mut" data-notr dir="auto">${esc(x.parent)}</td><td class="r mut" style="white-space:nowrap">${fdate(x.at.slice(0, 10), { day: 'numeric', month: 'short' })}</td></tr>`).join('');
   return shell(u, 4, `<div class="page">
-  <div class="top"><a class="ib" href="#/admin" aria-label="Retour">${ic('back', 20)}</a><div class="grow"><div class="small mut b">Direction</div><h1>Demandes d’inscription</h1></div></div>
-  ${hero('En attente', n('new') ? `${n('new')} demande(s)` : 'Aucune', { sub: 'Envoyées depuis l’onglet Cours du site', shadow: 'var(--pink)' })}
-  <p class="small mut b" style="font-weight:600">Les demandes envoyées depuis l’onglet Cours du site. Une demande acceptée crée l’élève, son code de suivi et sa famille (pour la cotisation).</p>
-  <div class="seg">${[['new', `En attente (${n('new')})`], ['done', `Traitées (${n('done')})`], ['all', 'Toutes']].map(([k, l]) => `<a href="#/admin/demandes?v=${k}" class="${f === k ? 'on' : ''}">${l}</a>`).join('')}</div>
-  ${shown.length ? shown.map((x) => card(x, u)).join('') : `<div class="ck pad small mut b">${f === 'new' ? 'Aucune demande en attente.' : 'Rien à afficher.'}</div>`}
-  </div>`);
+  <div class="qd-h"><a class="ib" href="#/admin" aria-label="Retour">${ic('back', 20)}</a><div class="grow"><h1>Demandes d’inscription</h1><div class="qd-sub">${n('new')} en attente · envoyées depuis l’onglet Cours du site</div></div></div>
+  <nav class="q-tabs">${TABS.map(([k, l]) => `<a href="#/admin/demandes?v=${k}" class="${f === k ? 'on' : ''}">${l} <span class="mut">${n(k)}</span></a>`).join('')}</nav>
+  ${shown.length ? `<div class="q-split"><div class="q-main q-card q-pad"><div style="overflow-x:auto"><table class="q-tbl"><thead><tr><th>Enfant</th><th>Âge</th><th class="hm">Année</th><th class="hm">Parent</th><th class="r">Reçue</th></tr></thead><tbody>${rows}</tbody></table></div></div>
+  ${sel ? detail(sel, u, PALQ[shown.indexOf(sel) % 4], ini(sel)) : ''}</div>` : `<div class="q-card small mut" style="padding:20px 24px">${f === 'new' ? 'Aucune demande en attente.' : 'Rien à afficher.'}</div>`}
+  <p class="small mut">Une demande acceptée crée l’élève, son code de suivi et sa famille (cotisation « pas payé »).</p></div>`);
 }
+function detail(x, u, pc, ini) {
+  const cur = x.annee === schoolYear(0);
+  const classes = d.myClasses(u);
+  const st = x.studentId && d.student(x.studentId);
+  const actions = x.status !== 'new' ? `<div class="row wrap" style="gap:8px">${st ? `<a class="btn sm" href="#/prof/eleve/${st.id}">${ic('users', 16)}Voir l’élève</a>` : ''}<button class="btn2 sm" data-act="dem-del" data-id="${x.id}">${ic('trash', 16)}Supprimer la demande</button></div>`
+    : cur ? `<form class="col" style="gap:10px" data-form="dem-ok" data-id="${x.id}"><div class="field" style="margin:0"><label class="lbl" for="dc-${x.id}">Classe</label><select id="dc-${x.id}" name="classId" class="inp" required>${classes.length ? classes.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join('') : '<option value="">Créez d’abord une classe</option>'}</select></div><button class="btn full" ${classes.length ? '' : 'disabled'}>${ic('check', 18)}Accepter et créer l’élève</button></form>
+      <div class="grid2" style="gap:8px"><button class="btn2 sm" data-act="dem-later" data-id="${x.id}">Plus tard</button><button class="btn2 sm" data-act="dem-no" data-id="${x.id}">Refuser</button></div>`
+      : `<button class="btn full" data-act="dem-later" data-id="${x.id}">${ic('check', 18)}Retenir pour ${esc(x.annee)}</button><button class="btn2 sm full" data-act="dem-no" data-id="${x.id}">Refuser</button>`;
+  return `<aside class="q-card q-drawer" id="dem-d" aria-label="Demande sélectionnée"><div class="row" style="gap:12px"><span class="q-av lg ${pc}">${esc(ini)}</span><div class="col" style="gap:2px"><span class="b" style="font-size:18px" data-notr dir="auto">${esc(x.prenoms)} ${esc(x.nom)}</span><span class="small mut">${x.age} ans · demande du ${fdate(x.at.slice(0, 10), { day: 'numeric', month: 'short' })}</span></div></div>
+  <div class="q-kvs"><div><span>Année souhaitée</span><span>${esc(x.annee)}${cur ? ' · cette année' : ' · année prochaine'}</span></div>${x.cours ? `<div><span>Cours</span><span>${esc(x.cours)}</span></div>` : ''}<div><span>Parent</span><span data-notr dir="auto">${esc(x.parent)}</span></div><div><span>Téléphone</span><span><a href="tel:${esc(x.tel.replace(/\s/g, ''))}" class="q-amt" style="color:inherit">${esc(x.tel)}</a></span></div><div><span>E-mail</span><span style="word-break:break-all"><a href="mailto:${esc(x.email)}" style="color:inherit">${esc(x.email)}</a></span></div>${x.message ? `<div><span>Remarque</span><span data-notr dir="auto" style="white-space:pre-wrap">${esc(x.message)}</span></div>` : ''}</div>
+  ${actions}</aside>`;
+}
+ACT['dem-pick'] = (el) => { location.replace(`#/admin/demandes?v=${el.dataset.v}&s=${el.dataset.id}`); if (matchMedia('(max-width: 959px)').matches) setTimeout(() => { const e = document.getElementById('dem-d'); if (e) e.scrollIntoView({ behavior: 'smooth' }); }, 120); };
 const find = (id) => list().find((x) => x.id === id);
 FORMS['dem-ok'] = (f, fd) => {
   const x = find(f.dataset.id); const c = d.cls(fd.get('classId'));

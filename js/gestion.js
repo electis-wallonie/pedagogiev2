@@ -121,37 +121,46 @@ CHANGE['loc-find'] = () => {
   const day = +document.getElementById('lf-d').value, a = d.toMin(document.getElementById('lf-a').value), b = d.toMin(document.getElementById('lf-b').value);
   document.getElementById('lf-res').innerHTML = freeList(day, a, b);
 };
+// LO1 : grille de la semaine (jours en colonnes, heures en lignes)
+function weekGrid(days) {
+  const U = usage();
+  const PALQ = ['q-p2', 'q-p0', 'q-p1', 'q-p3'];
+  const cIdx = (c) => d.D().classes.indexOf(c);
+  const times = [...new Set(U.filter((x) => days.includes(+x.s.day)).map((x) => x.s.time))].sort();
+  return `<div class="q-card q-week" style="--n:${days.length}"><div class="q-wk-h"></div>${days.map((day) => `<div class="q-wk-h">${DAYS[day]}</div>`).join('')}
+  ${times.map((t) => `<div class="q-wk-t">${esc(t)}</div>${days.map((day) => `<div class="q-wk-c">${U.filter((x) => +x.s.day === day && x.s.time === t).map((x) => { const conf = blocks(day, x.s.localId).some((b) => b.conflict && b.ids.includes(x.c.id)); return `<button type="button" class="q-slot ${PALQ[cIdx(x.c) % 4]} ${conf ? 'conf' : ''}" data-act="loc-edit" data-id="${x.c.id}"><b>${esc(x.c.name)}</b><span>${esc(d.local(x.s.localId).name)} · ${esc(x.s.time)}${x.s.end ? '–' + esc(x.s.end) : ''}${conf ? ' · conflit' : ''}</span></button>`; }).join('')}</div>`).join('')}`).join('')}</div>`;
+}
 export function locauxView(u, q) {
   const L = d.D().locaux;
-  const v = q && q.get('v') === 'jour' ? 'jour' : 'salle';
+  const v = ['jour', 'salle'].includes(q && q.get('v')) ? q.get('v') : 'semaine';
   const days = usedDays();
   const [lo, hi] = span();
   const missing = d.D().classes.filter((c) => !d.slotsOf(c).length || d.slotsOf(c).some((s) => !s.localId || !d.local(s.localId)));
   const nconf = conflicts();
   const locRows = L.map((l) => {
     const n = usage().filter((x) => x.s.localId === l.id).length;
-    return `<div class="li"><span class="av" style="width:40px;height:40px;background:var(--blue2)">${ic('door', 18)}</span><div class="grow"><div class="b">${esc(l.name)}</div><div class="small mut b" style="font-weight:600">${n ? `${n} créneau(x) par semaine` : 'Jamais utilisé'}</div></div>
+    return `<div class="q-lrow"><span class="q-glyph">${ic('door', 16)}</span><span class="t"><b>${esc(l.name)}</b><span>${n ? `${n} créneau(x) par semaine` : 'Jamais utilisé'}</span></span>
     <button class="ib sm" data-act="loc-ren" data-id="${l.id}" aria-label="Renommer ${esc(l.name)}">${ic('edit', 16)}</button><button class="ib sm" data-act="loc-del" data-id="${l.id}" aria-label="Supprimer ${esc(l.name)}">${ic('trash', 16)}</button></div>`;
   }).join('');
-  const listCard = `<div class="ck pad col" id="salles" style="box-shadow:5px 5px 0 var(--blue2)"><div class="row between"><h2 class="sec-t" style="margin:0">${ic('door', 24)} Les salles</h2>${pill(L.length + ' local(aux)', 'var(--neutral)')}</div>
-    <p class="small mut b" style="font-weight:600">Ajoutez vos salles avec les noms que vous voulez (salle de prière, salle de classe, bureau, cuisine…).</p>
-    <div class="list">${locRows || '<p class="small mut">Aucune salle pour le moment.</p>'}</div>
-    <form class="row" data-form="loc-add"><label class="sr" for="la">Nom du local</label><input id="la" name="name" class="inp" placeholder="ex. Salle polyvalente" required><button class="btn sm">${ic('plus', 18)}Ajouter</button></form></div>`;
-  const finder = `<div class="bcard col"><span class="w1-blob" aria-hidden="true"></span><h2>${ic('clock', 20)} Trouver un local libre</h2><p class="small b" style="font-weight:600;color:#DCE3FF">Ex. : un prof veut ouvrir une classe le samedi matin.</p>
-    <div class="grid2" style="gap:8px"><div class="field" style="grid-column:1/-1"><label class="lbl" for="lf-d">Jour</label><select id="lf-d" class="inp" data-change="loc-find">${ORDER.map((k) => `<option value="${k}" ${k === 6 ? 'selected' : ''}>${DAYS[k]}</option>`).join('')}</select></div>
+  const listCard = `<div class="q-card q-pad" id="salles"><div class="q-sec"><b>Les salles</b><span class="grow"></span><span>${L.length} salle(s)</span></div>
+    <p class="small mut" style="margin:0 0 6px">Ajoutez vos salles avec les noms que vous voulez (salle de prière, salle de classe, bureau, cuisine…).</p>
+    ${locRows || '<p class="small mut">Aucune salle pour le moment.</p>'}
+    <form class="row" data-form="loc-add" style="padding:14px 0 18px"><label class="sr" for="la">Nom du local</label><input id="la" name="name" class="inp" placeholder="ex. Salle polyvalente" required><button class="btn sm">${ic('plus', 18)}Ajouter</button></form></div>`;
+  const finder = `<div class="q-card col" style="padding:20px 24px;gap:12px"><span class="b" style="font-size:16px">Trouver un local libre</span><span class="small mut" style="margin-top:-6px">Ex. : un prof veut ouvrir une classe le samedi matin.</span>
+    <div class="q-find"><div class="field"><label class="lbl" for="lf-d">Jour</label><select id="lf-d" class="inp" data-change="loc-find">${ORDER.map((k) => `<option value="${k}" ${k === 6 ? 'selected' : ''}>${DAYS[k]}</option>`).join('')}</select></div>
     <div class="field"><label class="lbl" for="lf-a">De</label><input id="lf-a" type="time" class="inp" value="09:00" data-change="loc-find"></div>
     <div class="field"><label class="lbl" for="lf-b">À</label><input id="lf-b" type="time" class="inp" value="12:00" data-change="loc-find"></div></div>
     <div id="lf-res">${freeList(6, 540, 720)}</div></div>`;
-  return shell(u, 4, `<div class="page">${top('Locaux', 'Direction · emploi du temps des salles', '#/admin', L.length ? `<a class="btn sm" href="#/admin/locaux/pdf">${ic('dl', 18)}PDF</a>` : '')}
-  ${hero('Locaux de la mosquée', `${L.length} salle(s)`, { sub: `${usage().length} créneau(x) par semaine${nconf ? ` · ${nconf} conflit(s)` : ''}`, chip: days.length ? days.length + ' j' : '', chipSub: days.length ? 'utilisés' : '', shadow: nconf ? 'var(--pink)' : 'var(--mint)' })}
-  ${L.length ? finder : ''}
-  ${L.length ? `<div class="row wrap between" style="gap:8px"><div class="seg" style="flex:1 1 260px"><a href="#/admin/locaux" class="${v === 'salle' ? 'on' : ''}">Par salle</a><a href="#/admin/locaux?v=jour" class="${v === 'jour' ? 'on' : ''}">Par jour</a></div>
-  <div class="row wrap" style="gap:8px">${pill('&nbsp;', 'var(--present)')}<span class="small b">Libre</span>${pill('&nbsp;', 'var(--absent)')}<span class="small b">Pris</span></div></div>
+  const tabs = [['semaine', 'Semaine'], ['salle', 'Par salle'], ['jour', 'Par jour']];
+  return shell(u, 4, `<div class="page">
+  <div class="qd-h"><a href="#/admin" class="ib" aria-label="Retour">${ic('back', 20)}</a><div class="grow"><h1>Locaux</h1><div class="qd-sub">${L.length} salle(s) · ${usage().length} créneau(x) par semaine · ${nconf ? `<span style="color:var(--q-neg)">${nconf} conflit(s)</span>` : 'aucun conflit'}</div></div>${L.length ? `<a class="btn2 sm" href="#/admin/locaux/pdf">${ic('dl', 16)}Exporter en PDF</a>` : ''}<button class="btn sm" data-act="loc-focus">${ic('plus', 18)}Nouvelle salle</button></div>
+  ${L.length ? `<nav class="q-tabs">${tabs.map(([k, l]) => `<a href="#/admin/locaux${k === 'semaine' ? '' : '?v=' + k}" class="${v === k ? 'on' : ''}">${l}</a>`).join('')}</nav>
   ${nconf ? `<div class="err">${ic('alert', 16)} ${nconf} conflit(s) : deux classes dans la même salle en même temps.</div>` : ''}
-  <p class="small mut b" style="font-weight:600">Seuls les jours où une salle est utilisée sont affichés. Touchez un créneau rouge pour changer la salle ou l’horaire de la classe.</p>
-  ${!days.length ? `<div class="ck pad col" style="background:var(--hi)"><h2>Aucun créneau pour le moment</h2><p class="b" style="font-weight:600">Indiquez pour chaque classe la salle utilisée (bouton « Local utilisé » sur la classe) : l’emploi du temps se remplit tout seul.</p></div>`
-    : v === 'salle' ? L.map((l) => roomCard(l, days, lo, hi)).join('') : days.map((day) => dayCard(day, lo, hi)).join('')}` : ''}
-  ${missing.length && L.length ? `<div class="ck pad col"><h2>Classes sans salle</h2><div class="list">${missing.map((c) => `<div class="li"><span class="grow b">${esc(c.name)}</span><button class="btn2 sm" data-act="loc-edit" data-id="${c.id}">${ic('door', 16)}Local utilisé</button></div>`).join('')}</div></div>` : ''}
+  ${!days.length ? `<div class="q-card col" style="padding:20px 24px"><span class="b">Aucun créneau pour le moment</span><p class="small mut">Indiquez pour chaque classe la salle utilisée (bouton « Local utilisé » sur la classe) : l’emploi du temps se remplit tout seul.</p></div>`
+    : v === 'semaine' ? `${weekGrid(days)}<p class="small mut" style="margin:0">Touchez un créneau pour changer la salle ou l’horaire de la classe. Seuls les jours utilisés sont affichés.</p>`
+    : `<div class="row wrap" style="gap:8px">${pill('&nbsp;', 'var(--present)')}<span class="small">Libre</span>${pill('&nbsp;', 'var(--absent)')}<span class="small">Pris</span></div>${v === 'salle' ? L.map((l) => roomCard(l, days, lo, hi)).join('') : days.map((day) => dayCard(day, lo, hi)).join('')}`}
+  ${finder}` : ''}
+  ${missing.length && L.length ? `<div class="q-card q-pad"><div class="q-sec"><b>Classes sans salle</b></div>${missing.map((c) => `<div class="q-lrow"><span class="t"><b>${esc(c.name)}</b></span><button class="btn2 sm" data-act="loc-edit" data-id="${c.id}">${ic('door', 16)}Local utilisé</button></div>`).join('')}</div>` : ''}
   ${listCard}</div>`);
 }
 // ---------- PDF : emploi du temps de toutes les salles, à envoyer à qui veut réserver un créneau ----------
@@ -200,6 +209,7 @@ function lmModal() {
   <button type="button" class="btn2 sm" data-act="lm-add" style="align-self:flex-start">${ic('plus', 16)}Ajouter un créneau</button>
   <button type="button" class="btn full" data-act="lm-save">Enregistrer</button>`);
 }
+ACT['loc-focus'] = () => { const i = document.getElementById('la'); if (i) { i.scrollIntoView({ behavior: 'smooth', block: 'center' }); i.focus({ preventScroll: true }); } };
 ACT['loc-edit'] = (el) => {
   const c = d.cls(el.dataset.id);
   if (!c) return;
@@ -398,12 +408,13 @@ export function locauxTile() {
 // formulaire commun recette / dépense
 export function entryForm(kind, m, cats) {
   const p = kind === 'inc' ? 'i' : 'e';
-  return `<form class="col" data-form="${kind}-add"><div class="grid2 stack">
+  return `<form class="col q-entry" data-form="${kind}-add" style="gap:14px">
+  <div class="field"><label class="lbl" for="${p}a">Montant</label><div class="q-amt-in"><input id="${p}a" name="amount" class="inp" inputmode="decimal" placeholder="0,00" required autocomplete="off"><span>€</span></div></div>
   <div class="field"><label class="lbl" for="${p}c">Catégorie</label><select id="${p}c" name="cat" class="inp">${cats.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></div>
-  <div class="field"><label class="lbl" for="${p}l">Intitulé (facultatif)</label><input id="${p}l" name="label" class="inp" placeholder="${kind === 'inc' ? 'ex. Quête du 14 novembre, don de M. X…' : 'ex. Facture Engie novembre…'}"></div></div>
-  <div class="grid2"><div class="field"><label class="lbl" for="${p}a">Montant (€)</label><input id="${p}a" name="amount" class="inp" inputmode="decimal" required></div><div class="field"><label class="lbl" for="${p}d">Date</label><input id="${p}d" name="date" type="date" class="inp" value="${m === d.curMonth() ? todayISO() : m + '-01'}" required></div></div>
-  <label class="row small b" style="gap:8px;cursor:pointer"><input type="checkbox" name="monthly" style="width:20px;height:20px">Tous les mois (${kind === 'inc' ? 'don récurrent, prélèvement automatique' : 'loyer, électricité, assurance…'})</label>
-  <button class="btn sm" style="align-self:flex-start">${ic('plus', 18)}${kind === 'inc' ? 'Ajouter la recette' : 'Ajouter la dépense'}</button></form>`;
+  <div class="field"><label class="lbl" for="${p}l">Intitulé (facultatif)</label><input id="${p}l" name="label" class="inp" placeholder="${kind === 'inc' ? 'ex. Quête du 14 novembre, don de M. X…' : 'ex. Facture Engie novembre…'}"></div>
+  <div class="field"><label class="lbl" for="${p}d">Date</label><input id="${p}d" name="date" type="date" class="inp" value="${m === d.curMonth() ? todayISO() : m + '-01'}" required></div>
+  <label class="row small" style="gap:10px;cursor:pointer"><input type="checkbox" name="monthly" style="width:20px;height:20px;accent-color:#050505">Répéter chaque mois (${kind === 'inc' ? 'don récurrent, prélèvement…' : 'loyer, électricité, assurance…'})</label>
+  <button class="btn full">${kind === 'inc' ? 'Enregistrer la recette' : 'Enregistrer la dépense'}</button></form>`;
 }
 export function entryList(items, cats, del) {
   if (!items.length) return '<p class="small mut">Rien pour ce mois-ci.</p>';
