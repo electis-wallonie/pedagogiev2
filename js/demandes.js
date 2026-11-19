@@ -48,7 +48,7 @@ function kidBlock(k) {
     <div class="grid2"><div class="field"><label class="lbl" for="kp${k}">Prénom(s)</label><input id="kp${k}" name="k${k}-prenoms" class="inp" required autocomplete="off"></div>
     <div class="field"><label class="lbl" for="kn${k}">Nom</label><input id="kn${k}" name="k${k}-nom" class="inp" required autocomplete="off"></div></div>
     <div class="field" style="max-width:240px"><label class="lbl" for="kb${k}">Date de naissance</label><input id="kb${k}" name="k${k}-naissance" class="inp" type="date" required max="${todayISO()}"></div>
-    <div class="field"><label class="lbl" for="kc${k}">Déjà inscrit(e) l’an dernier ? Entrez le code de suivi <span class="mut">(facultatif)</span></label><input id="kc${k}" name="k${k}-code" class="inp code" autocomplete="off" autocapitalize="characters" placeholder="ex. CL2-YB-KARIM-3516-7K2Q"><span class="hint">Sa progression (sourates, niveau) sera reprise.</span></div>
+    <div class="field"><label class="lbl" for="kc${k}">Déjà inscrit(e) l’an dernier ? Entrez le code de suivi <span class="mut">(facultatif)</span></label><input id="kc${k}" name="k${k}-code" class="inp code" autocomplete="off" autocapitalize="characters" placeholder="ex. YB3516-K7Q"><span class="hint">Sa progression (sourates, niveau) sera reprise.</span></div>
     ${publics().length > 1 ? `<fieldset class="dm-set" style="border:0;padding:0;margin:0"><legend class="lbl">Les cours pour…</legend><div class="dm-opts pubs">${publics().map((p) => `<label class="dm-opt"><input type="radio" name="k${k}-public" value="${esc(p)}" required><span class="b" dir="auto">${esc(pubLabel(p))}</span></label>`).join('')}</div></fieldset>` : ''}</div>`;
 }
 export function inscription(q) {

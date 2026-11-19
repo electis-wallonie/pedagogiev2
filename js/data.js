@@ -200,20 +200,21 @@ export function classSlug(name) {
   if (m) return 'CL' + m[1];
   return s.replace(/ /g, '').slice(0, 5) || 'CL';
 }
+// Code de suivi court : initiales (prénom + nom) + date de naissance courte + 3 caractères de sécurité.
+// Ex. Yasmine Benali, née le 06/06/2011 → YB6611-K7Q. Même code d'une année à l'autre (pas de classe, pas d'âge).
 export function genCode(st, c) {
-  const ini = strip(st.prenoms).split(' ').filter(Boolean).map((w) => w[0]).join('') + strip(st.nom).replace(/ /g, '').slice(0, 1);
-  const par = strip(st.parent).split(' ')[0] || 'P';
+  const ini = (strip(st.prenoms).replace(/[^A-Z]/gi, '')[0] || 'X') + (strip(st.nom).replace(/[^A-Z]/gi, '')[0] || 'X');
   const [y, m, d] = (st.naissance || '').split('-');
-  // date de naissance courte : jour + mois + 2 derniers chiffres de l'année, sans zéros (06/06/2011 → 6611, 06/06/2003 → 663)
+  // jour + mois + 2 derniers chiffres de l'année, sans zéros (06/06/2011 → 6611, 06/06/2003 → 663)
   const yy = st.naissance ? +y : new Date().getFullYear() - (ageOf(st) ?? 0);
   const datePart = st.naissance ? `${+d}${+m}${yy % 100}` : `${yy % 100}`;
   const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code;
   do {
-    const r = crypto.getRandomValues(new Uint8Array(4));
+    const r = crypto.getRandomValues(new Uint8Array(3));
     const suf = [...r].map((x) => a[x % a.length]).join('');
-    code = `${classSlug(c.name)}-${ini}-${par}-${datePart}-${suf}`;
-  } while (db.students.some((s) => s.id !== st.id && normCode(s.code) === normCode(code)));
+    code = `${ini.toUpperCase()}${datePart}-${suf}`;
+  } while (db.students.some((s) => s.id !== st.id && normCode(s.code) === normCode(code)) || (db.archive || []).some((s) => normCode(s.code) === normCode(code)));
   return code;
 }
 

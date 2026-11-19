@@ -38,7 +38,7 @@ export function home() {
       <span class="w1-blob" aria-hidden="true"><i></i><i></i></span>
       <span class="col" style="gap:2px;position:relative;padding-inline-end:70px"><h1 class="w1-h">Mon suivi</h1><span class="small b" style="font-weight:600">Entrez le code donné par l’enseignant.</span></span>
       <label class="sr" for="code">Code de suivi</label>
-      <input id="code" name="code" class="inp code w1-in" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CL2-YIB-KARIM-…" value="${esc(err || '')}" ${err ? 'aria-invalid="true" aria-describedby="code-err"' : ''}>
+      <input id="code" name="code" class="inp code w1-in" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="YB3516-K7Q" value="${esc(err || '')}" ${err ? 'aria-invalid="true" aria-describedby="code-err"' : ''}>
       ${err ? `<div id="code-err" class="w1-err" role="alert">${ic('x', 15)}Code introuvable. Vérifiez chaque lettre, ou demandez-le à l’enseignant.</div>` : ''}
       <label class="check w1-check"><input type="checkbox" name="remember" checked>Se souvenir de ce code sur cet appareil</label>
       <button class="btn full y">${ic('key', 18)}Voir la fiche</button>

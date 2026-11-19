@@ -488,7 +488,7 @@ function studentForm(u, s, classId) {
   <span class="hint" style="margin-top:-6px">Téléphone et e-mail : visibles seulement par les profs et l’admin, jamais sur la fiche des parents.</span>
   <details ${s && (s.rue || s.ville) ? 'open' : ''}><summary class="small b" style="cursor:pointer">Adresse (pour la fiche d’inscription)</summary><div class="col" style="gap:10px;margin-top:8px"><div class="field"><label class="lbl" for="sru">Rue et numéro</label><input id="sru" name="rue" class="inp" value="${esc(s ? s.rue || '' : '')}" autocomplete="off"></div>
   <div class="grid2"><div class="field"><label class="lbl" for="scp">Code postal</label><input id="scp" name="cp" class="inp" inputmode="numeric" value="${esc(s ? s.cp || '' : '')}" autocomplete="off"></div><div class="field"><label class="lbl" for="svi">Ville</label><input id="svi" name="ville" class="inp" value="${esc(s ? s.ville || '' : '')}" autocomplete="off"></div></div></div></details>
-  ${s ? '' : '<div class="ck flat pad small b" style="background:var(--yellow);font-weight:600">Le code de suivi est créé automatiquement : classe, initiales, prénom du parent, date de naissance, + 4 caractères de sécurité.</div>'}
+  ${s ? '' : '<div class="ck flat pad small b" style="background:var(--yellow);font-weight:600">Le code de suivi est créé automatiquement, court et le même chaque année : initiales, date de naissance courte et 3 caractères de sécurité (ex. YB6611-K7Q).</div>'}
   <button class="btn full">${s ? 'Enregistrer' : 'Ajouter l’élève'}</button></form>`;
 }
 export function eleveNew(u, q) {
