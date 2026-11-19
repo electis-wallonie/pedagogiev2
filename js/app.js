@@ -24,10 +24,11 @@ function guard(role) {
   return u;
 }
 const R = [
-  [/^\/?$/, (m, q) => { if (mosq.teamHost()) { const u = d.me(); location.hash = u ? d.homeOf(u) : '#/login'; return null; } return mosq.prieres(q); }],
+  [/^\/?$/, (m, q) => { if (mosq.teamHost()) { const u = d.me(); location.hash = u ? d.homeOf(u) : '#/login'; return null; } return pub.home(); }],
+  [/^\/prieres$/, (m, q) => mosq.prieres(q)],
   [/^\/mosquee$/, () => { location.replace('#/'); return ''; }],
   [/^\/imam$/, (m, q) => mosq.imam(q)],
-  [/^\/cours$/, () => pub.home()],
+  [/^\/cours$/, () => { location.replace('#/'); return ''; }],
   [/^\/inscription$/, (m, q) => dem.inscription(q)],
   [/^\/admin\/demandes$/, (m, q) => { const u = guard('admin'); return u && dem.demandesView(u, q); }],
   [/^\/installer$/, () => pub.install()],
@@ -56,7 +57,8 @@ const R = [
   [/^\/prof\/classe\/(\w+)\/historique$/, (m) => { const u = guard('prof'); return u && prof.historique(u, m[1]); }],
   [/^\/prof\/eleves$/, (m, q) => { const u = guard('prof'); return u && prof.eleves(u, q); }],
   [/^\/prof\/eleve\/new$/, (m, q) => { const u = guard('prof'); return u && prof.eleveNew(u, q); }],
-  [/^\/prof\/eleve\/(\w+)\/cree$/, (m) => { const u = guard('prof'); return u && prof.eleveCree(u, m[1]); }],
+  [/^\/prof\/eleve\/(\w+)\/cree$/, (m, q) => { const u = guard('prof'); return u && prof.eleveCree(u, m[1], q); }],
+  [/^\/prof\/eleve\/(\w+)\/inscription$/, (m) => { const u = guard('prof'); return u && d.student(m[1]) && d.canSeeStudent(u, d.student(m[1])) && prof.inscriptionPdf(u, m[1]); }],
   [/^\/prof\/eleve\/(\w+)\/edit$/, (m) => { const u = guard('prof'); return u && prof.eleveEdit(u, m[1]); }],
   [/^\/prof\/eleve\/(\w+)(?:\/(coran|langue|presence|notes))?$/, (m, q) => { const u = guard('prof'); return u && prof.eleve(u, m[1], m[2], q); }],
   [/^\/prof\/import$/, () => { const u = guard('prof'); return u && importView(u); }],

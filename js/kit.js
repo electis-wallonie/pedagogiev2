@@ -34,15 +34,17 @@ const SH = [
   { k: 'locaux', n: 'Locaux', note: 'Toutes les salles utilisables : salles de classe, salles de prière, bureau…',
     cols: [['name', 'Nom du local', true, 'ex. Local 1, Salle de prière femmes'], ['note', 'Remarque', false, 'ex. 20 places, 1er étage']] },
   { k: 'classes', n: 'Classes', note: 'Une ligne par classe. Le professeur est indiqué par son identifiant (feuille Équipe).',
-    cols: [['name', 'Nom de la classe', true, 'ex. Classe 1, Coran adultes'], ['prof', 'Professeur (identifiant)', true, 'ex. rahman'], ['level', 'Niveau', false, '1, 2, 3… (objectifs Langue & Religion)'], ['public', 'Public', false, 'Enfants, Adultes, Sœurs…']] },
+    cols: [['name', 'Nom de la classe', true, 'ex. Classe 1, Coran adultes'], ['prof', 'Professeur (identifiant)', true, 'ex. rahman'], ['level', 'Niveau', false, '1, 2, 3… (objectifs Langue & Religion)'], ['public', 'Public', false, 'Enfants, Adultes, Sœurs…'], ['cap', 'Nombre de places', false, 'Vide = 20']] },
   { k: 'horaires', n: 'Horaires', note: 'Une ligne par cours de la semaine. Une classe peut avoir plusieurs cours.',
     cols: [['classe', 'Classe', true, 'Nom exact (feuille Classes)'], ['day', 'Jour', true, 'lundi … dimanche'], ['time', 'Début', true, '09:00'], ['end', 'Fin', true, '12:00'], ['local', 'Local', true, 'Nom exact (feuille Locaux)']] },
   { k: 'familles', n: 'Familles', note: 'Les frères et sœurs d’une même famille partagent une cotisation.',
     cols: [['name', 'Nom de la famille', true, 'ex. Famille Benali'], ['fee', 'Cotisation annuelle (€)', false, 'Vide = cotisation par défaut']] },
   { k: 'eleves', n: 'Élèves', note: 'Une ligne par élève inscrit cette année. Téléphone ET e-mail du parent obligatoires (devoirs envoyés aux parents). À la rentrée : mettez « non » dans « Réinscrit » pour un élève qui ne revient pas.',
-    cols: [['classe', 'Classe', true, 'Nom exact (feuille Classes)'], ['nom', 'Nom', true, ''], ['prenoms', 'Prénom(s)', true, 'Tous les prénoms'], ['age', 'Date de naissance ou âge', true, '2016-05-03 ou 10'], ['parent', 'Prénom du parent', true, ''], ['tel', 'Téléphone du parent', true, '+32 470 12 34 56'], ['email', 'E-mail du parent', true, ''], ['famille', 'Famille', false, 'Nom exact (feuille Familles)'], ['coran', 'Sourates acquises', false, 'Numéros : 1, 93-114'], ['cours', 'Sourate en cours', false, 'Numéro, ex. 92'], ['level', 'Niveau', false, '1, 2…'], ['code', 'Code de suivi', false, 'Gardé d’une année à l’autre. Vide = créé automatiquement.'], ['renew', 'Réinscrit', false, 'oui / non (vide = oui)']] },
-  { k: 'demandes', n: 'Demandes', note: 'Inscriptions reçues et pas encore traitées (elles arriveront dans Direction → Demandes).',
-    cols: [['prenoms', 'Prénom(s)', true, ''], ['nom', 'Nom', true, ''], ['age', 'Âge', true, ''], ['parent', 'Parent', true, ''], ['tel', 'Téléphone', true, ''], ['email', 'E-mail', true, ''], ['cours', 'Cours', false, 'Enfants, Adultes…'], ['annee', 'Année', false, '2026-2027'], ['message', 'Message', false, '']] },
+    cols: [['classe', 'Classe', true, 'Nom exact (feuille Classes)'], ['nom', 'Nom', true, ''], ['prenoms', 'Prénom(s)', true, 'Tous les prénoms'], ['age', 'Date de naissance ou âge', true, '2016-05-03 ou 10'], ['parent', 'Prénom du parent', true, ''], ['tel', 'Téléphone du parent', true, '+32 470 12 34 56'], ['email', 'E-mail du parent', true, ''], ['famille', 'Famille', false, 'Nom exact (feuille Familles)'], ['coran', 'Sourates acquises', false, 'Numéros : 1, 93-114'], ['cours', 'Sourate en cours', false, 'Numéro, ex. 92'], ['level', 'Niveau', false, '1, 2…'], ['code', 'Code de suivi', false, 'Gardé d’une année à l’autre. Vide = créé automatiquement.'], ['rue', 'Rue et numéro', false, ''], ['cp', 'Code postal', false, ''], ['ville', 'Ville', false, ''], ['renew', 'Réinscrit', false, 'oui / non (vide = oui). « non » : l’élève passe dans « Anciens élèves » avec toute sa progression.']] },
+  { k: 'archive', n: 'Anciens élèves', note: 'Élèves non réinscrits, avec leur progression. S’ils reviennent, leur code de suivi permet de retrouver leurs sourates et leur niveau.',
+    cols: [['nom', 'Nom', true, ''], ['prenoms', 'Prénom(s)', true, ''], ['age', 'Date de naissance ou âge', false, ''], ['parent', 'Prénom du parent', false, ''], ['tel', 'Téléphone du parent', false, ''], ['email', 'E-mail du parent', false, ''], ['classe', 'Dernière classe', false, ''], ['annee', 'Dernière année', false, ''], ['coran', 'Sourates acquises', false, ''], ['cours', 'Sourate en cours', false, ''], ['level', 'Niveau', false, ''], ['code', 'Code de suivi', true, '']] },
+  { k: 'demandes', n: 'Demandes', note: 'Inscriptions reçues et pas encore traitées (elles arriveront dans Direction → Demandes). Une ligne par enfant : les enfants d’un même parent (même téléphone) forment une seule demande.',
+    cols: [['prenoms', 'Prénom(s)', true, ''], ['nom', 'Nom', true, ''], ['naissance', 'Date de naissance', true, '2016-05-03 (ou un âge)', ['Âge']], ['classe', 'Classe souhaitée', false, 'Nom exact (feuille Classes)'], ['code', 'Code de suivi (réinscription)', false, ''], ['parent', 'Parent', true, ''], ['tel', 'Téléphone', true, ''], ['email', 'E-mail', true, ''], ['rue', 'Rue et numéro', false, ''], ['cp', 'Code postal', false, ''], ['ville', 'Ville', false, ''], ['annee', 'Année', false, '2026–2027'], ['message', 'Message', false, '']] },
   { k: 'contact', n: 'Contact', note: 'Les destinataires de la page Contact du site (les adresses ne sont jamais affichées au public).',
     cols: [['label', 'Destinataire', true, 'ex. La direction, L’imam, Le trésorier'], ['email', 'E-mail', true, '']] },
   { k: 'faq', n: 'Questions imam', note: 'Réponses de l’imam déjà publiées sur le site (sans le nom de la personne).',
@@ -51,6 +53,8 @@ const SH = [
     cols: [['public', 'Public', true, 'Enfants, Adultes, Sœurs…'], ['detail', 'Détail', false, 'ex. 6–14 ans · Coran, arabe'], ['horaires', 'Horaires', false, 'ex. Mer. 14h–17h']] },
   { k: 'objectifs', n: 'Objectifs', note: 'Objectifs Langue & Religion par niveau. Laisser vide : les objectifs habituels sont proposés à chaque professeur.',
     cols: [['prof', 'Professeur (identifiant)', true, ''], ['level', 'Niveau', true, '1, 2…'], ['group', 'Catégorie', true, 'Langue arabe, Religion…'], ['text', 'Objectif', true, '']] },
+  { k: 'cats', n: 'Catégories', note: 'Catégories de recettes et de dépenses de la compta. Vide : la liste habituelle. « Autres recettes » et « Autres dépenses » sont toujours ajoutées.',
+    cols: [['type', 'Type', true, 'Recette ou Dépense'], ['label', 'Catégorie', true, 'ex. Quête du vendredi, Loyer']] },
   { k: 'charges', n: 'Charges mensuelles', note: 'Recettes et dépenses qui reviennent chaque mois (loyer, électricité, dons réguliers…).',
     cols: [['type', 'Type', true, 'Recette ou Dépense'], ['cat', 'Catégorie', true, 'ex. Loyer, Électricité, Dons'], ['label', 'Intitulé', false, ''], ['amount', 'Montant par mois (€)', true, '']] },
 ];
@@ -108,20 +112,28 @@ export function exportData(db = d.D()) {
     mosque: { nom: m.name || cfg.nom || '', adresse: m.adresse || '', cp: m.cp || '', ville: m.ville || '', pays: m.pays || '', tel: m.tel || '', email: m.email || ((db.contacts || [])[0] || {}).email || '', imamEmail: m.imamEmail || '', mawaqit: m.mawaqit || cfg.mawaqit || '', annee: db.year ? nextOf(db.year) : nextYear(), fee: f.defaultFee ?? '', rate: f.rate ?? '', opening: Math.round(solde * 100) / 100, site: m.site || cfg.domaineEquipe || '', style: m.style || cfg.style || '', couleur: m.couleur || cfg.couleurTheme || '' },
     equipe: db.users.map((u) => ({ role: ROLES.find(([k]) => k === roleKey(u))[1], name: u.name, fonction: u.fonction || '', login: u.login, tel: u.tel || '', email: u.email || '', rate: u.rate ?? '', pw: `${u.salt}:${u.hash}` })),
     locaux: (db.locaux || []).map((l) => ({ name: l.name, note: l.note || '' })),
-    classes: db.classes.map((c) => ({ name: c.name, prof: login(c.profId), level: c.level || 1, public: c.public || '' })),
+    classes: db.classes.map((c) => ({ name: c.name, prof: login(c.profId), level: c.level || 1, public: c.public || '', cap: +c.capacity > 0 ? +c.capacity : '' })),
     horaires: db.classes.flatMap((c) => d.slotsOf(c).map((s) => ({ classe: c.name, day: DAYS[s.day], time: s.time, end: s.end || '', local: lname(s.localId) }))),
     familles: (db.families || []).filter((x) => db.students.some((s) => s.familyId === x.id)).map((x) => ({ name: x.name, fee: x.cotisation ?? '' })),
-    eleves: db.students.slice().sort((a, b) => cname(a.classId).localeCompare(cname(b.classId)) || a.nom.localeCompare(b.nom)).map((s) => { const co = s.coran || {}; return { classe: cname(s.classId), nom: s.nom, prenoms: s.prenoms, age: s.naissance || d.ageOf(s) || '', parent: s.parent, tel: s.tel || '', email: s.email || '', famille: fname(s.familyId), coran: ranges(Object.keys(co).filter((n) => co[n].s === 'v').map(Number)), cours: Object.keys(co).filter((n) => co[n].s === 'c').join(', '), level: s.level || 1, code: s.code || '', renew: 'oui' }; }),
-    demandes: (db.demandes || []).filter((x) => x.status === 'new' || x.status === 'later').map((x) => ({ prenoms: x.prenoms, nom: x.nom, age: x.age, parent: x.parent, tel: x.tel, email: x.email, cours: x.cours || '', annee: x.annee || '', message: x.message || '' })),
+    eleves: db.students.slice().sort((a, b) => cname(a.classId).localeCompare(cname(b.classId)) || a.nom.localeCompare(b.nom)).map((s) => { const co = s.coran || {}; return { classe: cname(s.classId), nom: s.nom, prenoms: s.prenoms, age: s.naissance || d.ageOf(s) || '', parent: s.parent, tel: s.tel || '', email: s.email || '', famille: fname(s.familyId), coran: ranges(Object.keys(co).filter((n) => co[n].s === 'v').map(Number)), cours: Object.keys(co).filter((n) => co[n].s === 'c').join(', '), level: s.level || 1, code: s.code || '', rue: s.rue || '', cp: s.cp || '', ville: s.ville || '', renew: s.renew === 'non' ? 'non' : 'oui' }; }),
+    archive: (db.archive || []).map((a) => ({ nom: a.nom, prenoms: a.prenoms, age: a.naissance || a.age || '', parent: a.parent || '', tel: a.tel || '', email: a.email || '', classe: a.classe || '', annee: a.annee || '', coran: ranges(Object.keys(a.coran || {}).filter((n) => a.coran[n].s === 'v').map(Number)), cours: Object.keys(a.coran || {}).filter((n) => a.coran[n].s === 'c').join(', '), level: a.level || 1, code: a.code || '' })),
+    demandes: (db.demandes || []).filter((x) => x.status === 'new' || x.status === 'later').flatMap((x) => (x.kids && x.kids.length ? x.kids : [{ prenoms: x.prenoms, nom: x.nom, naissance: x.naissance, age: x.age, classId: x.classId, code: x.code }]).map((k) => ({ prenoms: k.prenoms, nom: k.nom, naissance: k.naissance || k.age || '', classe: cname(k.classId), code: k.code || '', parent: x.parent, tel: x.tel, email: x.email, rue: x.rue || '', cp: x.cp || '', ville: x.ville || '', annee: x.annee || '', message: x.message || '' }))),
     contact: (db.contacts || []).map((c) => ({ label: c.label, email: c.email })),
     faq: (db.faq || []).map((x) => ({ theme: x.theme, q: x.q, r: x.r, freq: x.freq ? 'oui' : '' })),
     cours: (m.cours || cfg.cours || []).map((c) => ({ public: c.public, detail: c.detail || '', horaires: c.horaires || '' })),
     objectifs: db.objectives.map((o) => ({ prof: login(o.profId), level: o.level, group: o.group, text: o.text })),
+    cats: [...d.INCOME_CATS.filter(([k]) => k !== d.OTHER_CAT).map(([, l]) => ({ type: 'Recette', label: l })), ...d.EXPENSE_CATS.filter(([k]) => k !== d.OTHER_CAT).map(([, l]) => ({ type: 'Dépense', label: l }))],
     charges: [...(f.incomes || []).filter((x) => x.monthly).map((x) => ({ type: 'Recette', cat: d.catLabel(d.INCOME_CATS, x.cat), label: x.label || '', amount: +x.amount || 0 })), ...(f.expenses || []).filter((x) => x.monthly).map((x) => ({ type: 'Dépense', cat: d.catLabel(d.EXPENSE_CATS, x.cat), label: x.label || '', amount: +x.amount || 0 }))],
   };
 }
 const nextOf = (y) => { const m = String(y).match(/(\d{4})\D+(\d{4})/); return m ? `${+m[1] + 1}-${+m[2] + 1}` : nextYear(); };
 export const downloadTemplate = () => dl(book(null), 'fichier-mosquee-vide.xlsx');
+export function downloadLeaving() {
+  const data = exportData();
+  const cols = SH.find((x) => x.k === 'eleves').cols.filter(([k]) => k !== 'renew');
+  const rows = data.eleves.filter((e) => e.renew === 'non');
+  dl(xlsxBook([['Élèves non réinscrits', [[`Élèves non réinscrits pour ${data.mosque.annee}, avec toute leur progression (sourates, niveau, code de suivi). S’ils reviennent, entrez leur code de suivi dans la demande d’inscription.`], head(cols), ...rows.map((r) => cols.map(([k]) => r[k] ?? ''))], { head: 1, note: true }]]), `eleves-non-reinscrits-${data.mosque.annee}.xlsx`);
+}
 export const downloadRentree = () => dl(book(exportData()), `fichier-mosquee-rentree-${exportData().mosque.annee}.xlsx`);
 // exemple rempli (pour tester) : généré à partir des données d'exemple, puis effacé
 export async function exampleData() {
@@ -137,7 +149,7 @@ export async function downloadExample() { dl(book(await exampleData()), 'fichier
 
 // ---------- base vide (aucune donnée de démonstration) ----------
 export function emptyDb() {
-  return { v: 1, users: [], classes: [], students: [], attendance: [], objectives: [], notes: [], snotes: [], announcements: [], locaux: [], families: [], demandes: [], contacts: [], faq: [], mosque: { name: '' }, finance: { rate: 10, incomes: [], expenses: [], overrides: {} } };
+  return { v: 1, archive: [], regLocks: {}, users: [], classes: [], students: [], attendance: [], objectives: [], notes: [], snotes: [], announcements: [], locaux: [], families: [], demandes: [], contacts: [], faq: [], mosque: { name: '' }, finance: { rate: 10, incomes: [], expenses: [], overrides: {} } };
 }
 export function setEmpty() { d.setDb(emptyDb()); d.load(); }
 
@@ -149,7 +161,7 @@ function table(rows, cols) {
   const hi = rows.findIndex((r) => r && norm(String(r[0] ?? '').replace('*', '')) === h0);
   if (hi < 0) return null;
   const hdr = rows[hi].map((x) => norm(String(x ?? '').replace('*', '')));
-  const idx = cols.map(([, l]) => hdr.indexOf(norm(l)));
+  const idx = cols.map(([, l, , , al]) => { let i = hdr.indexOf(norm(l)); for (const a of al || []) if (i < 0) i = hdr.indexOf(norm(a)); return i; });
   return rows.slice(hi + 1).map((r, i) => ({ line: hi + i + 2, v: Object.fromEntries(cols.map(([k], j) => [k, idx[j] >= 0 ? String(r[idx[j]] ?? '').trim() : ''])) }))
     .filter((x) => Object.values(x.v).some((v) => v !== '') && !/^ex\. \//.test(Object.values(x.v).find((v) => v) || ''));
 }
@@ -213,6 +225,7 @@ export async function parseFile(file) {
   }
   const fam = new Set(T.familles.map((x) => norm(x.v.name)));
   const eleves = T.eleves.filter((x) => !/^non$/i.test(x.v.renew));
+  const leaving = T.eleves.filter((x) => /^non$/i.test(x.v.renew));
   for (const x of eleves) {
     if (x.v.classe && !cl.has(norm(x.v.classe))) E('Élèves', x.line, `classe « ${x.v.classe} » inconnue`);
     if (x.v.tel && !okTel(x.v.tel)) E('Élèves', x.line, 'téléphone du parent invalide');
@@ -221,10 +234,11 @@ export async function parseFile(file) {
     if (x.v.famille && !fam.has(norm(x.v.famille))) warn.push(`Élèves · ligne ${x.line} : famille « ${x.v.famille} » ajoutée automatiquement`);
   }
   for (const x of T.objectifs) if (x.v.prof && !logins.has(x.v.prof.toLowerCase())) E('Objectifs', x.line, `professeur « ${x.v.prof} » inconnu`);
+  for (const x of T.cats || []) if (!/^(recette|depense)$/.test(norm(x.v.type))) E('Catégories', x.line, 'type : « Recette » ou « Dépense »');
   for (const x of T.charges) { if (!/^(recette|depense)$/.test(norm(x.v.type))) E('Charges mensuelles', x.line, 'type : « Recette » ou « Dépense »'); if (x.v.amount && num(x.v.amount) == null) E('Charges mensuelles', x.line, 'montant illisible'); }
-  const skipped = T.eleves.length - eleves.length;
-  if (skipped) warn.push(`${skipped} élève(s) marqué(s) « non réinscrit » : ignoré(s)`);
-  return { mosque, T: { ...T, eleves }, err, warn };
+  for (const x of T.demandes) { if (x.v.classe && !cl.has(norm(x.v.classe))) warn.push(`Demandes · ligne ${x.line} : classe « ${x.v.classe} » inconnue (à choisir à l’acceptation)`); if (x.v.naissance && !xlDate(x.v.naissance) && !(num(x.v.naissance) > 1 && num(x.v.naissance) < 100)) E('Demandes', x.line, 'date de naissance illisible'); }
+  if (leaving.length) warn.push(`${leaving.length} élève(s) non réinscrit(s) : gardé(s) dans « Anciens élèves » avec leur progression`);
+  return { mosque, T: { ...T, eleves, leaving }, err, warn };
 }
 
 // ---------- installation ----------
@@ -257,7 +271,7 @@ export async function install(P) {
   D.locaux = T.locaux.map(({ v }) => ({ id: d.uid(), name: v.name, ...(v.note ? { note: v.note } : {}) }));
   const lBy = (n) => D.locaux.find((l) => norm(l.name) === norm(n));
   const COL = ['mint', 'blue', 'pink', 'yellow'];
-  D.classes = T.classes.map(({ v }, i) => ({ id: d.uid(), name: v.name, profId: (uBy(v.prof) || {}).id, level: num(v.level) || 1, color: COL[i % 4], ...(v.public ? { public: v.public } : {}), slots: [] }));
+  D.classes = T.classes.map(({ v }, i) => ({ id: d.uid(), name: v.name, profId: (uBy(v.prof) || {}).id, level: num(v.level) || 1, color: COL[i % 4], ...(v.public ? { public: v.public } : {}), capacity: Math.round(num(v.cap)) || 20, slots: [] }));
   const cBy = (n) => D.classes.find((c) => norm(c.name) === norm(n));
   for (const { v } of T.horaires) { const c = cBy(v.classe); if (c) c.slots.push({ day: DAYN.indexOf(norm(v.day)), time: hhmm(v.time), end: hhmm(v.end) || '', localId: (lBy(v.local) || {}).id }); }
   const fee = D.finance.defaultFee;
@@ -270,20 +284,43 @@ export async function install(P) {
   for (const { v } of T.eleves) {
     const c = cBy(v.classe); if (!c) continue;
     const nais = xlDate(v.age);
-    const s = { id: d.uid(), classId: c.id, nom: v.nom, prenoms: v.prenoms.replace(/\s+/g, ' '), naissance: nais, age: nais ? null : Math.round(num(v.age)), ageAt: nais ? null : today, parent: v.parent, tel: v.tel, email: v.email.toLowerCase(), level: num(v.level) || c.level || 1, coran: {}, acquired: {}, createdAt: new Date().toISOString() };
+    const s = { id: d.uid(), classId: c.id, nom: v.nom, prenoms: v.prenoms.replace(/\s+/g, ' '), naissance: nais, age: nais ? null : Math.round(num(v.age)), ageAt: nais ? null : today, parent: v.parent, tel: v.tel, email: v.email.toLowerCase(), ...(v.rue ? { rue: v.rue, cp: v.cp, ville: v.ville } : {}), level: num(v.level) || c.level || 1, coran: {}, acquired: {}, createdAt: new Date().toISOString() };
     for (const n of parseRanges(v.coran)) s.coran[n] = { s: 'v' };
     for (const n of parseRanges(v.cours)) if (!s.coran[n]) s.coran[n] = { s: 'c', start: today };
     if (v.famille) s.familyId = fBy(v.famille).id;
     D.students.push(s);
     s.code = v.code && !D.students.some((o) => o !== s && d.normCode(o.code) === d.normCode(v.code)) ? v.code : d.genCode(s, c);
   }
-  D.demandes = T.demandes.map(({ v }) => ({ id: d.uid(), status: 'new', at: new Date().toISOString(), prenoms: v.prenoms, nom: v.nom, age: Math.round(num(v.age) || 0), parent: v.parent, tel: v.tel, email: v.email.toLowerCase(), cours: v.cours, annee: v.annee || M.annee, message: v.message }));
+  // demandes : une ligne par enfant, regroupées par parent (même téléphone)
+  const DG = new Map();
+  for (const { v } of T.demandes) {
+    const key = String(v.tel).replace(/[^\d]/g, '') || v.email || d.uid();
+    const nais = xlDate(v.naissance);
+    const kid = { prenoms: v.prenoms, nom: v.nom, naissance: nais, age: nais ? null : Math.round(num(v.naissance) || 0) || null, classId: (cBy(v.classe) || {}).id || '', code: v.code || '' };
+    if (!DG.has(key)) DG.set(key, { id: d.uid(), status: 'new', at: new Date().toISOString(), parent: v.parent, tel: v.tel, email: String(v.email).toLowerCase(), rue: v.rue, cp: v.cp, ville: v.ville, annee: v.annee || M.annee, message: v.message, kids: [] });
+    DG.get(key).kids.push(kid);
+  }
+  D.demandes = [...DG.values()].map((x) => ({ ...x, prenoms: x.kids[0].prenoms, nom: x.kids[0].nom, naissance: x.kids[0].naissance, age: x.kids[0].naissance ? d.ageOf({ naissance: x.kids[0].naissance }) : x.kids[0].age, classId: x.kids[0].classId }));
+  // anciens élèves (non réinscrits) : gardés avec leur progression, retrouvables par leur code de suivi
+  const arch = (v, from) => { const nais = xlDate(v.age); const a = { id: d.uid(), nom: v.nom, prenoms: v.prenoms, naissance: nais, age: nais ? null : Math.round(num(v.age)) || null, parent: v.parent, tel: v.tel, email: String(v.email || '').toLowerCase(), classe: v.classe, annee: v.annee || from, level: num(v.level) || 1, code: v.code, coran: {} };
+    for (const n of parseRanges(v.coran)) a.coran[n] = { s: 'v' }; for (const n of parseRanges(v.cours)) if (!a.coran[n]) a.coran[n] = { s: 'c', start: today }; return a; };
+  const prevYear = (y) => { const m = String(y).match(/(\d{4})\D+(\d{4})/); return m ? `${+m[1] - 1}–${+m[2] - 1}` : ''; };
+  D.archive = [...(T.archive || []).map(({ v }) => arch(v, v.annee)), ...(T.leaving || []).filter(({ v }) => v.code || v.nom).map(({ v }) => arch(v, prevYear(M.annee)))];
+
   D.contacts = T.contact.map(({ v }) => ({ id: d.uid(), label: v.label, email: v.email.toLowerCase() }));
   if (!D.contacts.length && M.email) D.contacts.push({ id: d.uid(), label: 'La direction', email: M.email.toLowerCase() });
   if (M.imamEmail) D.mosque.imamEmail = M.imamEmail;
   D.faq = T.faq.map(({ v }) => ({ id: d.uid(), at: new Date().toISOString(), theme: v.theme, q: v.q, r: v.r, freq: yes(v.freq) }));
   if (T.cours.length) D.mosque.cours = T.cours.map(({ v }) => ({ public: v.public, detail: v.detail, horaires: v.horaires }));
-  const catKey = (list, l) => (list.find(([k, lab]) => norm(lab) === norm(l) || norm(k) === norm(l) || norm(lab).startsWith(norm(l))) || list[list.length - 1])[0];
+  // catégorie du fichier : reprise si elle existe, sinon ajoutée à la liste
+  const catKey = (list, l) => { const f = list.find(([k, lab]) => norm(lab) === norm(l) || norm(k) === norm(l) || (norm(l).length > 3 && norm(lab).startsWith(norm(l)))); if (f) return f[0]; if (!String(l || '').trim()) return d.OTHER_CAT; const key = 'c-' + d.uid().slice(0, 8); list.splice(list.length - 1, 0, [key, String(l).trim()]); d.catsSave(); return key; };
+  if (T.cats && T.cats.length) {
+    const mk = (type) => T.cats.filter(({ v }) => norm(v.type) === type && norm(v.label) !== norm('Autres recettes') && norm(v.label) !== norm('Autres dépenses')).map(({ v }) => { const old = [...d.INCOME_CATS, ...d.EXPENSE_CATS].find(([, l]) => norm(l) === norm(v.label)); return [old ? old[0] : 'c-' + d.uid().slice(0, 8), v.label]; });
+    const inc = mk('recette'), exp = mk('depense');
+    if (inc.length) d.INCOME_CATS.splice(0, d.INCOME_CATS.length, ...inc);
+    if (exp.length) d.EXPENSE_CATS.splice(0, d.EXPENSE_CATS.length, ...exp);
+    d.catsSave();
+  }
   const m0 = d.curMonth() + '-01';
   for (const { v } of T.charges) {
     const inc = norm(v.type) === 'recette';
@@ -355,19 +392,26 @@ ACT['kit-creds'] = () => dl(xlsxBook([['Identifiants', [['Nom', 'Rôle', 'Identi
 let ny = { got: false };
 export function yearView(u, shell) {
   const data = exportData();
-  const left = data.eleves.length, dem = data.demandes.length;
+  const sts = d.D().students.slice().sort((a, b) => d.cls(a.classId).name.localeCompare(d.cls(b.classId).name) || a.nom.localeCompare(b.nom));
+  const leaving = sts.filter((s) => s.renew === 'non').length, dem = data.demandes.length;
   return shell(u, 4, `<div class="page" style="max-width:860px">
   <div class="qd-h"><a href="#/admin" class="ib" aria-label="Retour">${ic('back', 20)}</a><div class="grow"><h1>Nouvelle année scolaire</h1><div class="qd-sub">Réinitialiser l’application pour ${esc(data.mosque.annee)}, sans rien perdre d’important</div></div></div>
-  ${card(1, 'Téléchargez le fichier de la rentrée', `<p class="small mut" style="margin:0">Il contient déjà tout pour l’année prochaine : la mosquée, l’équipe (avec leurs mots de passe), les locaux, les classes et horaires, <b>${left} élève(s)</b> avec leurs sourates acquises et leur code de suivi, <b>${dem} demande(s)</b> en attente, les contacts, les réponses de l’imam, les objectifs, les charges mensuelles et le solde de la caisse.</p>
-    <p class="small mut" style="margin:0">Ouvrez-le dans Excel pour le préparer : mettez « non » dans « Réinscrit » pour un élève qui ne revient pas, changez les classes, ajoutez les nouveaux élèves…</p>
-    <button class="btn sm" data-act="ny-kit" style="align-self:flex-start">${ic('dl', 16)}Télécharger le fichier de la rentrée (Excel)</button>`)}
-  ${card(2, 'Gardez une trace de l’année', `<p class="small mut" style="margin:0">Appels, absences, notes et opérations de compta de l’année ne sont pas repris. Téléchargez-les pour vos archives et l’assemblée générale.</p>
-    <div class="row wrap" style="gap:8px"><button class="btn2 sm" data-act="compta-csv" data-y="${d.curMonth().slice(0, 4)}">${ic('dl', 16)}Compta de l’année (Excel)</button><button class="btn2 sm" data-act="ny-backup">${ic('dl', 16)}Sauvegarde complète (fichier)</button></div>`)}
-  ${card(3, 'Réinitialisez l’application', `<p class="small mut" style="margin:0">Tout est effacé sur cet appareil, puis l’écran d’installation s’ouvre : importez-y le fichier de la rentrée (étape 1).</p>
+  ${card(1, 'Qui revient l’année prochaine ?', `<p class="small mut" style="margin:0">Décochez les élèves qui ne se réinscrivent pas. Ils ne sont pas perdus : ils vont dans une fiche à part, avec toute leur progression.</p>
+    <div class="q-card q-pad" style="max-height:380px;overflow:auto"><table class="q-tbl q-tbl-static"><thead><tr><th>Élève</th><th class="hm">Classe</th><th class="hm">Sourates</th><th class="r">Réinscrit</th></tr></thead><tbody>${sts.map((s) => `<tr><td>${esc(s.prenoms)} ${esc(s.nom)}</td><td class="hm mut">${esc(d.cls(s.classId).name)}</td><td class="hm">${d.coranStats(s).v}</td><td class="r"><label class="row" style="gap:8px;justify-content:flex-end;cursor:pointer"><span class="small mut">${s.renew === 'non' ? 'non' : 'oui'}</span><input type="checkbox" data-change="ny-renew" data-id="${s.id}" ${s.renew === 'non' ? '' : 'checked'} style="width:20px;height:20px;accent-color:#050505" aria-label="${esc(s.prenoms)} se réinscrit"></label></td></tr>`).join('')}</tbody></table></div>
+    <span class="small">${sts.length - leaving} réinscrit(s) · <b>${leaving}</b> non réinscrit(s)</span>`)}
+  ${card(2, 'Téléchargez les 2 fiches', `<div class="col" style="gap:4px"><span class="b small">① Fichier de la rentrée</span><p class="small mut" style="margin:0">Tout pour l’année prochaine : la mosquée, l’équipe (avec leurs mots de passe), les locaux, les classes et horaires, les ${sts.length - leaving} élève(s) réinscrit(s) avec leurs sourates et leur code de suivi, ${dem} demande(s) en attente, les contacts, les réponses de l’imam, les objectifs, les charges mensuelles et le solde de la caisse. Vous pouvez l’ouvrir dans Excel pour le préparer.</p></div>
+    <button class="btn sm" data-act="ny-kit" style="align-self:flex-start">${ic('dl', 16)}Fichier de la rentrée (Excel)</button>
+    <div class="col" style="gap:4px;margin-top:6px"><span class="b small">② Élèves non réinscrits</span><p class="small mut" style="margin:0">Les ${leaving} élève(s) qui ne reviennent pas, avec toute leur progression (sourates, niveau, code de suivi). Ils sont aussi gardés dans l’application (« Anciens élèves ») : s’ils reviennent, leur code de suivi retrouve leur progression.</p></div>
+    <button class="btn2 sm" data-act="ny-leaving" style="align-self:flex-start" ${leaving ? '' : 'disabled'}>${ic('dl', 16)}Élèves non réinscrits (Excel)</button>
+    <div class="row wrap" style="gap:8px;margin-top:6px"><button class="btn2 sm" data-act="compta-csv" data-y="${d.curMonth().slice(0, 4)}">${ic('dl', 16)}Compta de l’année (Excel)</button><button class="btn2 sm" data-act="ny-backup">${ic('dl', 16)}Sauvegarde complète (fichier)</button></div>
+    <p class="small mut" style="margin:0">Appels, absences, notes et opérations de compta de l’année ne sont pas repris : gardez la compta et la sauvegarde pour vos archives.</p>`)}
+  ${card(3, 'Réinitialisez l’application', `<p class="small mut" style="margin:0">Tout est effacé sur cet appareil, puis l’écran d’installation s’ouvre : importez-y le fichier de la rentrée (fiche ①).</p>
     <label class="row small" style="gap:10px;cursor:pointer"><input type="checkbox" data-change="ny-got" ${ny.got ? 'checked' : ''} style="width:20px;height:20px;accent-color:#050505">J’ai bien téléchargé le fichier de la rentrée</label>
     <button class="btnd sm" data-act="ny-reset" ${ny.got ? '' : 'disabled'} style="align-self:flex-start">${ic('refresh', 16)}Réinitialiser pour la nouvelle année</button>`)}
   </div>`);
 }
+CHANGE['ny-renew'] = (el) => { const s = d.student(el.dataset.id); if (!s) return; if (el.checked) delete s.renew; else s.renew = 'non'; d.save(); rerender(); };
+ACT['ny-leaving'] = () => downloadLeaving();
 ACT['ny-kit'] = () => { downloadRentree(); ny.got = true; rerender(); };
 CHANGE['ny-got'] = (el) => { ny.got = el.checked; rerender(); };
 ACT['ny-backup'] = () => dl(new Blob([JSON.stringify(d.D(), null, 2)], { type: 'application/json' }), `sauvegarde-complete-${todayISO()}.json`);

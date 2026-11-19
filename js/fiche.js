@@ -106,10 +106,10 @@ export function presence(st, limit = 50) {
 export function notes(st, edit) {
   const list = d.notesForStudent(st);
   const items = list.map((n) => {
-    const tag = n.kind === 'devoir' ? devoirTag(n) : n.scope === 'class' ? pill('Toute la classe', 'var(--yellow)') : pill('Personnelle', 'var(--blue2)');
+    const tag = n.scope === 'class' ? devoirTag(n) : pill('Appréciation personnelle', 'var(--blue2)');
     return `<div class="col" style="gap:6px">${tag}${msgHtml(n, edit && n.scope === 'student' ? 'note-del' : null)}</div>`;
   }).join('');
-  return `<div class="row between"><h2>Notes &amp; appréciations</h2></div>
+  return `<div class="row between"><h2>Devoirs, infos &amp; appréciations</h2></div>
   ${edit ? `<div class="ck pad col"><h3>Nouvelle note pour ${esc(st.prenoms.split(' ')[0])}</h3>${composer('note-student', 'zn', '', 'Appréciation, remarque, encouragement…')}</div>` : ''}
   <div class="col">${items || '<p class="mut small">Aucune note pour le moment.</p>'}</div>`;
 }

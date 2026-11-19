@@ -274,7 +274,7 @@ export function composer(form, zone, attrs = '', placeholder = 'Écrire une note
   <div class="row wrap"><button type="button" class="btn2 sm mic" data-act="rec" data-zone="${zone}">${ic('mic', 20)}Vocal</button>${withFiles ? `<button type="button" class="btn2 sm" data-act="file-pick" data-zone="${zone}">${ic('clip', 20)}Photo / fichier</button>` : ''}<span class="grow"></span><button class="btn sm">${ic('send', 18)}Envoyer</button></div>
   </form>`;
 }
-export const devoirTag = (m) => (m.kind === 'devoir' ? pill(`${ic('book', 14)} Devoirs pour le ${fdate(m.due, { weekday: 'long', day: 'numeric', month: 'long' })}`, 'var(--mint)') : '');
+export const devoirTag = (m) => (m.kind === 'devoir' ? pill(`${ic('book', 14)} Devoir · pour le ${fdate(m.due, { weekday: 'long', day: 'numeric', month: 'long' })}`, 'var(--mint)') : m.scope === 'class' ? pill(`${ic('bell', 14)} Info`, 'var(--yellow)') : '');
 export function msgHtml(m, delAct) {
   const audio = m.audioId ? `<audio controls preload="none" data-audio="${m.audioId}"></audio>` : '';
   const del = delAct ? `<button type="button" class="ib sm" data-act="${delAct}" data-id="${m.id}" aria-label="Supprimer la note">${ic('trash', 16)}</button>` : '';

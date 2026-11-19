@@ -87,9 +87,9 @@ export function dashboard(u) {
   ${cl.length ? `<div class="row between"><span class="tiny b mut" style="letter-spacing:1.2px">CETTE SEMAINE</span><a href="#/prof/classes" class="small">Toutes les classes</a></div>
   ${weekBands(cl)}` : ''}
   ${d.isAdmin(u) ? hoursCard() : ''}
-  <div class="grid3"><div class="ck stat" style="background:var(--yellow)"><div class="v">${sv}</div><div class="l">sourates validées (7 j)</div></div>
+  ${d.isAdmin(u) ? '' : `<div class="grid3"><div class="ck stat" style="background:var(--yellow)"><div class="v">${sv}</div><div class="l">sourates validées (7 j)</div></div>
   <div class="ck stat" style="background:var(--blue2)"><div class="v">${oa}</div><div class="l">objectifs acquis (7 j)</div></div>
-  <div class="ck stat" style="background:var(--mint)"><div class="v">${ap}</div><div class="l">appels faits (7 j)</div></div></div>
+  <div class="ck stat" style="background:var(--mint)"><div class="v">${ap}</div><div class="l">appels faits (7 j)</div></div></div>`}
   <div class="grid2 stack" style="align-items:start">
   <div class="ck pad col"><h2>À surveiller</h2><div class="list">${watch.slice(0, 6).map(([s, t, c]) => `<a class="li" href="#/prof/eleve/${s.id}">${av(initials(s), 40, c, 13)}<span class="grow"><span class="b" style="display:block">${esc(fullName(s))}</span><span class="small mut b" style="font-weight:600">${esc(t)}</span></span>${ic('chev', 18)}</a>`).join('') || '<p class="small mut">Rien à signaler.</p>'}</div></div>
   <div class="col"><a class="btn2" href="#/prof/eleve/new">${ic('plus', 20)}Nouvel élève</a><a class="btn2" href="#/prof/classes?new=1">${ic('plus', 20)}Nouvelle classe</a><a class="btn2" href="#/prof/import">${ic('sheet', 20)}Importer des élèves (Excel)</a></div>
@@ -114,7 +114,7 @@ function schedLine(c, withNext = true) {
 function courseCard(c) {
   const sl = d.slotsOf(c);
   const nn = sl.length && d.nextCourse(c);
-  if (nn) return hero('Prochain cours', nextLabel(nn), { sub: `${schedLabel(sl)} · ${localLine(c)}`, chip: untilLabel(nn), chipSub: 'avant le cours', extra: `<div class="row" style="gap:8px"><a class="btn y grow" href="#/prof/classe/${c.id}/appel">${ic('check', 18)}Appel</a><a class="btn2 grow" href="#notes-devoirs">${ic('book', 18)}Devoir</a></div>` });
+  if (nn) return hero('Prochain cours', nextLabel(nn), { sub: `${schedLabel(sl)} · ${localLine(c)}`, chip: untilLabel(nn), chipSub: 'avant le cours', extra: `<div class="row" style="gap:8px"><a class="btn y grow" href="#/prof/classe/${c.id}/appel">${ic('check', 18)}Appel</a><a class="btn2 grow" href="#/prof/classe/${c.id}" data-act="go-devoir" data-id="${c.id}">${ic('book', 18)}Devoir</a></div>` });
   if (!sl.length) return `<div class="ck flat pad row wrap" style="background:var(--hi);gap:10px">${ic('cal', 20)}<span class="grow b small">Horaires des cours à compléter</span><button class="btn2 sm" data-act="class-edit" data-id="${c.id}">${ic('edit', 16)}Ajouter les horaires</button></div>`;
   const n = d.nextCourse(c);
   return `<div class="ck flat pad col" style="gap:4px;background:var(--hi)"><span class="b">${ic('cal', 18)} Prochain cours : ${nextLabel(n)}</span><span class="small b" style="font-weight:600">Cours : ${schedLabel(sl)}</span></div>`;
@@ -161,6 +161,7 @@ function classForm(u, c = null) {
   <div id="slots" class="col" style="gap:10px">${slotRows(Math.max(1, d.slotsOf(c).length), d.slotsOf(c))}</div>
   <span class="hint" style="margin:0">Sert à afficher « Prochain cours » sur les fiches des élèves. L’heure de fin sert au compteur d’heures du professeur et au planning des locaux.</span></fieldset>
   <fieldset style="border:0;padding:0;margin:0"><legend class="lbl">Couleur</legend><div class="row">${Object.keys(COLORS).map((k) => `<label style="cursor:pointer"><input type="radio" name="color" value="${k}" class="sr" ${(c ? c.color : 'blue') === k ? 'checked' : ''}><span class="av swatch" style="width:48px;height:48px;background:${COLORS[k]}" title="${COLOR_NAMES[k]}"></span><span class="sr">${COLOR_NAMES[k]}</span></label>`).join('')}</div></fieldset>
+  <div class="field"><label class="lbl" for="ccap">Nombre de places</label><input id="ccap" name="capacity" type="number" min="1" max="500" inputmode="numeric" class="inp" value="${c && +c.capacity > 0 ? +c.capacity : 20}" style="max-width:160px"><span class="hint">Quand la classe est pleine (inscrits + demandes reçues), elle n’est plus proposée dans le formulaire d’inscription du site.</span></div>
   <div class="field"><label class="lbl" for="cl">Niveau Langue &amp; Religion par défaut</label><select id="cl" name="level" class="inp">${levels.map((l) => `<option value="${l}" ${(c ? c.level : 1) === l ? 'selected' : ''}>Niveau ${l}</option>`).join('')}</select></div>
   <button class="btn full">${c ? 'Enregistrer' : 'Créer la classe'}</button>
   ${c ? `<button type="button" class="btnd full" data-act="class-del" data-id="${c.id}">${ic('trash', 18)}Supprimer la classe</button>` : ''}
@@ -180,7 +181,7 @@ FORMS.class = (f, fd) => {
     else if (s.end <= s.time) { toast('L’heure de fin doit être après l’heure de début'); return; }
     slots.push(s);
   }
-  const v = { name: (fd.get('name') || '').trim() || 'Classe', color: fd.get('color') || 'blue', level: +fd.get('level') || 1, slots };
+  const v = { name: (fd.get('name') || '').trim() || 'Classe', color: fd.get('color') || 'blue', level: +fd.get('level') || 1, capacity: Math.max(1, parseInt(fd.get('capacity'), 10) || 20), slots };
   if (d.isAdmin(u)) { if (!fd.get('profId')) { toast('Créez d’abord un professeur'); return; } v.profId = fd.get('profId'); }
   if (id) { const cc = d.cls(id); delete cc.day; delete cc.time; Object.assign(cc, v); }
   else { const c = { id: d.uid(), profId: u.id, ...v }; d.D().classes.push(c); d.save(); closeModal(); go(`#/prof/classe/${c.id}`); toast('Classe créée'); return; }
@@ -215,27 +216,33 @@ export function classe(u, id) {
   <div class="col" style="flex:1.25;min-width:0;gap:12px"><div class="row between"><h2 style="margin:0">Élèves</h2><a class="btn2 sm" href="#/prof/eleve/new?c=${id}">${ic('plus', 16)}Ajouter un élève</a></div>
   <div class="q-card q-pad">${sts.length ? `<div style="overflow-x:auto"><table class="q-tbl"><thead><tr><th>Élève</th><th class="hm">Âge</th><th class="hm">Coran</th><th class="r">Présence</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>` : `<div class="col" style="padding:16px 0"><p class="mut small">Pas encore d’élève dans cette classe.</p><a class="btn sm" href="#/prof/eleve/new?c=${id}" style="align-self:flex-start">${ic('plus', 18)}Ajouter un élève</a></div>`}</div></div>
   <div class="col" style="flex:1;min-width:0;gap:16px">
-  ${devoirsCard(c, sts)}
-  <div class="q-card col" id="notes-classe" style="padding:20px 24px;gap:10px"><span class="b" style="font-size:16px">Notes pour la classe</span><p class="small mut" style="margin:0">Visibles sur la fiche de chaque élève de ${esc(c.name)}.</p>
-  ${composer('note-class', 'zc', '', 'Ex : pas de cours samedi prochain…', true)}
-  <p class="small mut" style="margin:0">Photos et fichiers : visibles par les parents pendant 7 jours, puis supprimés automatiquement.</p>
-  <div class="col">${notes.map((n) => `<div class="col" style="gap:6px">${devoirTag(n)}${msgHtml(n, 'note-del')}</div>`).join('')}</div></div></div></div></div>`;
+  ${infoCard(c, sts, notes)}</div></div></div>`;
   return shell(u, 1, body);
 }
 // ---------- devoirs : enregistrés sur la fiche de chaque élève + e-mail prêt pour tous les parents de la classe ----------
 const localISO = (dt) => { const x = new Date(dt); x.setMinutes(x.getMinutes() - x.getTimezoneOffset()); return x.toISOString().slice(0, 10); };
 const okMail = (m) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(m || '').trim());
 const parentMails = (classId) => [...new Set(d.studentsOf(classId).map((s) => (s.email || '').trim().toLowerCase()).filter(okMail))];
-function devoirsCard(c, sts) {
+// « Devoir / Information » : un seul bloc avec un interrupteur ; une seule liste en dessous
+let diMode = 'devoir';
+function infoCard(c, sts, notes) {
   const nx = d.nextCourse(c);
   const due = nx ? localISO(nx.when) : todayISO();
   const n = parentMails(c.id).length;
-  const pre = `<div class="field"><label class="lbl" for="zd-due">Devoirs pour le cours du</label><input id="zd-due" name="due" type="date" class="inp" value="${due}" min="${todayISO()}" required style="max-width:220px"></div>`;
-  return `<div class="q-card col" id="notes-devoirs" style="padding:20px 24px;gap:10px"><span class="b" style="font-size:16px">Devoirs</span>
-  <p class="small mut" style="margin:0">La date du prochain cours est remplie toute seule. En envoyant, les devoirs s’affichent sur la fiche de chaque élève, et votre e-mail s’ouvre avec ${n ? `les ${n} parent(s) de la classe en destinataires` : 'les parents de la classe en destinataires'} : il ne reste qu’à envoyer.</p>
+  const pre = `<div class="field"><label class="lbl" for="zd-due">Devoir pour le cours du</label><input id="zd-due" name="due" type="date" class="inp" value="${due}" min="${todayISO()}" required style="max-width:220px"></div>`;
+  const dv = diMode === 'devoir';
+  return `<div class="q-card col" id="devoir-info" style="padding:20px 24px;gap:12px"><div class="row between wrap" style="gap:10px"><span class="b" style="font-size:16px">Devoir / Information</span>
+  <div class="segq" role="tablist" aria-label="Type de message" style="min-width:220px">${[['devoir', 'Devoir'], ['info', 'Information']].map(([k, l]) => `<button type="button" role="tab" aria-selected="${diMode === k}" class="${diMode === k ? 'on' : ''}" data-act="di-mode" data-m="${k}">${l}</button>`).join('')}</div></div>
+  <div data-di="devoir" class="col" style="gap:10px" ${dv ? '' : 'hidden'}><p class="small mut" style="margin:0">La date du prochain cours est remplie toute seule. En envoyant, le devoir s’affiche sur la fiche de chaque élève et votre e-mail s’ouvre avec ${n ? `les ${n} parent(s) de la classe` : 'les parents de la classe'} en destinataires.</p>
   ${composer('devoir', 'zd', '', 'Ex : apprendre les versets 1 à 5 d’Al-Layl, exercice page 12…', true, pre)}
-  <p class="small mut" style="margin:0">Les pièces jointes ne peuvent pas partir dans l’e-mail : elles sont visibles sur la fiche de l’élève jusqu’au jour du cours (7 jours minimum). L’e-mail l’indique aux parents.${sts.length > n ? ` ${sts.length - n} élève(s) sans e-mail de parent.` : ''}</p></div>`;
+  <p class="small mut" style="margin:0">Les pièces jointes ne partent pas dans l’e-mail : elles restent visibles sur la fiche jusqu’au jour du cours (7 jours minimum).${sts.length > n ? ` ${sts.length - n} élève(s) sans e-mail de parent.` : ''}</p></div>
+  <div data-di="info" class="col" style="gap:10px" ${dv ? 'hidden' : ''}><p class="small mut" style="margin:0">Une information simple, sans date, visible sur la fiche de chaque élève de ${esc(c.name)}.</p>
+  ${composer('note-class', 'zc', '', 'Ex : pas de cours samedi prochain…', true)}
+  <p class="small mut" style="margin:0">Photos et fichiers : visibles par les parents pendant 7 jours, puis supprimés automatiquement.</p></div>
+  ${notes.length ? `<div class="col" style="gap:12px;border-top:1px solid var(--q-hair);padding-top:12px">${notes.map((x) => `<div class="col" style="gap:6px">${devoirTag(x)}${msgHtml(x, 'note-del')}</div>`).join('')}</div>` : ''}</div>`;
 }
+ACT['go-devoir'] = (el) => { diMode = 'devoir'; location.hash = `#/prof/classe/${el.dataset.id}`; setTimeout(() => { const e = document.getElementById('devoir-info'); if (e) { e.scrollIntoView({ behavior: 'smooth', block: 'start' }); const t = e.querySelector('textarea'); if (t) t.focus({ preventScroll: true }); } }, 250); };
+ACT['di-mode'] = (el) => { diMode = el.dataset.m; const box = document.getElementById('devoir-info'); if (!box) return; box.querySelectorAll('[data-di]').forEach((e) => (e.hidden = e.dataset.di !== diMode)); box.querySelectorAll('[data-act=di-mode]').forEach((b) => { b.classList.toggle('on', b === el); b.setAttribute('aria-selected', b === el); }); };
 FORMS.devoir = async (f, fd) => {
   const c = ctx.cls, u = d.me();
   const text = (fd.get('text') || '').trim();
@@ -265,7 +272,7 @@ FORMS['note-class'] = async (f, fd) => {
   if (audioId === false) return;
   const files = await takeFiles('zc');
   d.D().notes.push({ id: d.uid(), profId: ctx.cls.profId, authorId: d.me().id, scope: 'class', classId: ctx.cls.id, studentId: null, at: new Date().toISOString(), text, audioId, files });
-  d.save(); toast('Note publiée'); rerender();
+  d.save(); toast('Information publiée'); rerender();
 };
 // ---------- appel ----------
 // Chaque appel est enregistré avec sa date ET son heure : une classe peut avoir
@@ -483,6 +490,8 @@ function studentForm(u, s, classId) {
   <div class="grid2 stack"><div class="field"><label class="lbl" for="stl">Téléphone du parent</label><input id="stl" name="tel" type="tel" inputmode="tel" class="inp code" required value="${esc(s ? s.tel || '' : '')}" autocomplete="off" placeholder="ex. +32 470 12 34 56"><span class="hint">Avec l’indicatif (+32, +33…), le bouton WhatsApp apparaît aussi.</span></div>
   <div class="field"><label class="lbl" for="sml">E-mail du parent</label><input id="sml" name="email" type="email" inputmode="email" class="inp" required value="${esc(s ? s.email || '' : '')}" autocomplete="off" autocapitalize="none" placeholder="ex. karim.benali@gmail.com"></div></div>
   <span class="hint" style="margin-top:-6px">Téléphone et e-mail : visibles seulement par les profs et l’admin, jamais sur la fiche des parents.</span>
+  <details ${s && (s.rue || s.ville) ? 'open' : ''}><summary class="small b" style="cursor:pointer">Adresse (pour la fiche d’inscription)</summary><div class="col" style="gap:10px;margin-top:8px"><div class="field"><label class="lbl" for="sru">Rue et numéro</label><input id="sru" name="rue" class="inp" value="${esc(s ? s.rue || '' : '')}" autocomplete="off"></div>
+  <div class="grid2"><div class="field"><label class="lbl" for="scp">Code postal</label><input id="scp" name="cp" class="inp" inputmode="numeric" value="${esc(s ? s.cp || '' : '')}" autocomplete="off"></div><div class="field"><label class="lbl" for="svi">Ville</label><input id="svi" name="ville" class="inp" value="${esc(s ? s.ville || '' : '')}" autocomplete="off"></div></div></div></details>
   <details ${s && s.naissance ? 'open' : ''}><summary class="small b" style="cursor:pointer">Date de naissance précise (facultatif)</summary><div class="field" style="margin-top:8px"><label class="lbl" for="sb">Date de naissance</label><input id="sb" name="naissance" type="date" class="inp" value="${s && s.naissance ? s.naissance : ''}"><span class="hint">Si elle est remplie, l’âge est calculé à partir d’elle.</span></div></details>
   ${s ? '' : '<div class="ck flat pad small b" style="background:var(--yellow);font-weight:600">Le code de suivi est créé automatiquement : classe, initiales, prénom du parent, âge, + 4 caractères de sécurité.</div>'}
   <button class="btn full">${s ? 'Enregistrer' : 'Ajouter l’élève'}</button></form>`;
@@ -493,7 +502,7 @@ export function eleveNew(u, q) {
 FORMS.student = (f, fd) => {
   const u = d.me();
   const id = f.dataset.id;
-  const v = { classId: fd.get('classId'), nom: (fd.get('nom') || '').trim(), prenoms: (fd.get('prenoms') || '').trim().replace(/\s+/g, ' '), naissance: fd.get('naissance') || null, parent: (fd.get('parent') || '').trim(), tel: (fd.get('tel') || '').trim(), email: (fd.get('email') || '').trim().toLowerCase() };
+  const v = { classId: fd.get('classId'), nom: (fd.get('nom') || '').trim(), prenoms: (fd.get('prenoms') || '').trim().replace(/\s+/g, ' '), naissance: fd.get('naissance') || null, parent: (fd.get('parent') || '').trim(), tel: (fd.get('tel') || '').trim(), email: (fd.get('email') || '').trim().toLowerCase(), rue: (fd.get('rue') || '').trim(), cp: (fd.get('cp') || '').trim(), ville: (fd.get('ville') || '').trim() };
   const age = parseInt(fd.get('age'), 10);
   if (!v.nom || !v.prenoms || !v.parent || (!v.naissance && !(age > 0))) { toast('Merci de remplir tous les champs'); return; }
   if (v.tel.replace(/[^\d]/g, '').length < 8) { toast('Indiquez le numéro de téléphone du parent'); return; }
@@ -508,12 +517,34 @@ FORMS.student = (f, fd) => {
   go(`#/prof/eleve/${s.id}/cree`);
 };
 const ficheLink = (s) => `${location.origin}${location.pathname}#/f/${encodeURIComponent(s.code)}`;
-export function eleveCree(u, id) {
+export function eleveCree(u, id, q) {
   const s = d.student(id); const c = d.cls(s.classId);
+  const autres = ((q && q.get('autres')) || '').split(',').map((x) => d.student(x)).filter(Boolean);
   return shell(u, 2, `<div class="page narrow"><div class="col center" style="align-items:center;padding-top:20px">
   <span class="av" style="width:76px;height:76px;background:var(--mint)">${ic('check', 38, 3.4)}</span><h1>${esc(s.prenoms.split(' ')[0])} est inscrit(e) !</h1><p class="mut b">${clsLabel(c)}</p></div>
   ${codeCard(s)}
-  <a class="btn2 full" href="#/prof/eleve/new?c=${c.id}">${ic('plus', 20)}Inscrire un autre élève</a><a class="btn full" href="#/prof/eleve/${id}">Ouvrir la fiche</a></div>`);
+  <a class="btn full" href="#/prof/eleve/${id}/inscription">${ic('note', 20)}Fiche d’inscription (PDF) à faire signer</a>
+  ${autres.length ? `<div class="q-card q-pad"><div class="q-sec"><b>Aussi inscrits dans la même famille</b></div>${autres.map((o) => `<div class="q-lrow"><span class="t"><b>${esc(o.prenoms)} ${esc(o.nom)}</b><span>${esc(d.cls(o.classId).name)} · code ${esc(o.code)}</span></span><a class="btn2 sm" href="#/prof/eleve/${o.id}/inscription">${ic('note', 16)}Fiche PDF</a><a class="ib sm" href="#/prof/eleve/${o.id}" aria-label="Ouvrir la fiche">${ic('chev', 16)}</a></div>`).join('')}</div>` : ''}
+  <a class="btn2 full" href="#/prof/eleve/new?c=${c.id}">${ic('plus', 20)}Inscrire un autre élève</a><a class="btn2 full" href="#/prof/eleve/${id}">Ouvrir la fiche</a></div>`);
+}
+// fiche d'inscription imprimable (à faire signer par le parent)
+export function inscriptionPdf(u, id) {
+  const s = d.student(id); if (!s) return '';
+  const c = d.cls(s.classId), fam = s.familyId && d.family(s.familyId);
+  const m = d.D().mosque || {};
+  const kv = (l, v) => `<tr><th>${l}</th><td data-notr dir="auto">${v ? esc(String(v)) : '<span class="pdf-line"></span>'}</td></tr>`;
+  const adr = [s.rue, [s.cp, s.ville].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+  const today = new Date().toLocaleDateString('fr-BE', { day: 'numeric', month: 'long', year: 'numeric' });
+  return `<div class="page pdf ins-pdf"><div class="row between wrap noprint" style="gap:8px"><a class="btn2 sm" href="#/prof/eleve/${id}">${ic('back', 18)}Retour</a><button class="btn sm" data-act="print">${ic('dl', 18)}Enregistrer en PDF / imprimer</button></div>
+  <p class="small mut noprint">Dans la fenêtre d’impression, choisissez « Enregistrer au format PDF » (sur téléphone : Partager → Imprimer → PDF).</p>
+  <div class="ins-sheet">
+  <div class="row between" style="align-items:flex-start;gap:16px"><div class="col" style="gap:2px"><span class="ins-t">Fiche d’inscription</span><span class="b">${esc(m.name || '')}</span><span class="small">${esc([m.adresse, [m.cp, m.ville].filter(Boolean).join(' ')].filter(Boolean).join(', '))}${m.tel ? ' · ' + esc(m.tel) : ''}</span></div><div class="col" style="gap:2px;text-align:right"><span class="small">Année scolaire</span><span class="b">${esc(d.D().year || '')}</span></div></div>
+  <h3>L’élève</h3><table class="ins-tbl">${kv('Nom', s.nom)}${kv('Prénom(s)', s.prenoms)}${kv('Date de naissance', s.naissance ? new Date(s.naissance + 'T12:00').toLocaleDateString('fr-BE') : '')}${kv('Âge', d.ageOf(s) != null ? d.ageOf(s) + ' ans' : '')}${kv('Code de suivi', s.code)}</table>
+  <h3>Le parent ou responsable</h3><table class="ins-tbl">${kv('Nom et prénom', s.parent)}${kv('Téléphone', s.tel)}${kv('E-mail', s.email)}${kv('Adresse', adr)}</table>
+  <h3>La classe</h3><table class="ins-tbl">${kv('Classe', c ? c.name : '')}${kv('Professeur', c && d.user(c.profId) ? d.user(c.profId).name : '')}${kv('Créneau(x)', c && d.slotsOf(c).length ? schedLabel(d.slotsOf(c)) : '')}${kv('Local', c ? localLine(c).replace(/^Local\s*:\s*/i, '') : '')}${kv('Cotisation annuelle', fam && +fam.cotisation ? `${(+fam.cotisation).toLocaleString('fr-BE', { minimumFractionDigits: 2 })} € (${fam.name})` : '')}</table>
+  <p class="small" style="margin-top:14px">Je soussigné(e), parent ou responsable de l’élève, confirme l’exactitude des informations ci-dessus et l’inscription de l’élève pour l’année scolaire ${esc(d.D().year || '')}. J’autorise la mosquée à me contacter par téléphone et par e-mail pour le suivi de l’élève (devoirs, absences, informations).</p>
+  <div class="ins-sign"><div><span class="small">Fait à ……………………, le ${today}</span></div><div class="ins-box"><span class="small">Signature du parent</span></div><div class="ins-box"><span class="small">Pour la mosquée</span></div></div>
+  </div></div>`;
 }
 function codeCard(s) {
   return hero('Code de suivi à donner', `<span class="code" style="font-size:22px;color:#fff;background:transparent;border:0;padding:0;word-break:break-all">${esc(s.code)}</span>`, { sub: 'Le lien ouvre directement la fiche, sans rien taper.', extra: `<div class="grid2"><button class="btn2 sm" data-act="copy" data-t="${esc(s.code)}">${ic('copy', 18)}Copier</button><button class="btn y sm" data-act="share" data-id="${s.id}">${ic('share', 18)}Partager le lien</button></div>` });
@@ -526,7 +557,7 @@ ACT.share = async (el) => {
   else copyText(text);
 };
 
-const ETABS = [['coran', 'Coran'], ['langue', 'Langue & Religion'], ['presence', 'Présence'], ['notes', 'Notes']];
+const ETABS = [['coran', 'Coran'], ['langue', 'Langue & Religion'], ['presence', 'Présence'], ['notes', 'Devoirs & notes']];
 export function eleve(u, id, tab = 'coran', q = null) {
   const s = d.student(id);
   if (!d.canSeeStudent(u, s)) return shell(u, 2, `<div class="page">${top('Élève introuvable', '', '#/prof/eleves')}</div>`);
@@ -549,6 +580,7 @@ export function eleve(u, id, tab = 'coran', q = null) {
     <div class="q-card col" style="padding:18px 22px;gap:10px"><span class="small mut">Code de suivi</span><span class="code" style="font-size:15px;word-break:break-all">${esc(s.code)}</span>
       <div class="grid2" style="gap:8px"><button class="btn2 sm" data-act="copy" data-t="${esc(s.code)}">${ic('copy', 16)}Copier</button><button class="btn2 sm" data-act="share" data-id="${s.id}">${ic('share', 16)}Partager</button></div>
       <a class="small" href="#/f/${encodeURIComponent(s.code)}" style="color:var(--ink)">${ic('eye', 14)} Voir la fiche comme un parent</a>
+      <a class="small" href="#/prof/eleve/${s.id}/inscription" style="color:var(--ink)">${ic('note', 14)} Fiche d’inscription (PDF)</a>
       ${fam ? `${d.isAdmin(u) ? `<a class="small" href="#/prof/familles" style="color:var(--muted)">` : '<span class="small mut">'}${esc(fam.name)} · ${d.familyKids(fam.id).length} enfant(s) · cotisation ${fam.status === 'paid' ? 'payée' : fam.status === 'partial' ? 'en partie payée' : 'pas payée'}${d.isAdmin(u) ? ' ›</a>' : '</span>'}` : ''}</div>
     <div class="q-card q-pad"><div class="q-sec"><b>Contact du parent</b></div>
       <div class="q-kvs"><div><span>Parent</span><span><bdi>${esc(s.parent || '—')}</bdi></span></div><div><span>Téléphone</span><span class="q-amt" style="font-weight:500">${s.tel ? esc(s.tel) : '<a href="#/prof/eleve/' + id + '/edit">à ajouter</a>'}</span></div><div><span>E-mail</span><span style="word-break:break-all">${s.email ? esc(s.email) : '<a href="#/prof/eleve/' + id + '/edit">à ajouter</a>'}</span></div></div>

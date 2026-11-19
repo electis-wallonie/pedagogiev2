@@ -372,3 +372,14 @@ body.q a.bd:hover{background:#FAFAF8!important}
 .q-drop:hover{border-color:var(--q-k)}
 .linkbtn{background:none;border:0;padding:0;font:inherit;color:var(--ink);text-decoration:underline;cursor:pointer}
 body.q .btnd[disabled],body.q .btn[disabled]{opacity:.45;cursor:not-allowed}
+/* verrous d'inscription et jauges */
+.q-lock{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border:1px solid var(--q-hair);border-radius:12px;background:#FFFFFF;font:inherit;color:var(--ink);cursor:pointer}
+.q-lock b{font-weight:600;font-size:15px}
+.q-sw{width:44px;height:26px;border-radius:999px;background:#CCCCCC;position:relative;flex:none;transition:background .15s}
+.q-sw i{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:999px;background:#FFFFFF;transition:left .15s}
+.q-lock.on .q-sw{background:var(--q-pos)}.q-lock.on .q-sw i{left:21px}
+.q-gauges{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px 22px}
+.q-gauge{display:flex;flex-direction:column;gap:6px}
+.segq button{flex:1;text-align:center;padding:8px 6px;border-radius:6px;font:inherit;font-size:14px;color:var(--muted);background:none;border:0;cursor:pointer}
+.segq button.on{background:#FFFFFF;color:var(--ink);font-weight:500;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+@media (max-width:600px){.grid3.stack{grid-template-columns:1fr!important}}

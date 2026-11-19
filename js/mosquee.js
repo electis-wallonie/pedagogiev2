@@ -11,7 +11,7 @@ const logo = (s = 40) => brandLogo(s);
 const langBtn = () => `<button class="btn2 sm" data-act="lang" lang="${isAr ? 'fr' : 'ar'}" aria-label="${isAr ? 'Français' : 'العربية'}">${ic('globe', 18)}<span class="hide-sm" data-notr dir="auto">${isAr ? 'Français' : 'العربية'}</span></button>`;
 
 // ---------- navigation publique : 4 rubriques ----------
-const PUB = [['#/', 'clock', 'Prières'], ['#/imam', 'chat', 'Questions'], ['#/cours', 'book', 'Cours']];
+const PUB = [['#/', 'book', 'Cours'], ['#/prieres', 'clock', 'Prières'], ['#/imam', 'chat', 'Questions']];
 // Connexion séparée : l'équipe se connecte sur « domaineEquipe » (ex. connexion.ma-mosquee.fr), le public ne voit jamais de bouton de connexion.
 export const teamHost = () => { const h = location.hostname; const c = (CFG && CFG.domaineEquipe) || ''; return (c && h === c) || /^connexion\./.test(h); };
 export const publicOnly = () => !!(CFG && CFG.domaineEquipe) && !teamHost();
@@ -97,11 +97,11 @@ setInterval(() => {
   if (left <= 0 && Date.now() - cdDone > 5000) { cdDone = Date.now(); window.dispatchEvent(new CustomEvent('soft-render')); }
 }, 1000);
 export function prieres(q) {
-  if (!MW && !MW_ERR) { loadMawaqit(); return pubShell(0, `<h1>Horaires de prière</h1><div class="ck pad"><p class="b">Chargement des horaires…</p></div>`); }
+  if (!MW && !MW_ERR) { loadMawaqit(); return pubShell(1, `<h1>Horaires de prière</h1><div class="ck pad"><p class="b">Chargement des horaires…</p></div>`); }
   const tilesHtml = '';
   const now = new Date();
   const t = MW && dayTimes(now);
-  if (!t) return pubShell(0, `<h1>Horaires de prière</h1><div class="ck pad col" style="background:var(--hi)"><h2>Horaires bientôt disponibles</h2><p class="b" style="font-weight:600">La synchronisation avec Mawaqit n’a pas encore eu lieu.</p></div>${tilesHtml}`);
+  if (!t) return pubShell(1, `<h1>Horaires de prière</h1><div class="ck pad col" style="background:var(--hi)"><h2>Horaires bientôt disponibles</h2><p class="b" style="font-weight:600">La synchronisation avec Mawaqit n’a pas encore eu lieu.</p></div>${tilesHtml}`);
   const iq = dayIqama(now, t);
   const np = nextPrayer(now);
   const fri = now.getDay() === 5;
@@ -113,7 +113,7 @@ export function prieres(q) {
     const y = now.getFullYear(), mo = now.getMonth(), days = new Date(y, mo + 1, 0).getDate();
     const rows = [];
     for (let k = 1; k <= days; k++) { const dd = new Date(y, mo, k); const tt = dayTimes(dd); if (tt) rows.push(`<tr style="border-top:2px solid var(--neutral);${k === now.getDate() ? 'background:var(--hi);font-weight:800' : ''}"><td style="padding:6px 8px">${dd.toLocaleDateString(locale, { weekday: 'short', day: 'numeric' })}</td>${tt.map((x) => `<td style="padding:6px 8px;text-align:center">${x}</td>`).join('')}</tr>`); }
-    month = `<div class="ck pad col"><div class="row between"><h2>${now.toLocaleDateString(locale, { month: 'long', year: 'numeric' })}</h2><a href="#/" class="small b">Fermer</a></div><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="background:var(--neutral)"><th style="padding:6px 8px;text-align:start">Jour</th>${PR.map(([f], j) => `<th style="padding:6px 8px">${f}${j === 1 ? `<span class="sun-l" style="justify-content:center">${ic('sunrise', 12, 2)}<span>lever</span></span>` : ''}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div></div>`;
+    month = `<div class="ck pad col"><div class="row between"><h2>${now.toLocaleDateString(locale, { month: 'long', year: 'numeric' })}</h2><a href="#/prieres" class="small b">Fermer</a></div><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="background:var(--neutral)"><th style="padding:6px 8px;text-align:start">Jour</th>${PR.map(([f], j) => `<th style="padding:6px 8px">${f}${j === 1 ? `<span class="sun-l" style="justify-content:center">${ic('sunrise', 12, 2)}<span>lever</span></span>` : ''}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div></div>`;
   }
   // Design T3 : la journée entière en bandes ; passées en gris compact, la prochaine devient le bloc bleu nuit.
   const COL = ['var(--blue2)', 'var(--hi)', 'var(--yellow)', 'var(--mint)', 'var(--pink)', 'var(--blue2)'];
@@ -126,10 +126,10 @@ export function prieres(q) {
     if (np && !np.tomorrow && i === np.i) return block(i, time, q ? `<span class="small b">Iqama ${q}</span>` : '');
     if (past) return `<div class="pt3 past" style="--rot:${ROT[i]}deg"><span class="pt3-chk">${ic('check', 15)}</span><span class="grow col" style="gap:0;min-width:0"><span class="b">${f} ${isAr ? '' : `<span data-notr lang="ar" class="small">${a}</span>`}</span>${i === 1 ? `<span class="sun-l">${ic('sunrise', 13, 2)}<span>Lever du soleil</span></span>` : ''}</span><span class="pt3-t">${time}</span></div>`;
     return `<div class="pt3" style="--rot:${ROT[i]}deg;background:${COL[i]}"><span class="col grow" style="gap:0;min-width:0"><span class="b pt3-n">${f} ${isAr ? '' : `<span data-notr lang="ar">${a}</span>`}</span>${i === 1 ? `<span class="sun-l big">${ic('sunrise', 15, 2)}<span>Lever du soleil</span></span>` : `<span class="small b">${q ? 'Iqama ' + q : ''}</span>`}</span><span class="pt3-t big">${time}</span></div>`; };
-  return pubShell(0, `
+  return pubShell(1, `
   <div class="row between wrap" style="gap:6px"><span class="b">${esc(now.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' }))}</span><span class="small b mut" data-notr>${esc(hijri(now))}</span></div>
   <div class="pt3-stack">${np && np.tomorrow ? block(0, np.time, '', true) : ''}${[0, 1, 2, 3, 4, 5].map(band).join('')}</div>
-  <div class="row wrap" style="gap:8px">${jum.length ? pill(`${ic('star', 14)} Jumu’a : ${jum.join(' · ')}`, 'var(--pink)') : ''}${[MW.aidPrayerTime, MW.aidPrayerTime2, MW.aidPrayerTime3].filter(Boolean).length ? pill(`Prière de l’Aïd : ${[MW.aidPrayerTime, MW.aidPrayerTime2, MW.aidPrayerTime3].filter(Boolean).join(' · ')}`, 'var(--mint)') : ''}<a class="pill" href="#/?mois=1" style="background:var(--surface);text-decoration:none">${ic('cal', 14)} Le mois</a>${MW.latitude ? `<a class="pill" href="https://www.google.com/maps/dir/?api=1&destination=${MW.latitude},${MW.longitude}" target="_blank" rel="noopener" style="background:var(--surface);text-decoration:none">${ic('arrow', 14)} Itinéraire</a>` : ''}</div>
+  <div class="row wrap" style="gap:8px">${jum.length ? pill(`${ic('star', 14)} Jumu’a : ${jum.join(' · ')}`, 'var(--pink)') : ''}${[MW.aidPrayerTime, MW.aidPrayerTime2, MW.aidPrayerTime3].filter(Boolean).length ? pill(`Prière de l’Aïd : ${[MW.aidPrayerTime, MW.aidPrayerTime2, MW.aidPrayerTime3].filter(Boolean).join(' · ')}`, 'var(--mint)') : ''}<a class="pill" href="#/prieres?mois=1" style="background:var(--surface);text-decoration:none">${ic('cal', 14)} Le mois</a>${MW.latitude ? `<a class="pill" href="https://www.google.com/maps/dir/?api=1&destination=${MW.latitude},${MW.longitude}" target="_blank" rel="noopener" style="background:var(--surface);text-decoration:none">${ic('arrow', 14)} Itinéraire</a>` : ''}</div>
   ${month}
   ${(MW.announcements || []).length ? `<div class="ck pad col"><h2>${ic('mega', 20)} Annonces de la mosquée</h2>${MW.announcements.map((a) => `<div class="col" style="gap:4px"><span class="b" data-notr dir="auto">${esc(a.title || '')}</span><span style="white-space:pre-wrap" data-notr dir="auto">${esc(a.content || '')}</span></div>`).join('<hr style="border:0;border-top:2px solid var(--neutral);width:100%">')}</div>` : ''}
   <p class="tiny mut b">Horaires repris de la page Mawaqit officielle de la mosquée. <a href="${esc(MW.source || MW.url || 'https://mawaqit.net')}" target="_blank" rel="noopener">Voir sur Mawaqit</a></p>`);
@@ -176,7 +176,7 @@ export function imam(q) {
   const list = v === 'r' ? rec : freq;
   const ago = (iso) => { const n = Math.floor((Date.now() - new Date(iso)) / 864e5); return n <= 0 ? 'aujourd’hui' : n === 1 ? 'hier' : n < 7 ? `il y a ${n} j` : n < 30 ? `il y a ${Math.floor(n / 7)} sem.` : `il y a ${Math.floor(n / 30)} mois`; };
   const mail = imamMail();
-  return pubShell(1, `
+  return pubShell(2, `
   <form class="qz-bubble" data-form="imam-ask">
     <h1 class="qz-h">Une question ?<br>L’imam vous répond.</h1>
     ${mail ? `<label class="sr" for="qq">Votre question</label><textarea id="qq" name="question" class="inp" rows="3" required placeholder="Écrivez votre question…"></textarea>

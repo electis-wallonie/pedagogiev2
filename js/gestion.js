@@ -361,12 +361,42 @@ ACT['fam-del'] = () => {
   d.save(); closeModal(); rerender(); toast('Famille supprimée');
 };
 // bouton ② : paiement rapide
+// ---------- catégories de recettes / dépenses ----------
+const catList = (k) => (k === 'inc' ? d.INCOME_CATS : d.EXPENSE_CATS);
+function catsModal(k) {
+  const L = catList(k), entries = k === 'inc' ? d.D().finance.incomes : d.D().finance.expenses;
+  return `<div class="row between"><h2>Catégories de ${k === 'inc' ? 'recettes' : 'dépenses'}</h2><button class="ib" data-act="close-modal" aria-label="Fermer">${ic('x', 20)}</button></div>
+  <p class="small mut" style="margin:0">Renommez, ajoutez ou supprimez. Les opérations d’une catégorie supprimée passent dans « ${k === 'inc' ? 'Autres recettes' : 'Autres dépenses'} » : rien n’est perdu.</p>
+  <div class="col" style="gap:8px">${L.map(([key, label]) => { const n = entries.filter((x) => x.cat === key).length; const other = key === d.OTHER_CAT;
+    return `<div class="row" style="gap:8px"><label class="sr" for="cat-${key}">Nom de la catégorie</label><input id="cat-${key}" class="inp grow" value="${esc(label)}" data-change="cat-ren" data-k="${k}" data-key="${key}" ${other ? 'readonly' : ''}><span class="small mut" style="min-width:60px;text-align:right">${n} op.</span>${other ? `<span class="ib sm" style="visibility:hidden"></span>` : `<button class="ib sm" data-act="cat-del" data-k="${k}" data-key="${key}" aria-label="Supprimer ${esc(label)}">${ic('trash', 16)}</button>`}</div>`; }).join('')}</div>
+  <form class="row" data-form="cat-add" data-k="${k}" style="gap:8px"><label class="sr" for="cat-new">Nouvelle catégorie</label><input id="cat-new" name="label" class="inp grow" placeholder="Nouvelle catégorie, ex. Cours d’arabe adultes" required><button class="btn sm">${ic('plus', 16)}Ajouter</button></form>
+  <button class="btn2 full" data-act="cats-done">Terminé</button>`;
+}
+ACT['cats-manage'] = (el) => { const k = el.dataset.k; openModal(() => catsModal(k)); };
+ACT['cats-done'] = () => { closeModal(); rerender(); };
+CHANGE['cat-ren'] = (el) => { const v = el.value.trim(); const c = catList(el.dataset.k).find((x) => x[0] === el.dataset.key); if (!c || !v || el.dataset.key === d.OTHER_CAT) return; c[1] = v; d.catsSave(); toast('Catégorie renommée'); };
+ACT['cat-del'] = (el) => {
+  const k = el.dataset.k, key = el.dataset.key; if (key === d.OTHER_CAT) return;
+  const L = catList(k), c = L.find((x) => x[0] === key); if (!c) return;
+  const entries = k === 'inc' ? d.D().finance.incomes : d.D().finance.expenses;
+  const n = entries.filter((x) => x.cat === key).length;
+  if (!ask(`Supprimer la catégorie « ${c[1]} » ?${n ? `\n\nSes ${n} opération(s) passent dans « ${k === 'inc' ? 'Autres recettes' : 'Autres dépenses'} ».` : ''}`)) return;
+  for (const x of entries) if (x.cat === key) x.cat = d.OTHER_CAT;
+  L.splice(L.indexOf(c), 1); d.catsSave(); toast('Catégorie supprimée'); openModal(() => catsModal(k));
+};
+FORMS['cat-add'] = (f, fd) => {
+  const k = f.dataset.k, label = (fd.get('label') || '').trim(); if (!label) return;
+  const L = catList(k);
+  if (L.some((x) => x[1].toLowerCase() === label.toLowerCase())) { toast('Cette catégorie existe déjà'); return; }
+  const key = 'c-' + d.uid().slice(0, 8);
+  L.splice(L.length - 1, 0, [key, label]); d.catsSave(); toast('Catégorie ajoutée'); openModal(() => catsModal(k));
+};
 ACT['fam-pay'] = (el) => {
   const f = d.family(el.dataset.id);
   openModal(() => `<div class="row between"><h2>${esc(f.name)}</h2><button class="ib" data-act="close-modal" aria-label="Fermer">${ic('x', 20)}</button></div>
   <form class="col" data-form="fam-pay" data-id="${f.id}">
   <div class="field"><label class="lbl" for="pc">① Cotisation (€)</label><input id="pc" name="cotisation" class="inp" inputmode="decimal" value="${f.cotisation || ''}"></div>
-  <fieldset style="border:0;padding:0;margin:0"><legend class="lbl">② Paiement</legend><div class="col" style="gap:8px">${Object.entries(PAY).map(([k, [l, bg, fg]]) => `<label class="ck flat row" style="gap:10px;padding:10px 12px;cursor:pointer;background:${bg};color:${fg}"><input type="radio" name="status" value="${k}" ${f.status === k ? 'checked' : ''} data-change="pay-st" style="width:22px;height:22px"><span class="b">${l}${k === 'unpaid' ? ' (0 %)' : k === 'paid' ? ' (100 %)' : ' (en cours)'}</span></label>`).join('')}</div></fieldset>
+  <fieldset style="border:0;padding:0;margin:0"><legend class="lbl">② Paiement</legend><div class="col pay-opts" style="gap:8px">${Object.entries(PAY).map(([k, [l]]) => `<label class="pay-opt"><input type="radio" name="status" value="${k}" ${f.status === k ? 'checked' : ''} data-change="pay-st"><span class="pay-dot ${k}"></span><span class="b">${l}</span><span class="small mut">${k === 'unpaid' ? '0 %' : k === 'paid' ? '100 %' : 'en cours'}</span></label>`).join('')}</div></fieldset>
   <div class="field ${f.status === 'partial' ? '' : 'hide'}" id="ppw"><label class="lbl" for="pp">Montant déjà versé (€)</label><input id="pp" name="paid" class="inp" inputmode="decimal" value="${f.paid || ''}"></div>
   <button class="btn full">Enregistrer</button></form>`);
 };
@@ -410,7 +440,7 @@ export function entryForm(kind, m, cats) {
   const p = kind === 'inc' ? 'i' : 'e';
   return `<form class="col q-entry" data-form="${kind}-add" style="gap:14px">
   <div class="field"><label class="lbl" for="${p}a">Montant</label><div class="q-amt-in"><input id="${p}a" name="amount" class="inp" inputmode="decimal" placeholder="0,00" required autocomplete="off"><span>€</span></div></div>
-  <div class="field"><label class="lbl" for="${p}c">Catégorie</label><select id="${p}c" name="cat" class="inp">${cats.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></div>
+  <div class="field"><div class="row between" style="gap:8px"><label class="lbl" for="${p}c">Catégorie</label><button type="button" class="linkbtn small" data-act="cats-manage" data-k="${kind}">Gérer les catégories</button></div><select id="${p}c" name="cat" class="inp">${cats.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></div>
   <div class="field"><label class="lbl" for="${p}l">Intitulé (facultatif)</label><input id="${p}l" name="label" class="inp" placeholder="${kind === 'inc' ? 'ex. Quête du 14 novembre, don de M. X…' : 'ex. Facture Engie novembre…'}"></div>
   <div class="field"><label class="lbl" for="${p}d">Date</label><input id="${p}d" name="date" type="date" class="inp" value="${m === d.curMonth() ? todayISO() : m + '-01'}" required></div>
   <label class="row small" style="gap:10px;cursor:pointer"><input type="checkbox" name="monthly" style="width:20px;height:20px;accent-color:#050505">Répéter chaque mois (${kind === 'inc' ? 'don récurrent, prélèvement…' : 'loyer, électricité, assurance…'})</label>
@@ -432,18 +462,29 @@ ACT['inc-del'] = (el) => { if (!ask('Supprimer cette recette ?')) return; d.D().
 export function teacherRows(m) {
   const fin = d.D().finance;
   const ov = fin.overrides[m] || {};
-  const rows = d.staff(m).map((p) => {
+  const list = d.staff(m);
+  const others = d.D().users.filter((u) => !list.includes(u));
+  const rows = list.map((p) => {
     const h = d.profHours(p.id, m);
-    const auto = Math.round((h.min / 60) * d.profRate(p) * 100) / 100;
-    return `<div class="ck flat pad col" style="gap:8px"><div class="row between wrap"><span class="b">${esc(p.name)}${p.role === 'admin' ? ' (admin)' : ''}</span><span class="b" style="font-size:20px">${eur(d.profCost(p, m))}</span></div>
-    <div class="small b" style="font-weight:600">${ic('clock', 14)} ${d.fmtH(h.min)} (${h.n} cours)${h.missing ? ` · ${h.missing} cours sans heure de fin` : ''} × ${eur(d.profRate(p))}/h = ${eur(auto)}</div>
-    <div class="grid2"><div class="field"><label class="lbl" for="pr-${p.id}">Taux horaire (€)</label><input id="pr-${p.id}" class="inp" inputmode="decimal" value="${p.rate ?? ''}" placeholder="${fin.rate} (par défaut)" data-change="fin-prate" data-id="${p.id}"></div>
-    <div class="field"><label class="lbl" for="po-${p.id}">Montant retenu (€)</label><input id="po-${p.id}" class="inp" inputmode="decimal" value="${ov[p.id] ?? ''}" placeholder="${auto} (calcul auto)" data-change="fin-ov" data-id="${p.id}" data-m="${m}"></div></div></div>`;
+    const auto = p.benevole ? 0 : Math.round((h.min / 60) * d.profRate(p) * 100) / 100;
+    const adjH = h.adj ? String(Math.round((h.adj / 60) * 100) / 100).replace('.', ',') : '';
+    return `<div class="ck flat pad col" style="gap:10px"><div class="row between wrap" style="gap:8px"><span class="b">${esc(p.name)} <span class="small mut" style="font-weight:400">· ${esc(d.roleLabel(p))}</span></span><span class="q-amt" style="font-size:20px">${eur(d.profCost(p, m))}</span></div>
+    <div class="segq" style="max-width:320px" role="radiogroup" aria-label="Statut de ${esc(p.name)}">${[[false, 'Rémunéré'], [true, 'Bénévole']].map(([v, l]) => `<button type="button" role="radio" aria-checked="${!!p.benevole === v}" class="${!!p.benevole === v ? 'on' : ''}" data-act="fin-benevole" data-id="${p.id}" data-v="${v ? 1 : 0}">${l}</button>`).join('')}</div>
+    <div class="small">${ic('clock', 14)} ${d.fmtH(h.auto)} d’appels (${h.n} cours)${h.missing ? ` · <span style="color:var(--q-warn)">${h.missing} cours sans heure de fin, non comptés</span>` : ''}${h.adj ? ` ${h.adj > 0 ? '+' : '−'} ${d.fmtH(Math.abs(h.adj))} à la main` : ''} = <b>${d.fmtH(h.min)}</b>${p.benevole ? ' · bénévole : 0 €' : ` × ${eur(d.profRate(p))}/h = ${eur(auto)}`}</div>
+    <div class="grid3 stack" style="gap:10px"><div class="field"><label class="lbl" for="ph-${p.id}">Heures à ajouter ou corriger</label><input id="ph-${p.id}" class="inp" inputmode="decimal" value="${adjH}" placeholder="ex. 2 ou -1,5" data-change="fin-hadj" data-id="${p.id}" data-m="${m}"><span class="hint">En heures, pour ce mois. Négatif pour retirer.</span></div>
+    <div class="field"><label class="lbl" for="pr-${p.id}">Taux horaire (€)</label><input id="pr-${p.id}" class="inp" inputmode="decimal" value="${p.rate ?? ''}" placeholder="${fin.rate} (par défaut)" data-change="fin-prate" data-id="${p.id}" ${p.benevole ? 'disabled' : ''}></div>
+    <div class="field"><label class="lbl" for="po-${p.id}">Montant retenu (€)</label><input id="po-${p.id}" class="inp" inputmode="decimal" value="${ov[p.id] ?? ''}" placeholder="${auto} (calcul auto)" data-change="fin-ov" data-id="${p.id}" data-m="${m}" ${p.benevole ? 'disabled' : ''}></div></div>
+    ${(fin.staffExtra || []).includes(p.id) && p.role !== 'prof' ? `<button type="button" class="linkbtn small" style="align-self:flex-start" data-act="fin-staff-del" data-id="${p.id}">Retirer de la liste</button>` : ''}</div>`;
   }).join('');
-  return `<p class="small mut b" style="font-weight:600">Calcul automatique : heures du compteur (appels faits par chaque personne, remplacements compris) × taux horaire. Laissez « Montant retenu » vide pour garder le calcul, ou tapez un autre montant. Mettez le taux à 0 pour un bénévole.</p>
-  <div class="field" style="max-width:260px"><label class="lbl" for="fr">Taux horaire par défaut (€)</label><input id="fr" class="inp" inputmode="decimal" value="${fin.rate}" data-change="fin-rate"></div>
+  return `<p class="small mut" style="margin:0">Calcul automatique : heures des appels faits par chaque personne (remplacements compris), plus les heures ajoutées à la main, × taux horaire. Un bénévole a ses heures comptées, à 0 €. Laissez « Montant retenu » vide pour garder le calcul.</p>
+  <div class="row wrap" style="gap:12px;align-items:flex-end"><div class="field" style="max-width:260px;margin:0"><label class="lbl" for="fr">Taux horaire par défaut (€)</label><input id="fr" class="inp" inputmode="decimal" value="${fin.rate}" data-change="fin-rate"></div>
+  ${others.length ? `<div class="field" style="margin:0;min-width:240px"><label class="lbl" for="fadd">Ajouter un membre</label><select id="fadd" class="inp" data-change="fin-staff-add"><option value="">Choisir…</option>${others.map((u) => `<option value="${u.id}">${esc(u.name)} · ${esc(d.roleLabel(u))}</option>`).join('')}</select></div>` : ''}</div>
   ${rows || '<p class="small mut">Aucun enseignant.</p>'}`;
 }
+ACT['fin-benevole'] = (el) => { const u = d.user(el.dataset.id); if (!u) return; if (el.dataset.v === '1') u.benevole = true; else delete u.benevole; d.save(); toast(u.benevole ? `${u.name} : bénévole` : `${u.name} : rémunéré`); rerender(); };
+CHANGE['fin-hadj'] = (el) => { const fin = d.D().finance; fin.hoursAdj = fin.hoursAdj || {}; const m = el.dataset.m; fin.hoursAdj[m] = fin.hoursAdj[m] || {}; const v = parseFloat(String(el.value).replace(',', '.').replace(/[^\d.-]/g, '')); if (isNaN(v) || !v) delete fin.hoursAdj[m][el.dataset.id]; else fin.hoursAdj[m][el.dataset.id] = Math.round(v * 60); d.save(); toast('Heures enregistrées'); rerender(); };
+CHANGE['fin-staff-add'] = (el) => { if (!el.value) return; const fin = d.D().finance; fin.staffExtra = [...new Set([...(fin.staffExtra || []), el.value])]; d.save(); toast('Membre ajouté'); rerender(); };
+ACT['fin-staff-del'] = (el) => { const fin = d.D().finance; fin.staffExtra = (fin.staffExtra || []).filter((x) => x !== el.dataset.id); d.save(); rerender(); };
 CHANGE['fin-rate'] = (el) => { d.D().finance.rate = num(el.value); d.save(); softRender(); };
 CHANGE['fin-prate'] = (el) => { const p = d.user(el.dataset.id); if (el.value.trim() === '') delete p.rate; else p.rate = num(el.value); d.save(); softRender(); };
 CHANGE['fin-ov'] = (el) => {

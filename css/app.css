@@ -449,3 +449,33 @@ button.bd{border:var(--bw) solid var(--ink)}
 .fid-l{font-size:12px;font-weight:800;color:var(--yellow);letter-spacing:1px;text-transform:uppercase}
 [dir=rtl] .fid-l{text-transform:none;letter-spacing:0}
 .fid-k{flex:none;background:var(--yellow);color:var(--ink);border:2px solid #fff;border-radius:9px;padding:3px 9px;font-weight:800;font-size:14px;white-space:nowrap}
+/* formulaire d'inscription en 4 étapes */
+.dm-steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.dm-steps li{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12.5px;font-weight:700;color:var(--muted);text-align:center;line-height:1.2}
+.dm-steps li span{width:30px;height:30px;border-radius:999px;border:2px solid currentColor;display:inline-flex;align-items:center;justify-content:center;font-size:14px}
+.dm-steps li.on{color:var(--ink)}.dm-steps li.on span{background:var(--ink);color:#fff;border-color:var(--ink)}
+.dm-steps li.done{color:var(--ink)}.dm-steps li.done span{background:var(--mint)}
+.dm-opt.off{opacity:.55;cursor:not-allowed}
+/* fiche d'inscription imprimable */
+.ins-sheet{background:#FFFFFF;color:#111;border:1px solid #DDD;border-radius:12px;padding:28px 32px;display:flex;flex-direction:column;gap:6px;font-family:Inter,Arial,sans-serif}
+.ins-t{font-size:24px;font-weight:700}
+.ins-sheet h3{font-size:15px;margin:16px 0 4px;padding-bottom:4px;border-bottom:1.5px solid #111}
+.ins-tbl{width:100%;border-collapse:collapse;font-size:14px}
+.ins-tbl th{width:34%;text-align:left;font-weight:500;color:#555;padding:7px 8px 7px 0;vertical-align:top}
+.ins-tbl td{padding:7px 0;border-bottom:1px solid #EEE}
+.pdf-line{display:inline-block;width:100%;border-bottom:1px dotted #999;height:14px}
+.ins-sign{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px}
+.ins-sign>div:first-child{grid-column:1/-1}
+.ins-box{border:1px solid #999;border-radius:8px;height:110px;padding:8px 10px}
+@media print{body.q .side,body.q .tabbar{display:none!important}.ins-pdf{max-width:none!important}.ins-sheet{border:0;padding:0}.ins-tbl th,.ins-tbl td{padding:5px 0}}
+/* choix du paiement : texte toujours foncé, pastille de couleur */
+.pay-opt{display:flex;align-items:center;gap:12px;padding:12px 14px;border:2px solid var(--line,#D5DCF2);border-radius:12px;background:#FFFFFF;color:#0B1F66;cursor:pointer}
+.pay-opt input{width:22px;height:22px;margin:0;accent-color:#0B1F66}
+.pay-opt .b{flex:1}
+.pay-opt:has(input:checked){border-color:#0B1F66;background:#F4F6FF}
+.pay-dot{width:14px;height:14px;border-radius:999px;flex:none}
+.pay-dot.unpaid{background:#C2341D}.pay-dot.partial{background:#E8A200}.pay-dot.paid{background:#0A7F4F}
+body.q .pay-opt{border:1px solid var(--q-hair);border-radius:8px;color:#1A1A1A}
+body.q .pay-opt:has(input:checked){border-color:#050505;background:#FAFAF8}
+body.q .pay-opt input{accent-color:#050505}
+[hidden]{display:none!important}

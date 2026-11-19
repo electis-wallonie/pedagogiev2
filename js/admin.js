@@ -6,7 +6,7 @@ import { langBtn } from './public.js';
 import { locauxTile, financeTile, hoursPill, locauxSummary, eur } from './gestion.js';
 import { contactFields, readContact } from './contact.js';
 import { publicTile, teamHost, mosqueName, loadMawaqit, mawaqitData } from './mosquee.js';
-import { demandesTile, pending } from './demandes.js';
+import { demandesTile, pending, schoolYear, yearOpen } from './demandes.js';
 import { hero, brandLogo } from './ui.js';
 
 const go = (h) => { if (location.hash === h) window.dispatchEvent(new Event('hashchange')); else location.hash = h; };
@@ -101,7 +101,7 @@ export function adminView(u) {
   <div class="q-card q-stats q-stats-link"><a href="#/prof/eleves"><b>${sts.length}</b><span>élèves</span></a><a href="#/prof/classes"><b>${cls.length}</b><span>classes</span></a><a href="#/prof/eleves"><b>${avg == null ? '—' : avg + ' %'}</b><span>présence moyenne</span></a><a href="#/admin/demandes"><b>${dem.length}</b><span>demande(s) en attente</span></a></div>
   ${todo.length ? `<div class="q-card q-pad"><div class="q-sec"><b>À traiter</b><span>${todo.length}</span></div>${todo.map(([pc, n, t, sub, h, btn]) => `<a class="q-lrow q-link" href="${h}"><span class="q-av ${pc}">${n}</span><span class="t"><b>${t}</b><span>${sub}</span></span><span class="btn2 sm">${btn}</span></a>`).join('')}</div>` : ''}
   <div class="q-mods">
-    ${modCard('#/admin/demandes', 'inbox', 'Demandes d’inscription', 'Reçues depuis l’onglet Cours', dem.length ? `${dem.length} en attente` : 'Aucune en attente', 'Traiter', dem.length > 0)}
+    ${modCard('#/admin/demandes', 'inbox', 'Demandes d’inscription', 'Reçues depuis l’onglet Cours', `${dem.length ? `${dem.length} en attente` : 'Aucune en attente'}<br>${[schoolYear(0), schoolYear(1)].map((y) => `${y} : ${yearOpen(y) ? 'ouvertes' : '<b>fermées</b>'}`).join(' · ')}`, 'Traiter', dem.length > 0)}
     ${modCard('#/admin/equipe', 'users', 'Équipe &amp; comptes', 'Professeurs, administrateurs, trésorier', `${team.length} compte(s)${tmp ? ` · ${tmp} mot de passe temporaire` : ''}`, 'Gérer l’équipe')}
     ${modCard('#/admin/message', 'bell', 'Message de la direction', 'En haut des fiches et des tableaux de bord', `${live} en ligne · ${soon} à venir`, 'Écrire un message')}
     ${modCard('#/admin/public', 'moon', 'Mosquée &amp; espace public', 'Nom, horaires, contact, questions à l’imam', `${(d.D().contacts || []).length} destinataire(s) · ${(d.D().faq || []).length} réponse(s) publiée(s)`, 'Modifier')}

@@ -17,7 +17,7 @@ Une application web installable (PWA), **la même pour toutes les mosquées**. C
 | Nom à afficher (laisser vide = nom Mawaqit) ? | `nom` | `Mosquée Al-Mouhsinine` |
 | Quel **style** ? (voir `css/styles/`) | `style` | `pastille` ou `sobre` |
 | Couleur de la barre du téléphone ? | `couleurTheme` | `#1F4FFF` |
-| Où envoyer les demandes d’inscription ? (serveur Cloudflare de la mosquée) | `api` | ex. `/api` : le site envoie chaque demande en `POST /api/demandes` (JSON : cours, annee, prenoms, nom, age, parent, tel, email, message). Vide = démo, la demande reste sur l’appareil. |
+| Où envoyer les demandes d’inscription ? (serveur Cloudflare de la mosquée) | `api` | ex. `/api` : le site envoie chaque demande en `POST /api/demandes` (JSON : `annee`, `kids` = liste des enfants `{ prenoms, nom, naissance, classId, code }`, `parent`, `tel`, `email`, `rue`, `cp`, `ville`, `message` ; les champs `prenoms`, `nom`, `naissance`, `age`, `classId` du premier enfant sont aussi recopiés à plat pour compatibilité). Vide = la demande reste sur l’appareil. |
 | Quels cours la mosquée propose-t-elle ? (affichés dans l’onglet Cours) | `cours` | liste de `{"public": "Adultes", "detail": "Coran, tajwid", "horaires": "Mar. 19h–21h", "couleur": "jaune", "icone": "book"}` ; couleurs : mint, jaune, rose, bleu ; icônes : users, book, hands |
 | (Tant qu’il n’y a pas de nom de domaine, l’équipe se connecte par l’adresse du site suivie de `/connexion/`, ex. `https://electis-wallonie.github.io/pedagogiev2/connexion/` : aucun lien public n’y mène.) | | |
 | Adresse de connexion de l’équipe ? (le public ne voit alors aucun bouton de connexion) | `domaineEquipe` | `connexion.ma-mosquee.fr` |
@@ -94,7 +94,7 @@ Application web installable (PWA) qui remplace les feuilles de suivi papier : **
 - **Fiche parent** : aperçu, Coran, Langue & Religion, présence (« absent à ce cours », avec la date), notes.
 - PWA installable et utilisable hors connexion. Mise en page mobile et ordinateur.
 
-## ⚠️ Version actuelle : démonstration
+## ⚠️ Version actuelle : données sur l’appareil
 
 Pour l’instant, **toutes les données sont stockées dans le navigateur de l’appareil** (localStorage + IndexedDB pour les vocaux). Conséquences :
 
@@ -103,8 +103,8 @@ Pour l’instant, **toutes les données sont stockées dans le navigateur de l�
 
 Pour un usage réel, il faut brancher une base de données en ligne, par exemple [Supabase](https://supabase.com) (offre gratuite). Toute la couche de données est isolée dans `js/data.js` : c’est le seul fichier à adapter.
 
-Comptes de démonstration : `admin` / `admin1234` et `rahman` / `prof1234`.
-Le menu Réglages du prof contient « Réinitialiser la démo ».
+Installation : au premier lancement, l’écran **Installation** demande le *fichier de la mosquée* (Excel ou CSV, modèle téléchargeable depuis cet écran). Le lien « charger l’exemple » installe un exemple (`admin` / `admin1234`, `rahman` / `prof1234`).
+Chaque rentrée : Direction → **Nouvelle année scolaire** (méga administrateur) → télécharger le fichier de la rentrée et la fiche des élèves non réinscrits, réinitialiser, réimporter.
 
 ## Structure
 
@@ -115,7 +115,8 @@ sw.js                 cache hors connexion
 css/app.css           thème « Pastille Pop »
 js/app.js             routes et événements
 js/data.js            données, sessions, codes, audio
-js/seed.js            données de démonstration
+js/seed.js            données de l’exemple (lien « charger l’exemple »)
+js/kit.js             fichier de la mosquée : installation, rentrée, élèves non réinscrits
 js/ui.js              outils d’interface, enregistrement vocal
 js/fiche.js           blocs de la fiche élève
 js/public.js          accueil et fiche parent

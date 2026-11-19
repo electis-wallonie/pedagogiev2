@@ -11,11 +11,11 @@ let db = null;
 export const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
 export function load() {
   try { db = JSON.parse(localStorage.getItem(KEY)); } catch { db = null; }
-  if (db && db.users) { db.announcements = db.announcements || []; migrateGestion(db); }
+  if (db && db.users) { db.announcements = db.announcements || []; migrateGestion(db); syncCats(db); }
   return db;
 }
 export function save() { localStorage.setItem(KEY, JSON.stringify(db)); }
-export function setDb(d) { db = d; save(); }
+export function setDb(d) { db = d; if (db) syncCats(db); save(); }
 export function D() { return db; }
 
 import { isAr, SOURATES_AR } from './i18n.js';
@@ -335,12 +335,17 @@ export function profHours(userId, month = curMonth()) {
     list.push({ a, min: m });
   }
   list.sort((x, y) => (x.a.date + (x.a.at || '')).localeCompare(y.a.date + (y.a.at || '')));
-  return { min, n, missing, list };
+  // heures corrigées ou ajoutées à la main (Compta → Enseignants), en minutes, peut être négatif
+  const adj = +(((db.finance.hoursAdj || {})[month] || {})[userId] || 0);
+  const auto = min;
+  min = Math.max(0, min + adj);
+  return { min, auto, adj, n, missing, list };
 }
 // personnes à payer pour un mois : tous les profs + les admins qui ont fait des appels ce mois-là
 export function staff(month = curMonth()) {
   const ov = (db.finance.overrides[month] || {});
-  return db.users.filter((u) => u.role === 'prof' || profHours(u.id, month).n || ov[u.id] != null)
+  const extra = db.finance.staffExtra || [];
+  return db.users.filter((u) => u.role === 'prof' || extra.includes(u.id) || profHours(u.id, month).n || ov[u.id] != null)
     .sort((a, b) => (a.role === b.role ? a.name.localeCompare(b.name) : a.role === 'prof' ? -1 : 1));
 }
 export const fmtH = (min) => { const h = Math.floor(min / 60), m = min % 60; return m ? `${h} h ${String(m).padStart(2, '0')}` : `${h} h`; };
@@ -382,6 +387,18 @@ export const EXPENSE_CATS = [
   ['imam', 'Imam / personnel'], ['fournitures', 'Fournitures (bureau, école)'], ['evenement', 'Événements (iftar, Aïd, conférences…)'],
   ['social', 'Aide sociale (zakat, sadaqa redistribuées)'], ['banque', 'Frais bancaires'], ['taxes', 'Taxes et impôts'], ['autre', 'Autres dépenses'],
 ];
+// catégories modifiables (Compta → Gérer les catégories) : enregistrées dans les données, la liste ci-dessus sert de point de départ.
+// Les tableaux INCOME_CATS / EXPENSE_CATS restent les mêmes objets (mis à jour sur place) : tout le code les lit en direct.
+const DEF_CATS = { inc: INCOME_CATS.map((x) => [...x]), exp: EXPENSE_CATS.map((x) => [...x]) };
+export const OTHER_CAT = 'autre';
+function syncCats(b) {
+  b.cats = b.cats || { inc: DEF_CATS.inc.map((x) => [...x]), exp: DEF_CATS.exp.map((x) => [...x]) };
+  for (const [k, def] of [['inc', 'Autres recettes'], ['exp', 'Autres dépenses']]) { b.cats[k] = b.cats[k].filter((x) => x[0] !== OTHER_CAT); b.cats[k].push([OTHER_CAT, def]); }
+  INCOME_CATS.splice(0, INCOME_CATS.length, ...b.cats.inc);
+  EXPENSE_CATS.splice(0, EXPENSE_CATS.length, ...b.cats.exp);
+}
+export function catsSave() { db.cats = { inc: INCOME_CATS.map((x) => [...x]), exp: EXPENSE_CATS.map((x) => [...x]) }; syncCats(db); save(); }
+
 export const catLabel = (list, k) => (list.find((c) => c[0] === k) || list[list.length - 1])[1];
 // une ligne « mensuelle » compte chaque mois depuis sa date
 const inMonth = (x, month) => (x.monthly ? monthOf(x.date) <= month : monthOf(x.date) === month);
@@ -393,6 +410,7 @@ export function byCat(items, list) {
   return list.filter((c) => t[c[0]]).map(([k, l]) => ({ k, l, total: t[k] }));
 }
 export function profCost(p, month) {
+  if (p.benevole) return 0;
   const o = (db.finance.overrides[month] || {})[p.id];
   if (o != null && o !== '') return +o;
   return Math.round((profHours(p.id, month).min / 60) * profRate(p) * 100) / 100;
