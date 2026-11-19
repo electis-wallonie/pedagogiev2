@@ -1,7 +1,7 @@
 // Point d'entrée : chargement des données, routes, délégation des événements
 import * as d from './data.js';
 import { ACT, FORMS, CHANGE, hydrateAudio, closeModal, ic } from './ui.js';
-import { seed, SEED_VERSION } from './seed.js';
+import * as kit from './kit.js';
 import * as pub from './public.js';
 import * as adm from './admin.js';
 import * as prof from './prof.js';
@@ -42,6 +42,8 @@ const R = [
   [/^\/admin\/locaux\/pdf$/, () => { const u = guard('admin'); return u && gest.locauxPdf(u); }],
   [/^\/admin\/finances$/, () => { location.hash = '#/compta'; return null; }],
   [/^\/prof\/familles$/, () => { const u = guard('prof'); return u && gest.famillesView(u); }],
+  [/^\/installation$/, () => kit.installView()],
+  [/^\/admin\/annee$/, () => { const u = guard('admin'); if (u && !d.isSuper(u)) { location.hash = '#/admin'; return null; } return u && kit.yearView(u, prof.shell); }],
   [/^\/admin\/equipe$/, (m, q) => { const u = guard('admin'); return u && adm.equipeView(u, q); }],
   [/^\/admin\/message$/, () => { const u = guard('admin'); return u && adm.messageView(u); }],
   [/^\/admin$/, () => { const u = guard('admin'); return u && adm.adminView(u); }],
@@ -62,12 +64,9 @@ const R = [
   [/^\/prof\/objectifs$/, (m, q) => { const u = guard('prof'); return u && prof.objectifs(u, q); }],
 ];
 
-function demoBar() {
-  return d.D().demo ? `<div class="demo" role="note">${ic('alert', 14)}<span>Démo · les données restent sur cet appareil</span>${mosq.publicOnly() ? '' : '<a href="#/login">Comptes de test</a>'}</div>` : '';
-}
 let lastPath = null;
 // Sur l'adresse publique (quand un domaine d'équipe est configuré), aucune page de l'équipe n'est servie : on renvoie vers le domaine d'équipe.
-const TEAM = /^\/(login|mdp|prof|admin|compta)/;
+const TEAM = /^\/(login|mdp|prof|admin|compta|installation)/;
 function render(keep) {
   const raw = (location.hash || '#/').slice(1);
   if (mosq.publicOnly() && TEAM.test(raw.split('?')[0])) { location.href = mosq.teamUrl(); return; }
@@ -83,7 +82,7 @@ function render(keep) {
   const samePage = keep === true || path === lastPath;
   const y = window.scrollY;
   document.body.classList.toggle('q', TEAM.test(path));
-  app.innerHTML = demoBar() + html;
+  app.innerHTML = html;
   if (samePage) window.scrollTo(0, y); else window.scrollTo(0, 0);
   lastPath = path;
   hydrateAudio(app);
@@ -139,9 +138,9 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal
 (async function start() {
   startAutoTranslate();
   await mosq.loadConfig();
-  // Démo : si les données de démonstration de cet appareil datent d'une ancienne version, on les recharge
-  // (seulement en mode démo : de vraies données ne sont jamais effacées).
-  if (!d.load() || !d.D().users || (d.D().demo && d.D().seedV !== SEED_VERSION)) { d.logout(); await seed(); }
+  // Aucune donnée (première installation ou après la réinitialisation annuelle) : base vide → écran Installation.
+  // Les anciennes données de démonstration sont effacées.
+  if (!d.load() || !d.D().users || d.D().demo) { d.logout(); kit.setEmpty(); }
   d.load();
   await d.purgeExpired();
   render();

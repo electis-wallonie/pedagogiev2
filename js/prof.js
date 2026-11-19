@@ -661,7 +661,7 @@ export function reglages(u) {
   <h2 class="sec-t">Outils</h2>
   ${menu([['#/prof/annuaire', 'users', 'Annuaire de l’équipe'], ['#/prof/import', 'sheet', 'Importer des élèves (Excel)'], ['#/prof/objectifs', 'star', 'Objectifs Langue &amp; Religion'], ['#/prof/classes', 'grid', 'Mes classes']])}
   <h2 class="sec-t">Compte</h2>
-  ${menu([['', 'globe', 'Langue : français / العربية', 'lang'], ['#/mdp', 'key', 'Changer mon mot de passe'], ['', 'dl', 'Exporter mes données (fichier)', 'export'], ...(d.D().demo ? [['', 'refresh', 'Réinitialiser la démo', 'reset-demo']] : [])])}
+  ${menu([['', 'globe', 'Langue : français / العربية', 'lang'], ['#/mdp', 'key', 'Changer mon mot de passe'], ['', 'dl', 'Exporter mes données (fichier)', 'export'], ...(d.isSuper(u) ? [['#/admin/annee', 'refresh', 'Nouvelle année scolaire (réinitialiser)']] : [])])}
   <button class="btn2 full" data-act="logout">${ic('out', 20)}Se déconnecter</button></div>`);
 }
 ACT.export = () => {
@@ -671,10 +671,6 @@ ACT.export = () => {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
   a.download = `suivi-export-${todayISO()}.json`; a.click();
-};
-ACT['reset-demo'] = async () => {
-  if (!ask('Effacer toutes les données de cet appareil et recharger la démo ?')) return;
-  await seed(); d.logout(); location.hash = '#/'; location.reload();
 };
 
 export function objectifs(u, q) {

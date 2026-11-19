@@ -1,4 +1,4 @@
-// Couche de données — mode démo : tout est stocké sur cet appareil
+// Couche de données : tout est stocké sur cet appareil
 // (localStorage pour les données, IndexedDB pour les messages vocaux).
 // Toutes les lectures/écritures passent par ce fichier : c'est le seul à
 // remplacer pour brancher plus tard un vrai serveur (ex. Supabase).
@@ -414,5 +414,6 @@ export function financeSummary() {
   const other = incomeTotal();
   const dep = financeMonths().reduce((t, m) => t + monthExpenses(m).total, 0);
   const rec = c.real + other;
-  return { c, other, rec, dep, solde: rec - dep };
+  const opening = +db.finance.opening || 0;
+  return { c, other, rec, dep, opening, solde: opening + rec - dep };
 }

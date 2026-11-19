@@ -58,7 +58,7 @@ FORMS.demande = async (f, fd) => {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email)) { toast('Indiquez une adresse e-mail valide'); return; }
   const item = { id: d.uid(), at: new Date().toISOString(), status: 'new', ...v };
   // En ligne (Cloudflare) : la demande part vers le serveur de la mosquée (mosquee.json → "api").
-  // En démo : elle est enregistrée sur cet appareil, comme le reste des données.
+  // Elle est enregistrée avec le reste des données de la mosquée.
   const api = (config().api || '').replace(/\/$/, '');
   if (api) {
     try { const r = await fetch(api + '/demandes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(item) }); if (!r.ok) throw new Error(r.status); }

@@ -39,7 +39,8 @@ export async function loadConfig() {
   if (CFG && CFG.couleurTheme) document.querySelector('meta[name=theme-color]')?.setAttribute('content', CFG.couleurTheme);
   return CFG;
 }
-export const config = () => CFG || {};
+// configuration : mosquee.json (déploiement) complété par le fichier de la mosquée importé (nom, cours publics…)
+export const config = () => { const m = (d.D() && d.D().mosque) || {}; return { ...(CFG || {}), ...(m.cours && m.cours.length ? { cours: m.cours } : {}) }; };
 export async function loadMawaqit(force = false) {
   if ((MW || MW_LOADING) && !force) return MW;
   MW_LOADING = true;

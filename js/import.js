@@ -33,34 +33,41 @@ async function unzip(buf) {
 }
 const xml = (t) => new DOMParser().parseFromString(t, 'application/xml');
 function colIdx(ref) { let n = 0; for (const ch of ref.replace(/\d+/g, '')) n = n * 26 + ch.charCodeAt(0) - 64; return n - 1; }
-async function readXlsx(buf) {
+// toutes les feuilles d'un classeur : [{ name, rows }]
+export async function readXlsxSheets(buf) {
   const get = await unzip(buf);
   const wb = xml(await get('xl/workbook.xml'));
-  const first = wb.getElementsByTagName('sheet')[0];
-  const rid = first.getAttribute('r:id') || first.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id');
   const rels = xml(await get('xl/_rels/workbook.xml.rels'));
-  let target = 'worksheets/sheet1.xml';
-  for (const r of rels.getElementsByTagName('Relationship')) if (r.getAttribute('Id') === rid) target = r.getAttribute('Target');
-  target = target.replace(/^\/?xl\//, '').replace(/^\//, '');
   const ssT = await get('xl/sharedStrings.xml');
   const ss = ssT ? [...xml(ssT).getElementsByTagName('si')].map((si) => [...si.getElementsByTagName('t')].map((t) => t.textContent).join('')) : [];
-  const sh = xml(await get('xl/' + target));
-  const rows = [];
-  for (const r of sh.getElementsByTagName('row')) {
-    const row = [];
-    for (const c of r.getElementsByTagName('c')) {
-      const t = c.getAttribute('t');
-      const vEl = c.getElementsByTagName('v')[0];
-      let val = vEl ? vEl.textContent : '';
-      if (t === 's') val = ss[+val] ?? '';
-      else if (t === 'inlineStr') val = [...c.getElementsByTagName('t')].map((x) => x.textContent).join('');
-      else if (t !== 'str' && t !== 'b' && val !== '' && !isNaN(val)) val = +val;
-      row[colIdx(c.getAttribute('r'))] = val;
+  const out = [];
+  for (const sheet of wb.getElementsByTagName('sheet')) {
+    const rid = sheet.getAttribute('r:id') || sheet.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id');
+    let target = 'worksheets/sheet1.xml';
+    for (const r of rels.getElementsByTagName('Relationship')) if (r.getAttribute('Id') === rid) target = r.getAttribute('Target');
+    target = target.replace(/^\/?xl\//, '').replace(/^\//, '');
+    const txt = await get('xl/' + target);
+    if (!txt) continue;
+    const sh = xml(txt);
+    const rows = [];
+    for (const r of sh.getElementsByTagName('row')) {
+      const row = [];
+      for (const c of r.getElementsByTagName('c')) {
+        const t = c.getAttribute('t');
+        const vEl = c.getElementsByTagName('v')[0];
+        let val = vEl ? vEl.textContent : '';
+        if (t === 's') val = ss[+val] ?? '';
+        else if (t === 'inlineStr') val = [...c.getElementsByTagName('t')].map((x) => x.textContent).join('');
+        else if (t !== 'str' && t !== 'b' && val !== '' && !isNaN(val)) val = +val;
+        row[colIdx(c.getAttribute('r'))] = val;
+      }
+      rows[(+r.getAttribute('r') || rows.length + 1) - 1] = row;
     }
-    rows.push(row);
+    out.push({ name: sheet.getAttribute('name'), rows: Array.from(rows, (x) => x || []) });
   }
-  return rows;
+  return out;
 }
+async function readXlsx(buf) { return ((await readXlsxSheets(buf))[0] || { rows: [] }).rows; }
 function readCsv(text) {
   text = text.replace(/^﻿/, '');
   const firstLine = text.split(/\r?\n/)[0] || '';
@@ -279,18 +286,26 @@ function zip(files) {
 }
 const xe = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const colName = (i) => (i >= 26 ? String.fromCharCode(64 + Math.floor(i / 26)) : '') + String.fromCharCode(65 + (i % 26));
-function xlsxBlob(rows, sheetName) {
-  const sheetRows = rows.map((r, ri) => `<row r="${ri + 1}">${r.map((v, ci) => v === '' || v == null ? '' : typeof v === 'number'
-    ? `<c r="${colName(ci)}${ri + 1}"${ri ? '' : ' s="1"'}><v>${v}</v></c>`
-    : `<c r="${colName(ci)}${ri + 1}" t="inlineStr"${ri ? '' : ' s="1"'}><is><t xml:space="preserve">${xe(v)}</t></is></c>`).join('')}</row>`).join('');
-  const widths = rows[0].map((h, i) => `<col min="${i + 1}" max="${i + 1}" width="${Math.max(12, ...rows.map((r) => String(r[i] ?? '').length + 2))}" customWidth="1"/>`).join('');
+function sheetXml(rows, opt = {}) {
+  const head = opt.head == null ? 0 : opt.head;
+  const sheetRows = rows.map((r, ri) => `<row r="${ri + 1}">${r.map((v, ci) => { const st = ri === head ? ' s="1"' : opt.note && ri < head ? ' s="2"' : ''; return v === '' || v == null ? '' : typeof v === 'number'
+    ? `<c r="${colName(ci)}${ri + 1}"${st}><v>${v}</v></c>`
+    : `<c r="${colName(ci)}${ri + 1}" t="inlineStr"${st}><is><t xml:space="preserve">${xe(v)}</t></is></c>`; }).join('')}</row>`).join('');
+  const ncol = Math.max(1, ...rows.map((r) => r.length));
+  const widths = Array.from({ length: ncol }, (_, i) => `<col min="${i + 1}" max="${i + 1}" width="${Math.min(opt.maxW || 60, Math.max(12, ...rows.slice(head).map((r) => String(r[i] ?? '').length + 2)))}" customWidth="1"/>`).join('');
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="${head + 1}" topLeftCell="A${head + 2}" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${widths}</cols><sheetData>${sheetRows}</sheetData></worksheet>`;
+}
+// classeur à plusieurs feuilles : sheets = [[nom, lignes, { head }]]
+export function xlsxBook(sheets) {
+  const n = sheets.length;
   return zip([
-    ['[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>'],
+    ['[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`],
     ['_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
-    ['xl/workbook.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${xe(sheetName)}" sheetId="1" r:id="rId1"/></sheets></workbook>`],
-    ['xl/_rels/workbook.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'],
-    ['xl/styles.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf/></cellStyleXfs><cellXfs count="2"><xf/><xf fontId="1" applyFont="1"/></cellXfs></styleSheet>'],
-    ['xl/worksheets/sheet1.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${widths}</cols><sheetData>${sheetRows}</sheetData></worksheet>`],
+    ['xl/workbook.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheets.map(([nm], i) => `<sheet name="${xe(nm.slice(0, 31))}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('')}</sheets></workbook>`],
+    ['xl/_rels/workbook.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('')}<Relationship Id="rId${n + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
+    ['xl/styles.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="3"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font><font><i/><sz val="10"/><color rgb="FF616161"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF050505"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf/></cellStyleXfs><cellXfs count="3"><xf/><xf fontId="1" fillId="2" applyFont="1" applyFill="1"/><xf fontId="2" applyFont="1"><alignment wrapText="1" vertical="top"/></xf></cellXfs></styleSheet>'],
+    ...sheets.map(([, rows, opt], i) => [`xl/worksheets/sheet${i + 1}.xml`, sheetXml(rows, opt || {})]),
   ]);
 }
+function xlsxBlob(rows, sheetName) { return xlsxBook([[sheetName, rows]]); }
 ACT['imp-codes'] = () => download(`codes-eleves-${todayISO()}.csv`, [csvLine(['Classe', 'Nom', 'Prénom(s)', 'Parent', 'Téléphone', 'E-mail', 'Code de suivi', 'Lien direct'])].concat(imp.done.map((s) => csvLine([d.cls(s.classId).name, s.nom, s.prenoms, s.parent, s.tel || '', s.email || '', s.code, `${location.origin}${location.pathname}#/f/${encodeURIComponent(s.code)}`]))).join('\r\n'));

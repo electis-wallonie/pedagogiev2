@@ -13,6 +13,7 @@ const go = (h) => { if (location.hash === h) window.dispatchEvent(new Event('has
 let loginErr = false;
 
 export function loginView() {
+  if (!d.D().users.length) { location.hash = '#/installation'; return null; }
   const err = loginErr; loginErr = false;
   if (!mawaqitData()) loadMawaqit();
   return `<div class="page narrow" style="padding-top:30px">
@@ -25,8 +26,6 @@ export function loginView() {
     <button class="btn full">${ic('lock', 20)}Se connecter</button>
     <p class="small b" style="font-weight:600;color:#DCE3FF">Pas de compte ? Les comptes sont créés par la direction.</p>
   </form>
-  ${d.D().demo ? `<div class="ck flat pad col" style="background:var(--hi);gap:8px"><span class="b">Comptes de démonstration</span>
-    ${[['Méga admin', 'admin', 'admin1234'], ['Admin', 'direction', 'admin1234'], ['Comptabilité', 'tresorier', 'compta1234'], ['Prof', 'rahman', 'prof1234']].map(([r, l, p]) => `<div class="row between small"><span><b>${r}</b> : ${l} / ${p}</span><button class="btn2 sm" data-act="demo-login" data-l="${l}" data-p="${p}">Utiliser</button></div>`).join('')}</div>` : ''}
   </div>`;
 }
 FORMS.login = async (f, fd) => {
@@ -35,7 +34,6 @@ FORMS.login = async (f, fd) => {
   d.login(u);
   go(u.mustChange ? '#/mdp' : d.homeOf(u));
 };
-ACT['demo-login'] = (el) => { document.getElementById('lg').value = el.dataset.l; document.getElementById('pw').value = el.dataset.p; };
 ACT.logout = () => { d.logout(); go('#/'); };
 
 export function pwView(u) {
@@ -109,7 +107,8 @@ export function adminView(u) {
     ${modCard('#/admin/public', 'moon', 'Mosquée &amp; espace public', 'Nom, horaires, contact, questions à l’imam', `${(d.D().contacts || []).length} destinataire(s) · ${(d.D().faq || []).length} réponse(s) publiée(s)`, 'Modifier')}
     ${modCard('#/admin/locaux', 'door', 'Locaux', 'Salles et emploi du temps', `${L.n} salle(s) · ${L.used} créneau(x) · ${L.conflicts ? L.conflicts + ' conflit(s)' : 'aucun conflit'}`, 'Voir les locaux')}
     ${modCard('#/compta', 'euro', 'Finances', 'Comptabilité de l’association', `Solde <span class="q-amt">${eur(fin.solde)}</span> · cotisations ${pct} %`, 'Ouvrir la compta')}
-  </div></div>`);
+  </div>
+  ${d.isSuper(u) ? `<a class="q-card q-lrow q-link" href="#/admin/annee" style="margin:0;padding:16px 22px"><span class="q-glyph">${ic('refresh', 16)}</span><span class="t"><b>Nouvelle année scolaire</b><span>Télécharger le fichier de la rentrée, puis réinitialiser l’application</span></span>${ic('chev', 18)}</a>` : ''}</div>`);
 }
 
 // ---------- équipe & comptes ----------
