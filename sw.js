@@ -1,7 +1,7 @@
 // Service worker : l'app reste utilisable hors connexion.
 // Stratégie « réseau d'abord » : la dernière version est toujours servie quand on est en ligne.
-const CACHE = 'suivi-v46';
-const SHELL = ['./', './index.html', './css/app.css', './css/q.css', './js/app.js', './js/data.js', './js/ui.js', './js/seed.js', './js/fiche.js', './js/public.js', './js/admin.js', './js/prof.js', './js/i18n.js', './js/i18n-plus.js', './js/annonces.js', './js/import.js', './js/gestion.js', './js/contact.js', './js/mosquee.js', './js/compta.js', './js/kit.js', './js/demandes.js', './css/styles/pastille.css', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
+const CACHE = 'suivi-v47';
+const SHELL = ['./', './index.html', './css/app.css', './css/q.css', './js/app.js', './js/data.js', './js/ui.js', './js/seed.js', './js/fiche.js', './js/public.js', './js/admin.js', './js/prof.js', './js/i18n.js', './js/i18n-plus.js', './js/i18n-ar3.js', './js/annonces.js', './js/import.js', './js/gestion.js', './js/contact.js', './js/mosquee.js', './js/compta.js', './js/kit.js', './js/demandes.js', './css/styles/pastille.css', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
