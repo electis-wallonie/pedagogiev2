@@ -68,7 +68,7 @@ export async function readXlsxSheets(buf) {
   return out;
 }
 async function readXlsx(buf) { return ((await readXlsxSheets(buf))[0] || { rows: [] }).rows; }
-function readCsv(text) {
+export function readCsv(text) {
   text = text.replace(/^﻿/, '');
   const firstLine = text.split(/\r?\n/)[0] || '';
   const sep = (firstLine.match(/;/g) || []).length >= (firstLine.match(/,/g) || []).length ? ';' : ',';

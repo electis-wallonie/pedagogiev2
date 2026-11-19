@@ -5,7 +5,7 @@
 //   On le relit / complète, puis on le réimporte après la réinitialisation.
 import * as d from './data.js';
 import { ACT, CHANGE, esc, ic, toast, todayISO, DAYS, ask } from './ui.js';
-import { xlsxBook, readXlsxSheets } from './import.js';
+import { xlsxBook, readXlsxSheets, readCsv } from './import.js';
 import { config } from './mosquee.js';
 
 // ---------- structure du fichier ----------
@@ -160,9 +160,20 @@ const hhmm = (v) => { if (v === '' || v == null) return ''; const n = +v; if (!i
 const num = (v) => { const x = parseFloat(String(v ?? '').replace(/\s/g, '').replace(',', '.')); return isNaN(x) ? null : x; };
 const yes = (v) => /^(oui|yes|o|y|x|1|vrai|true)$/i.test(String(v).trim());
 
+// version CSV (un seul fichier) : chaque feuille commence par une ligne « [Nom de la feuille] »
+function csvSheets(text) {
+  const out = []; let cur = null;
+  for (const r of readCsv(text)) {
+    const m = String(r[0] ?? '').trim().match(/^\[(.+)\]$/);
+    if (m && r.slice(1).every((x) => !String(x ?? '').trim())) { cur = { name: m[1].trim(), rows: [] }; out.push(cur); continue; }
+    if (cur) cur.rows.push(r);
+  }
+  return out;
+}
 export async function parseFile(file) {
   const buf = await file.arrayBuffer();
-  const sheets = await readXlsxSheets(buf);
+  const isCsv = /\.csv$/i.test(file.name) || /^\uFEFF?\s*\[/.test(new TextDecoder().decode(new Uint8Array(buf, 0, Math.min(16, buf.byteLength))));
+  const sheets = isCsv ? csvSheets(new TextDecoder().decode(buf)) : await readXlsxSheets(buf);
   const by = (n) => (sheets.find((s) => norm(s.name) === norm(n)) || {}).rows;
   const err = [], warn = [];
   const E = (sh, line, msg) => err.push(`${sh}${line ? ` · ligne ${line}` : ''} : ${msg}`);
@@ -305,8 +316,8 @@ export function installView() {
     body = `${card(1, 'Téléchargez le fichier de la mosquée', `<p class="small mut" style="margin:0">Un seul fichier Excel avec tout ce qu’il faut : la mosquée, l’équipe (direction, imam, professeurs, trésorier), les locaux, les classes et leurs horaires, les élèves, les familles, les contacts, les réponses de l’imam… Chaque feuille explique quoi mettre.</p>
       <div class="row wrap" style="gap:8px"><button class="btn sm" data-act="kit-template">${ic('dl', 16)}Fichier vide à remplir</button><button class="btn2 sm" data-act="kit-example">${ic('dl', 16)}Exemple déjà rempli</button></div>`)}
     ${card(2, 'Importez le fichier rempli', `<p class="small mut" style="margin:0">À l’installation comme à chaque rentrée, c’est le même fichier. L’application vérifie tout avant d’installer.</p>
-      <label class="q-drop" for="kitfile">${ic('upload', 22)}<span class="b">${st.name ? esc(st.name) : 'Choisir le fichier (.xlsx)'}</span><span class="small mut">${st.busy ? 'Lecture…' : 'Fichier Excel téléchargé à l’étape 1, puis rempli'}</span></label>
-      <input id="kitfile" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="sr" data-change="kit-file">
+      <label class="q-drop" for="kitfile">${ic('upload', 22)}<span class="b">${st.name ? esc(st.name) : 'Choisir le fichier (Excel .xlsx ou .csv)'}</span><span class="small mut">${st.busy ? 'Lecture…' : 'Fichier Excel téléchargé à l’étape 1, puis rempli'}</span></label>
+      <input id="kitfile" type="file" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="sr" data-change="kit-file">
       ${P ? `${summary(P)}
       ${P.err.length ? `<div class="err col" style="gap:4px;align-items:flex-start"><b>${P.err.length} point(s) à corriger dans le fichier avant d’installer :</b>${P.err.slice(0, 40).map((e) => `<span>• ${esc(e)}</span>`).join('')}${P.err.length > 40 ? `<span>… et ${P.err.length - 40} autre(s)</span>` : ''}</div>` : ''}
       ${P.warn.length ? `<div class="q-note col" style="gap:2px;align-items:flex-start">${P.warn.map((w) => `<span class="small">${esc(w)}</span>`).join('')}</div>` : ''}
@@ -321,7 +332,7 @@ ACT['kit-example'] = async () => { await downloadExample(); };
 CHANGE['kit-file'] = async (el) => {
   const f = el.files && el.files[0]; if (!f) return;
   st = { parsed: null, creds: null, busy: true, name: f.name }; rerender();
-  try { st.parsed = await parseFile(f); } catch (e) { st.parsed = { mosque: {}, T: { equipe: [], locaux: [], classes: [], horaires: [], eleves: [], familles: [], demandes: [], contact: [], faq: [], charges: [] }, err: ['Fichier illisible : utilisez le fichier Excel (.xlsx) de l’étape 1.'], warn: [] }; }
+  try { st.parsed = await parseFile(f); } catch (e) { st.parsed = { mosque: {}, T: { equipe: [], locaux: [], classes: [], horaires: [], eleves: [], familles: [], demandes: [], contact: [], faq: [], charges: [] }, err: ['Fichier illisible : utilisez le fichier Excel (.xlsx) de l’étape 1 ou sa version .csv.'], warn: [] }; }
   st.busy = false; rerender();
 };
 ACT['kit-install'] = async () => {
