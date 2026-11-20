@@ -12,11 +12,11 @@ import { config } from './mosquee.js';
 const MOSQ = [
   // [clé, libellé, obligatoire, explication]
   ['nom', 'Nom de la mosquée', true, 'Tel qu’il doit apparaître sur le site.'],
-  ['adresse', 'Adresse (rue et numéro)', true, ''],
-  ['cp', 'Code postal', true, ''],
-  ['ville', 'Ville', true, ''],
-  ['pays', 'Pays', true, 'Belgique, France…'],
-  ['tel', 'Téléphone de la mosquée', true, 'Avec l’indicatif : +32…'],
+  ['adresse', 'Adresse (rue et numéro)', false, ''],
+  ['cp', 'Code postal', false, ''],
+  ['ville', 'Ville', false, ''],
+  ['pays', 'Pays', false, 'Belgique, France…'],
+  ['tel', 'Téléphone de la mosquée', false, 'Facultatif. Avec l’indicatif : +32…'],
   ['email', 'E-mail de la direction', true, 'Reçoit les messages de la page Contact.'],
   ['imamEmail', 'E-mail qui reçoit les questions à l’imam', true, ''],
   ['mawaqit', 'Lien de la page Mawaqit', true, 'ex. https://mawaqit.net/fr/ma-mosquee — les horaires de prière se mettent à jour tout seuls.'],
