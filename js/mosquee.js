@@ -6,6 +6,7 @@ import { isAr, locale } from './i18n.js';
 import { shell } from './prof.js';
 
 const rerender = () => window.dispatchEvent(new Event('hashchange'));
+const minAge = () => { const v = +((d.D().mosque || {}).ageMin); return v > 0 ? v : 6; };
 const okMail = (m) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(m || '').trim());
 const logo = (s = 40) => brandLogo(s);
 const langBtn = () => `<button class="btn2 sm" data-act="lang" lang="${isAr ? 'fr' : 'ar'}" aria-label="${isAr ? 'Français' : 'العربية'}">${ic('globe', 18)}<span class="hide-sm" data-notr dir="auto">${isAr ? 'Français' : 'العربية'}</span></button>`;
@@ -40,7 +41,7 @@ export async function loadConfig() {
   return CFG;
 }
 // configuration : mosquee.json (déploiement) complété par le fichier de la mosquée importé (nom, cours publics…)
-export const config = () => { const m = (d.D() && d.D().mosque) || {}; return { ...(CFG || {}), ...(m.cours && m.cours.length ? { cours: m.cours } : {}) }; };
+export const config = () => { const m = (d.D() && d.D().mosque) || {}; return { ...(CFG || {}), ...(m.cours && (m.cours.length || m.coursEdited) ? { cours: m.cours } : {}) }; };
 export async function loadMawaqit(force = false) {
   if ((MW || MW_LOADING) && !force) return MW;
   MW_LOADING = true;
@@ -211,10 +212,22 @@ export function adminPublic(u) {
   const C = d.D().contacts || [];
   const faq = (d.D().faq || []).slice().sort((a, b) => b.at.localeCompare(a.at));
   const sec = (id, title, right, inner) => `<section class="q-card q-pad" id="${id}"><div class="row between" style="padding:18px 0 6px;gap:10px"><span class="b" style="font-size:16px">${title}</span>${right}</div>${inner}</section>`;
+  const cards = (config().cours || []).filter((c) => c && c.public);
+  const nrm = (x) => String(x || '').trim().toLowerCase();
+  const sw = (on, act, attrs, label, txt) => `<button type="button" class="q-tgb" data-act="${act}" ${attrs} role="switch" aria-checked="${on}" aria-label="${esc(label)}"><span class="q-sw ${on ? 'on' : ''}"><i></i></span><span>${txt || (on ? 'Affiché' : 'Masqué')}</span></button>`;
+  const DAYS = ['Dim.', 'Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.'];
+  const clRow = (c, parentOff) => { const lo = +c.ageMin > 0 ? +c.ageMin : 0, hi = +c.ageMax > 0 ? +c.ageMax : 0; const ages = lo && hi ? `${lo}–${hi} ans` : lo ? `dès ${lo} ans` : hi ? `jusqu’à ${hi} ans` : 'tous âges'; const sl = d.slotsOf(c).map((x) => `${DAYS[+x.day]} ${x.time}`).join(', ');
+    return `<div class="q-lrow q-pcrow ${c.hidden || parentOff ? 'q-off' : ''}"><span class="t"><b data-notr dir="auto">${esc(c.name)}</b><span>${[sl, ages, `Niveau ${c.level || 1}`].filter(Boolean).join(' · ')}</span></span><span class="q-pa"><button class="ib sm" data-act="class-edit" data-id="${c.id}" aria-label="Modifier ${esc(c.name)}">${ic('edit', 16)}</button>${sw(!c.hidden, 'cl-vis', `data-id="${c.id}"`, `Afficher ${c.name}`, parentOff && !c.hidden ? 'Masquée avec le cours' : '')}</span></div>`; };
+  const others = d.D().classes.filter((c) => !cards.some((k) => nrm(k.public) === nrm(c.public)));
+  const coursSec = `<form class="row" data-form="agemin" style="align-items:flex-end;gap:10px;padding:4px 0 14px;flex-wrap:wrap"><div class="field" style="flex:0 1 220px"><label class="lbl" for="amin">Âge minimum pour s’inscrire</label><input id="amin" name="ageMin" type="number" min="3" max="30" inputmode="numeric" class="inp" value="${minAge()}"></div><button class="btn2 sm">Enregistrer</button><span class="hint" style="flex-basis:100%;margin:0">En dessous, le formulaire d’inscription refuse la date de naissance. L’âge de chaque classe se règle dans la classe (Âge minimum / maximum).</span></form>
+    ${cards.map((k, i) => { const cl = d.D().classes.filter((c) => nrm(c.public) === nrm(k.public)); return `<div class="q-pc"><div class="q-lrow q-pcrow ${k.hidden ? 'q-off' : ''}" style="border:0;padding:0"><span class="q-glyph">${ic(k.icone || ['users', 'book', 'hands'][i % 3], 16)}</span><span class="t"><b data-notr dir="auto">${esc(k.public)}</b><span>${[k.detail, k.horaires].filter(Boolean).map(esc).join(' · ') || 'Aucun détail'} · ${cl.length} classe(s)</span></span><span class="q-pa"><button class="ib sm" data-act="pc-edit" data-i="${i}" aria-label="Modifier ${esc(k.public)}">${ic('edit', 16)}</button><button class="ib sm" data-act="pc-del" data-i="${i}" aria-label="Supprimer ${esc(k.public)}">${ic('trash', 16)}</button>${sw(!k.hidden, 'pc-vis', `data-i="${i}"`, `Afficher ${k.public}`)}</span></div>
+      ${cl.length ? `<div class="q-pc-cls">${cl.map((c) => clRow(c, k.hidden)).join('')}</div>` : '<p class="small mut" style="margin:6px 0 0 44px">Aucune classe : choisissez ce public dans une classe (Modifier la classe → Public).</p>'}</div>`; }).join('') || '<p class="small mut" style="padding:10px 0">Aucun cours affiché.</p>'}
+    ${others.length ? `<div class="q-pc"><span class="b small">Classes sans cours public</span><span class="small mut" style="display:block">Elles sont proposées dans l’inscription, sans être classées sous un cours.</span><div class="q-pc-cls">${others.map((c) => clRow(c, false)).join('')}</div></div>` : ''}<div style="height:8px"></div>`;
   return shell(u, 4, `<div class="page">
   <div class="qd-h"><a href="#/admin" class="ib" aria-label="Retour">${ic('back', 20)}</a><div class="grow"><h1>Mosquée &amp; espace public</h1><div class="qd-sub">Ce que voient les fidèles sans compte : Prières, Questions, Cours, Contact</div></div><a class="btn2 sm" href="#/" target="_blank">${ic('eye', 16)}Voir le site</a></div>
-  <div class="q-split"><nav class="q-subnav" aria-label="Rubriques">${[['mp-m', 'La mosquée'], ['mp-c', 'Page Contact'], ['mp-i', 'Questions à l’imam']].map(([k, l], i) => `<button type="button" class="${i ? '' : 'on'}" data-act="mp-go" data-id="${k}">${l}</button>`).join('')}</nav>
+  <div class="q-split"><nav class="q-subnav" aria-label="Rubriques">${[['mp-k', 'Cours affichés'], ['mp-m', 'La mosquée'], ['mp-c', 'Page Contact'], ['mp-i', 'Questions à l’imam']].map(([k, l], i) => `<button type="button" class="${i ? '' : 'on'}" data-act="mp-go" data-id="${k}">${l}</button>`).join('')}</nav>
   <div class="q-main col" style="gap:16px">
+  ${sec('mp-k', 'Cours affichés sur le site', `<button class="btn2 sm" data-act="pc-edit">${ic('plus', 16)}Ajouter un cours</button>`, `<p class="small mut" style="margin:0 0 8px">Choisissez ce que le public voit dans l’onglet Cours et dans le formulaire d’inscription. Un cours masqué cache aussi toutes ses classes.</p>${coursSec}`)}
   ${sec('mp-m', 'La mosquée', '', `<form class="col" data-form="mosque" style="gap:14px;padding:6px 0 20px">
     <div class="field"><label class="lbl" for="mn">Nom affiché</label><input id="mn" name="name" class="inp" value="${esc(m.name || '')}" placeholder="${esc(mosqueName())}"><span class="hint">Laissez vide pour reprendre le nom de la configuration ou de Mawaqit.</span></div>
     <div class="q-note">${ic('clock', 18)}<span class="col grow" style="gap:2px"><span class="b small">Horaires de prière reliés à Mawaqit</span><span class="small mut">${MW ? `${esc(MW.label || MW.name || '')} · mise à jour automatique chaque nuit` : 'Synchronisation en attente'}</span><span class="small mut">Le lien Mawaqit est réglé une fois pour toutes par l’équipe technique (fichier mosquee.json).</span></span></div>
@@ -226,6 +239,30 @@ export function adminPublic(u) {
     ${faq.map((f) => `<div class="q-lrow" style="align-items:flex-start"><span class="q-glyph">${ic('chat', 16)}</span><span class="t"><b data-notr dir="auto">${esc(f.q)}</b><span>${esc(f.theme)}</span></span><span class="col" style="gap:8px;align-items:flex-end"><span class="row" style="gap:6px"><button class="ib sm" data-act="faq-edit" data-id="${f.id}" aria-label="Modifier">${ic('edit', 16)}</button><button class="ib sm" data-act="faq-del" data-id="${f.id}" aria-label="Supprimer">${ic('trash', 16)}</button></span>${f.freq ? '<span class="q-st ok">Fréquente</span>' : ''}</span></div>`).join('') || '<p class="small mut" style="padding:10px 0">Aucune réponse publiée.</p>'}<div style="height:8px"></div>`)}
   </div></div></div>`);
 }
+// ---------- cours publics : la direction choisit ce qui s'affiche ----------
+const pcList = () => { const m = d.D().mosque || (d.D().mosque = {}); if (!m.coursEdited && (!m.cours || !m.cours.length)) m.cours = ((CFG && CFG.cours) || []).map((x) => ({ ...x })); m.coursEdited = true; return m.cours; };
+ACT['pc-vis'] = (el) => { const k = pcList()[+el.dataset.i]; if (!k) return; k.hidden = !k.hidden; d.save(); toast(k.hidden ? `${k.public} : masqué sur le site` : `${k.public} : affiché sur le site`); rerender(); };
+ACT['cl-vis'] = (el) => { const c = d.cls(el.dataset.id); if (!c) return; c.hidden = !c.hidden; d.save(); toast(c.hidden ? `${c.name} : masquée sur le site` : `${c.name} : affichée sur le site`); rerender(); };
+ACT['pc-edit'] = (el) => {
+  const i = el.dataset.i != null && el.dataset.i !== '' ? +el.dataset.i : -1;
+  const k = i >= 0 ? pcList()[i] : { public: '', detail: '', horaires: '' };
+  openModal(() => `<div class="row between"><h2>${i >= 0 ? 'Modifier le cours' : 'Nouveau cours'}</h2><button class="ib" data-act="close-modal" aria-label="Fermer">${ic('x', 20)}</button></div>
+  <form class="col" data-form="pc" data-i="${i}"><div class="field"><label class="lbl" for="pcp">Public</label><input id="pcp" name="public" class="inp" required maxlength="40" value="${esc(k.public)}" placeholder="ex. Enfants, Adultes, Sœurs"></div>
+  <div class="field"><label class="lbl" for="pcd">Détail <span class="mut">(facultatif)</span></label><input id="pcd" name="detail" class="inp" maxlength="80" value="${esc(k.detail || '')}" placeholder="ex. 6–14 ans · Coran, arabe"></div>
+  <div class="field"><label class="lbl" for="pch">Horaires <span class="mut">(facultatif)</span></label><input id="pch" name="horaires" class="inp" maxlength="60" value="${esc(k.horaires || '')}" placeholder="ex. Mer. 14h–17h"></div>
+  <button class="btn full">Enregistrer</button></form>`);
+};
+FORMS.pc = (f, fd) => {
+  const L = pcList(), i = +f.dataset.i;
+  const v = { public: (fd.get('public') || '').trim(), detail: (fd.get('detail') || '').trim(), horaires: (fd.get('horaires') || '').trim() };
+  if (!v.public) return;
+  if (L.some((x, j) => j !== i && x.public.trim().toLowerCase() === v.public.toLowerCase())) { toast('Ce cours existe déjà'); return; }
+  if (i >= 0) { const old = L[i].public; for (const c of d.D().classes) if ((c.public || '').trim() === old.trim()) c.public = v.public; Object.assign(L[i], v); }
+  else L.push(v);
+  d.save(); closeModal(); toast('Enregistré'); rerender();
+};
+ACT['pc-del'] = async (el) => { const L = pcList(), k = L[+el.dataset.i]; if (!k || !(await ask(`Supprimer le cours « ${k.public} » du site ?\n\nSes classes restent, mais ne sont plus classées sous ce cours.`))) return; L.splice(+el.dataset.i, 1); d.save(); rerender(); };
+FORMS.agemin = (f, fd) => { const v = parseInt(fd.get('ageMin'), 10); if (!(v >= 3 && v <= 30)) { toast('Âge invalide'); return; } d.D().mosque.ageMin = v; d.save(); toast('Enregistré'); rerender(); };
 ACT['mp-go'] = (el) => { const t = document.getElementById(el.dataset.id); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); el.parentNode.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b === el)); };
 FORMS.mosque = (f, fd) => { d.D().mosque.name = (fd.get('name') || '').trim(); d.save(); toast('Enregistré'); rerender(); };
 FORMS['imam-mail'] = (f, fd) => { const e = (fd.get('email') || '').trim().toLowerCase(); if (e && !okMail(e)) { toast('Adresse e-mail invalide'); return; } d.D().mosque.imamEmail = e; d.save(); toast('Enregistré'); rerender(); };
@@ -235,14 +272,14 @@ ACT['ct-edit'] = (el) => {
   <form class="col" data-form="ct" data-id="${c.id}"><div class="field"><label class="lbl" for="cl">Nom affiché au public</label><input id="cl" name="label" class="inp" required value="${esc(c.label)}" placeholder="ex. L’imam, Le trésorier, Le secrétariat…"></div>
   <div class="field"><label class="lbl" for="cm">E-mail (jamais affiché)</label><input id="cm" name="email" type="email" class="inp" required value="${esc(c.email)}"></div><button class="btn full">Enregistrer</button></form>`);
 };
-FORMS.ct = (f, fd) => {
+FORMS.ct = async (f, fd) => {
   const v = { label: (fd.get('label') || '').trim(), email: (fd.get('email') || '').trim().toLowerCase() };
   if (!okMail(v.email)) { toast('Adresse e-mail invalide'); return; }
   const c = d.D().contacts.find((x) => x.id === f.dataset.id);
   if (c) Object.assign(c, v); else d.D().contacts.push({ id: d.uid(), ...v });
   d.save(); closeModal(); rerender();
 };
-ACT['ct-del'] = (el) => { if (!ask('Supprimer ce destinataire ?')) return; d.D().contacts = d.D().contacts.filter((x) => x.id !== el.dataset.id); d.save(); rerender(); };
+ACT['ct-del'] = async (el) => { if (!(await ask('Supprimer ce destinataire ?'))) return; d.D().contacts = d.D().contacts.filter((x) => x.id !== el.dataset.id); d.save(); rerender(); };
 ACT['faq-edit'] = (el) => {
   const f = d.D().faq.find((x) => x.id === el.dataset.id) || { id: '', theme: THEMES[0], q: '', r: '' };
   openModal(() => `<div class="row between"><h2>${f.id ? 'Modifier la réponse' : 'Publier une réponse'}</h2><button class="ib" data-act="close-modal" aria-label="Fermer">${ic('x', 20)}</button></div>
@@ -251,10 +288,10 @@ ACT['faq-edit'] = (el) => {
   <div class="field"><label class="lbl" for="fr">Réponse de l’imam</label><textarea id="fr" name="r" class="inp" rows="7" required>${esc(f.r)}</textarea></div>
   <label class="row" style="gap:10px;font-weight:800"><input type="checkbox" name="freq" ${f.freq ? 'checked' : ''} style="width:22px;height:22px"> Afficher dans « Fréquentes »</label><button class="btn full">Publier</button></form>`);
 };
-FORMS.faq = (f, fd) => {
+FORMS.faq = async (f, fd) => {
   const v = { theme: fd.get('theme'), q: (fd.get('q') || '').trim(), r: (fd.get('r') || '').trim(), freq: !!fd.get('freq') };
   const x = d.D().faq.find((y) => y.id === f.dataset.id);
   if (x) Object.assign(x, v); else d.D().faq.push({ id: d.uid(), at: new Date().toISOString(), ...v });
   d.save(); closeModal(); toast('Réponse publiée'); rerender();
 };
-ACT['faq-del'] = (el) => { if (!ask('Supprimer cette réponse ?')) return; d.D().faq = d.D().faq.filter((x) => x.id !== el.dataset.id); d.save(); rerender(); };
+ACT['faq-del'] = async (el) => { if (!(await ask('Supprimer cette réponse ?'))) return; d.D().faq = d.D().faq.filter((x) => x.id !== el.dataset.id); d.save(); rerender(); };

@@ -176,12 +176,12 @@ export function locauxPdf(u) {
   ${!days.length ? '<p class="b">Aucune salle n’est encore utilisée : tous les créneaux sont libres.</p>' : ''}</div>`;
 }
 ACT.print = () => window.print();
-FORMS['loc-add'] = (f, fd) => { const name = (fd.get('name') || '').trim(); if (!name) return; d.D().locaux.push({ id: d.uid(), name }); d.save(); toast('Local ajouté'); rerender(); };
-ACT['loc-ren'] = (el) => { const l = d.local(el.dataset.id); const n = askText('Nouveau nom du local', l.name); if (n && n.trim()) { l.name = n.trim(); d.save(); rerender(); } };
-ACT['loc-del'] = (el) => {
+FORMS['loc-add'] = async (f, fd) => { const name = (fd.get('name') || '').trim(); if (!name) return; d.D().locaux.push({ id: d.uid(), name }); d.save(); toast('Local ajouté'); rerender(); };
+ACT['loc-ren'] = async (el) => { const l = d.local(el.dataset.id); const n = (await askText('Nouveau nom du local', l.name)); if (n && n.trim()) { l.name = n.trim(); d.save(); rerender(); } };
+ACT['loc-del'] = async (el) => {
   const l = d.local(el.dataset.id);
   const n = usage().filter((x) => x.s.localId === l.id).length;
-  if (!ask(`Supprimer ${l.name} ?${n ? `\n\n${n} créneau(x) de classe n’auront plus de local.` : ''}`)) return;
+  if (!(await ask(`Supprimer ${l.name} ?${n ? `\n\n${n} créneau(x) de classe n’auront plus de local.` : ''}`))) return;
   d.D().classes.forEach((c) => (c.slots || []).forEach((s) => { if (s.localId === l.id) delete s.localId; }));
   d.D().locaux = d.D().locaux.filter((x) => x.id !== l.id); d.save(); rerender();
 };
@@ -354,8 +354,8 @@ FORMS.fam = (f, fd) => {
   d.D().students.forEach((s) => { if (kids.has(s.id)) s.familyId = fam.id; else if (s.familyId === fam.id) delete s.familyId; });
   d.save(); closeModal(); rerender(); toast('Famille enregistrée');
 };
-ACT['fam-del'] = () => {
-  if (!ask(`Supprimer ${fm.name} ?`)) return;
+ACT['fam-del'] = async () => {
+  if (!(await ask(`Supprimer ${fm.name} ?`))) return;
   d.D().students.forEach((s) => { if (s.familyId === fm.id) delete s.familyId; });
   d.D().families = d.D().families.filter((x) => x.id !== fm.id);
   d.save(); closeModal(); rerender(); toast('Famille supprimée');
@@ -375,12 +375,12 @@ function catsModal(k) {
 ACT['cats-manage'] = (el) => { const k = el.dataset.k; openModal(() => catsModal(k)); };
 ACT['cats-done'] = () => { closeModal(); rerender(); };
 CHANGE['cat-ren'] = (el) => { const v = el.value.trim(); const c = catList(el.dataset.k).find((x) => x[0] === el.dataset.key); if (!c || !v || el.dataset.key === d.OTHER_CAT) return; c[1] = v; d.catsSave(); toast('Catégorie renommée'); };
-ACT['cat-del'] = (el) => {
+ACT['cat-del'] = async (el) => {
   const k = el.dataset.k, key = el.dataset.key; if (key === d.OTHER_CAT) return;
   const L = catList(k), c = L.find((x) => x[0] === key); if (!c) return;
   const entries = k === 'inc' ? d.D().finance.incomes : d.D().finance.expenses;
   const n = entries.filter((x) => x.cat === key).length;
-  if (!ask(`Supprimer la catégorie « ${c[1]} » ?${n ? `\n\nSes ${n} opération(s) passent dans « ${k === 'inc' ? 'Autres recettes' : 'Autres dépenses'} ».` : ''}`)) return;
+  if (!(await ask(`Supprimer la catégorie « ${c[1]} » ?${n ? `\n\nSes ${n} opération(s) passent dans « ${k === 'inc' ? 'Autres recettes' : 'Autres dépenses'} ».` : ''}`))) return;
   for (const x of entries) if (x.cat === key) x.cat = d.OTHER_CAT;
   L.splice(L.indexOf(c), 1); d.catsSave(); toast('Catégorie supprimée'); openModal(() => catsModal(k));
 };
@@ -452,13 +452,13 @@ export function entryList(items, cats, del) {
   ${items.filter((x) => (cats.some((c) => c[0] === x.cat) ? x.cat : 'autre') === k).sort((a, b) => b.date.localeCompare(a.date)).map((x) => `<div class="li" style="padding-left:12px"><div class="grow"><div class="small b">${esc(x.label || l)}</div><div class="tiny mut b">${x.monthly ? `chaque mois depuis ${fdate(x.date, { month: 'long', year: 'numeric' })}` : fdate(x.date, { day: 'numeric', month: 'long' })}</div></div><span class="small b">${eur(x.amount)}</span><button class="ib sm" data-act="${del}" data-id="${x.id}" aria-label="Supprimer">${ic('trash', 16)}</button></div>`).join('')}</div>`).join('');
 }
 const byCat = (items, cats) => d.byCat(items, cats);
-FORMS['inc-add'] = (f, fd) => {
+FORMS['inc-add'] = async (f, fd) => {
   const amount = num(fd.get('amount'));
   if (!amount) { toast('Indiquez un montant'); return; }
   d.D().finance.incomes.push({ id: d.uid(), cat: fd.get('cat'), label: (fd.get('label') || '').trim(), amount, date: fd.get('date'), monthly: !!fd.get('monthly') });
   d.save(); toast('Recette ajoutée'); closeModal(); rerender();
 };
-ACT['inc-del'] = (el) => { if (!ask('Supprimer cette recette ?')) return; d.D().finance.incomes = d.D().finance.incomes.filter((x) => x.id !== el.dataset.id); d.save(); rerender(); };
+ACT['inc-del'] = async (el) => { if (!(await ask('Supprimer cette recette ?'))) return; d.D().finance.incomes = d.D().finance.incomes.filter((x) => x.id !== el.dataset.id); d.save(); rerender(); };
 export function teacherRows(m) {
   const fin = d.D().finance;
   const ov = fin.overrides[m] || {};
@@ -492,11 +492,11 @@ CHANGE['fin-ov'] = (el) => {
   if (el.value.trim() === '') delete o[el.dataset.id]; else o[el.dataset.id] = num(el.value);
   d.save(); softRender();
 };
-FORMS['exp-add'] = (f, fd) => {
+FORMS['exp-add'] = async (f, fd) => {
   const amount = num(fd.get('amount'));
   if (!amount) { toast('Indiquez un montant'); return; }
   d.D().finance.expenses.push({ id: d.uid(), cat: fd.get('cat'), label: (fd.get('label') || '').trim(), amount, date: fd.get('date'), monthly: !!fd.get('monthly') });
   d.save(); toast('Dépense ajoutée');
   closeModal(); rerender();
 };
-ACT['exp-del'] = (el) => { if (!ask('Supprimer cette dépense ?')) return; d.D().finance.expenses = d.D().finance.expenses.filter((x) => x.id !== el.dataset.id); d.save(); rerender(); };
+ACT['exp-del'] = async (el) => { if (!(await ask('Supprimer cette dépense ?'))) return; d.D().finance.expenses = d.D().finance.expenses.filter((x) => x.id !== el.dataset.id); d.save(); rerender(); };

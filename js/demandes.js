@@ -37,12 +37,30 @@ export function gauge(c, y) {
 // ---------- Public : le formulaire en 4 étapes ----------
 const STEPS = ['Élève(s)', 'Classe', 'Coordonnées', 'Récapitulatif'];
 // publics des classes (Enfants, Sœurs, Adultes…) : le parent choisit d'abord pour qui sont les cours
-const publics = () => { const P = [...new Set(d.D().classes.map((c) => (c.public || '').trim()).filter(Boolean))]; return P; };
-const pubLabel = (p) => (/^adultes?$/i.test(p) ? 'Adultes (hommes)' : p);
+// Ce que la direction affiche sur le site (Direction → Mosquée & espace public → Cours affichés)
+const normP = (x) => String(x || '').trim().toLowerCase();
+export const cardHidden = (pub) => (config().cours || []).some((c) => normP(c.public) === normP(pub) && c.hidden);
+export const shownClass = (c) => !c.hidden && !((c.public || '').trim() && cardHidden(c.public));
+export const shownClasses = () => d.D().classes.filter(shownClass);
+// Âge : minimum légal de la structure (6 ans par défaut) + âge min/max de chaque classe
+export const minAge = () => { const v = +((d.D().mosque || {}).ageMin); return v > 0 ? v : 6; };
+export function ageAt(naissance, when) {
+  if (!naissance) return null;
+  const b = new Date(naissance + 'T12:00:00');
+  let a = when.getFullYear() - b.getFullYear();
+  if (when.getMonth() < b.getMonth() || (when.getMonth() === b.getMonth() && when.getDate() < b.getDate())) a--;
+  return a;
+}
+// l'âge qui compte : aujourd'hui pour l'année en cours, au 1er septembre pour l'année prochaine
+export const refDate = (y) => { const a = parseInt(String(y || ''), 10); const sept = new Date(a, 8, 1, 12); return a && sept > new Date() ? sept : new Date(); };
+export const ageOk = (c, a) => a == null || ((!(+c.ageMin > 0) || a >= +c.ageMin) && (!(+c.ageMax > 0) || a <= +c.ageMax));
+export const ageRange = (c) => { const lo = +c.ageMin > 0 ? +c.ageMin : 0, hi = +c.ageMax > 0 ? +c.ageMax : 0; return lo && hi ? `De ${lo} à ${hi} ans` : lo ? `À partir de ${lo} ans` : hi ? `Jusqu’à ${hi} ans` : ''; };
+export const publics = () => { const P = [...new Set(shownClasses().map((c) => (c.public || '').trim()).filter(Boolean))]; return P; };
+export const pubLabel = (p) => (/^adultes?$/i.test(p) ? 'Adultes (hommes)' : p);
 // créneaux d'une classe, triés : « Samedi · 09:00 – 12:00 »
 const ORDER_D = [1, 2, 3, 4, 5, 6, 0];
 const DAYS_FR = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-const slotLines = (c) => d.slotsOf(c).slice().sort((x, y) => ORDER_D.indexOf(+x.day) - ORDER_D.indexOf(+y.day) || String(x.time).localeCompare(y.time)).map((sl) => `${DAYS_FR[+sl.day]} · ${sl.time}${sl.end ? ' – ' + sl.end : ''}`);
+export const slotLines = (c) => d.slotsOf(c).slice().sort((x, y) => ORDER_D.indexOf(+x.day) - ORDER_D.indexOf(+y.day) || String(x.time).localeCompare(y.time)).map((sl) => `${DAYS_FR[+sl.day]} · ${sl.time}${sl.end ? ' – ' + sl.end : ''}`);
 function kidBlock(k) {
   return `<div class="ck pad col dm-kid" data-k="${k}" style="gap:10px"><div class="row between"><span class="b dm-kt">${k ? `Élève ${k + 1}` : "L’élève"}</span>${k ? `<button type="button" class="btn2 sm" data-act="dm-delkid" data-k="${k}">${ic('trash', 16)}Retirer</button>` : ''}</div>
     <div class="grid2"><div class="field"><label class="lbl" for="kp${k}">Prénom(s)</label><input id="kp${k}" name="k${k}-prenoms" class="inp" required autocomplete="off"></div>
@@ -68,7 +86,7 @@ export function inscription(q) {
   <ol class="dm-steps">${STEPS.map((l, i) => `<li class="${i === 0 ? 'on' : ''}" data-i="${i}"><span>${i + 1}</span>${l}</li>`).join('')}</ol>
   <fieldset class="dm-step col" data-i="0" style="gap:12px;border:0;padding:0;margin:0"><legend class="sr">Élève(s)</legend>
     <div id="dm-kids" class="col" style="gap:12px">${kidBlock(0)}</div>
-    <button type="button" class="btn2 full" data-act="dm-addkid">${ic('plus', 18)}Inscrire une autre personne</button>
+    <button type="button" class="btn2 full" data-act="dm-addkid">${ic('plus', 18)}Ajouter un élève sur ma fiche d’inscription</button>
     <span class="hint">L’élève peut être un enfant, un adolescent ou un adulte (cours pour adultes, cours pour les sœurs…). Vous inscrivez plusieurs personnes de la même famille ? Ajoutez-les ici : une seule demande, une seule cotisation.</span>
   </fieldset>
   <fieldset class="dm-step col" data-i="1" style="gap:12px;border:0;padding:0;margin:0" hidden><legend class="sr">Classe</legend>
@@ -97,15 +115,20 @@ const fdOf = () => { const f = document.querySelector('form[data-form=demande]')
 const kidIdx = () => [...document.querySelectorAll('.dm-kid')].map((e) => +e.dataset.k);
 function classChoices(fd) {
   const y = fd.get('annee') || openYears()[0];
-  const all = d.D().classes;
+  const all = shownClasses();
+  const ref = refDate(y);
   if (!all.length) return '<p class="small b">La mosquée n’a pas encore publié ses classes. Envoyez la demande : elle vous proposera une classe.</p>';
   return kidIdx().map((k) => {
     const prev = fd.get(`k${k}-class`);
     const pub = fd.get(`k${k}-public`);
     const nm = (fd.get(`k${k}-prenoms`) || '').split(' ')[0] || `l’élève ${k + 1}`;
-    const cls = pub ? all.filter((c) => (c.public || '').trim() === pub || !(c.public || '').trim()) : all;
-    return `<fieldset class="ck pad col dm-set"><legend class="b">Quand ${kidIdx().length > 1 ? `pour ${esc(nm)}` : ''} ?</legend>${pub ? `<span class="small mut b" style="margin-top:-6px">Cours : ${esc(pubLabel(pub))}</span>` : ''}<div class="dm-opts">${cls.length ? cls.map((c) => { const g = seats(c, y); const full = g.free <= 0 && prev !== c.id; const L = slotLines(c);
-      return `<label class="dm-opt dm-cls ${full ? 'off' : ''}"><input type="radio" name="k${k}-class" value="${c.id}" ${prev === c.id ? 'checked' : ''} ${full ? 'disabled' : ''} required><span class="col grow" style="gap:3px">${L.length ? L.map((l) => `<span class="dm-when">${l}</span>`).join('') : '<span class="dm-when">Horaire à confirmer</span>'}<span class="dm-lvl">Niveau ${c.level || 1}</span><span class="dm-meta"><span style="color:${full ? 'var(--absent)' : 'inherit'}">${full ? 'Complet' : `${g.free} place(s) restante(s)`}</span> · <span dir="auto">${esc(c.name)}</span></span></span></label>`; }).join('') : '<p class="small b">Aucune classe pour ces cours pour le moment : envoyez la demande, la mosquée vous recontactera.</p>'}</div></fieldset>`;
+    const age = ageAt(fd.get(`k${k}-naissance`), ref);
+    const byPub = pub ? all.filter((c) => (c.public || '').trim() === pub || !(c.public || '').trim()) : all;
+    const cls = byPub.filter((c) => ageOk(c, age) || prev === c.id);
+    const young = age != null && age < minAge();
+    const sub = [pub ? `Cours : ${esc(pubLabel(pub))}` : '', age != null ? `${age} ans${ref > new Date() ? ' au 1er septembre' : ''}` : ''].filter(Boolean).join(' · ');
+    return `<fieldset class="ck pad col dm-set"><legend class="b">Quand ${kidIdx().length > 1 ? `pour ${esc(nm)}` : ''} ?</legend>${sub ? `<span class="small mut b" style="margin-top:-6px">${sub}</span>` : ''}<div class="dm-opts">${young ? `<p class="small b dm-age-no" style="margin:0">L’inscription est possible à partir de ${minAge()} ans.</p>` : cls.length ? cls.map((c) => { const g = seats(c, y); const full = g.free <= 0 && prev !== c.id; const L = slotLines(c);
+      return `<label class="dm-opt dm-cls ${full ? 'off' : ''}"><input type="radio" name="k${k}-class" value="${c.id}" ${prev === c.id ? 'checked' : ''} ${full ? 'disabled' : ''} required><span class="col grow" style="gap:3px">${L.length ? L.map((l) => `<span class="dm-when">${l}</span>`).join('') : '<span class="dm-when">Horaire à confirmer</span>'}<span class="dm-lvl">Niveau ${c.level || 1}${ageRange(c) ? ` · ${ageRange(c)}` : ''}</span><span class="dm-meta"><span style="color:${full ? 'var(--absent)' : 'inherit'}">${full ? 'Complet' : `${g.free} place(s) restante(s)`}</span> · <span dir="auto">${esc(c.name)}</span></span></span></label>`; }).join('') : byPub.length ? `<p class="small b" style="margin:0">Aucune classe de ces cours ne correspond à l’âge de l’élève (${age} ans). Envoyez la demande : la mosquée vous recontactera.</p>` : '<p class="small b">Aucune classe pour ces cours pour le moment : envoyez la demande, la mosquée vous recontactera.</p>'}</div></fieldset>`;
   }).join('');
 }
 CHANGE['dm-year'] = () => { const [, fd] = fdOf(); const box = document.getElementById('dm-classes'); if (box) box.innerHTML = classChoices(fd); };
@@ -130,7 +153,13 @@ function stepValid(n) {
   const [f] = fdOf();
   const step = f.querySelector(`.dm-step[data-i="${n}"]`);
   for (const el of step.querySelectorAll('input,textarea,select')) { if (!el.checkValidity()) { el.reportValidity(); return false; } }
-  if (n === 0) for (const e of step.querySelectorAll('input[type=date]')) { const a = d.ageOf({ naissance: e.value }); if (!(a >= 3 && a < 100)) { e.setCustomValidity('Vérifiez la date de naissance'); e.reportValidity(); e.setCustomValidity(''); return false; } }
+  if (n === 0) for (const e of step.querySelectorAll('input[type=date]')) {
+    const a = d.ageOf({ naissance: e.value });
+    const best = Math.max(...openYears().map((y) => ageAt(e.value, refDate(y))));
+    const msg = !(a >= 0 && a < 100) ? 'Vérifiez la date de naissance' : best < minAge() ? `L’inscription est possible à partir de ${minAge()} ans.` : '';
+    if (msg) { e.setCustomValidity(tr(msg)); e.reportValidity(); e.setCustomValidity(''); toast(msg); return false; }
+  }
+  if (n === 1) { const [, fd] = fdOf(); const ref = refDate(fd.get('annee') || openYears()[0]); for (const k of kidIdx()) { const a = ageAt(fd.get(`k${k}-naissance`), ref); if (a != null && a < minAge()) { toast(`L’inscription est possible à partir de ${minAge()} ans.`); return false; } } }
   if (n === 2) { const t = f.querySelector('[name=tel]').value; if (t.replace(/[^\d]/g, '').length < 8) { toast('Indiquez un numéro de téléphone'); return false; } }
   return true;
 }

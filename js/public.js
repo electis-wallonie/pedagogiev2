@@ -6,7 +6,7 @@ import * as F from './fiche.js';
 import { annoncesHtml } from './annonces.js';
 import { isAr } from './i18n.js';
 import { pubShell, config } from './mosquee.js';
-import { openYears } from './demandes.js';
+import { openYears, slotLines, pubLabel, shownClass, ageRange } from './demandes.js';
 export const langBtn = () => `<button class="btn2 sm" data-act="lang" lang="${isAr ? 'fr' : 'ar'}">${ic('globe', 18)}<span data-notr dir="auto">${isAr ? 'Français' : 'العربية'}</span></button>`;
 
 let lastError = null;
@@ -19,6 +19,18 @@ const blobs = () => `<div class="hero" aria-hidden="true">
 <i style="width:58px;height:58px;border-radius:14px;background:var(--pink);left:200px;top:10px;transform:rotate(-14deg)"></i></div>`;
 
 const regBtn = () => (openYears().length ? `<a href="#/inscription" class="btn2 full" style="margin-top:2px">${ic('edit', 18)}Faire une demande d’inscription</a>` : `<div class="btn2 full" aria-disabled="true" style="margin-top:2px;opacity:.7;cursor:default">${ic('clock', 18)}Inscriptions closes pour le moment</div>`);
+// détail d'un public (Enfants, Adultes, Sœurs…) : ses classes, avec créneaux, niveau et objectif
+export function coursPublic(pub) {
+  const norm = (x) => String(x || '').trim().toLowerCase();
+  const c0 = (config().cours || []).find((c) => norm(c.public) === norm(pub)) || { public: pub };
+  const cls = d.D().classes.filter((c) => shownClass(c) && norm(c.public) === norm(pub)).sort((a, b) => (a.level || 1) - (b.level || 1) || a.name.localeCompare(b.name, 'fr', { numeric: true }));
+  return pubShell(0, `<div class="col" style="gap:14px;max-width:720px">
+  <a href="#/" class="small b row" style="gap:6px">${ic('back', 16)}Cours</a>
+  <div class="col" style="gap:2px"><h1 style="margin:0" dir="auto">${esc(pubLabel(c0.public))}</h1>${c0.detail ? `<span class="small mut b" style="font-weight:600" dir="auto">${esc(c0.detail)}</span>` : ''}</div>
+  ${cls.length ? cls.map((c) => { const L = slotLines(c); return `<div class="ck pad col" style="gap:6px">${L.length ? L.map((l) => `<span class="dm-when">${l}</span>`).join('') : '<span class="dm-when">Horaire à confirmer</span>'}<span class="dm-lvl">Niveau ${c.level || 1}${ageRange(c) ? ` · ${ageRange(c)}` : ''}</span>${c.objectif ? `<span class="small b" style="font-weight:600" dir="auto">${esc(c.objectif)}</span>` : ''}</div>`; }).join('')
+    : '<div class="ck pad small b" style="font-weight:600">Les classes de ces cours seront bientôt publiées. Vous pouvez déjà faire une demande d’inscription.</div>'}
+  ${regBtn()}</div>`);
+}
 export function home() {
   const saved = d.savedCodes().map((c) => d.byCode(c)).filter(Boolean);
   const err = lastError;
@@ -29,8 +41,8 @@ export function home() {
   }).join('')}<button class="btn2 sm" data-act="forget-codes" style="align-self:flex-start">Oublier ces fiches sur cet appareil</button></div>` : '';
   // Design W1 « Mon suivi » : la carte bleue avec le code, puis la liste blanche des cours (mosquee.json → "cours").
   const COL = { mint: 'var(--mint)', jaune: 'var(--yellow)', rose: 'var(--pink)', bleu: 'var(--blue2)' };
-  const cours = (config().cours || []).filter((c) => c && c.public);
-  const list = cours.length ? `<div class="col" style="gap:10px"><h2 style="margin-top:6px">Nos cours</h2>${cours.map((c, k) => `<div class="w1-c"><span class="w1-ic" style="background:${COL[c.couleur] || ['var(--mint)', 'var(--yellow)', 'var(--pink)'][k % 3]}">${ic(c.icone || ['users', 'book', 'hands'][k % 3], 20)}</span><span class="col grow" style="gap:1px;min-width:0"><span class="b" style="font-size:16px" dir="auto">${esc(c.public)}</span>${c.detail ? `<span class="small mut" style="font-weight:600" dir="auto">${esc(c.detail)}</span>` : ''}${c.horaires ? `<span class="small b" dir="auto">${esc(c.horaires)}</span>` : ''}</span></div>`).join('')}
+  const cours = (config().cours || []).filter((c) => c && c.public && !c.hidden);
+  const list = cours.length ? `<div class="col" style="gap:10px"><h2 style="margin-top:6px">Nos cours</h2>${cours.map((c, k) => `<a class="w1-c w1-link" href="#/cours/${encodeURIComponent(c.public)}"><span class="w1-ic" style="background:${COL[c.couleur] || ['var(--mint)', 'var(--yellow)', 'var(--pink)'][k % 3]}">${ic(c.icone || ['users', 'book', 'hands'][k % 3], 20)}</span><span class="col grow" style="gap:1px;min-width:0"><span class="b" style="font-size:16px" dir="auto">${esc(c.public)}</span>${c.detail ? `<span class="small mut" style="font-weight:600" dir="auto">${esc(c.detail)}</span>` : ''}${c.horaires ? `<span class="small b" dir="auto">${esc(c.horaires)}</span>` : ''}</span>${ic('chev', 18)}</a>`).join('')}
     ${regBtn()}</div>` : `<div class="col" style="gap:10px">${regBtn()}</div>`;
   return pubShell(0, `<div class="home-grid w1-grid">
   <div class="col" style="gap:16px">

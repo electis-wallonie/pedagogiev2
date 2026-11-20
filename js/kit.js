@@ -22,6 +22,7 @@ const MOSQ = [
   ['mawaqit', 'Lien de la page Mawaqit', true, 'ex. https://mawaqit.net/fr/ma-mosquee — les horaires de prière se mettent à jour tout seuls.'],
   ['annee', 'Année scolaire', true, 'ex. 2026-2027'],
   ['fee', 'Cotisation annuelle par défaut, par famille (€)', true, 'Montant proposé pour chaque nouvelle famille.'],
+  ['ageMin', 'Âge minimum pour s’inscrire', false, 'Vide = 6 ans. En dessous, le formulaire d’inscription refuse la date de naissance.'],
   ['rate', 'Taux horaire par défaut des enseignants (€)', true, '0 si les enseignants sont bénévoles.'],
   ['opening', 'Solde de départ de la caisse (€)', false, 'Argent disponible au début de l’année (report). À la rentrée, l’app le remplit avec le solde de fin d’année.'],
   ['site', 'Adresse du site souhaitée', false, 'ex. al-mohsinine.be — rempli avec nous.'],
@@ -34,7 +35,7 @@ const SH = [
   { k: 'locaux', n: 'Locaux', note: 'Toutes les salles utilisables : salles de classe, salles de prière, bureau…',
     cols: [['name', 'Nom du local', true, 'ex. Local 1, Salle de prière femmes'], ['note', 'Remarque', false, 'ex. 20 places, 1er étage']] },
   { k: 'classes', n: 'Classes', note: 'Une ligne par classe. Le professeur est indiqué par son identifiant (feuille Équipe).',
-    cols: [['name', 'Nom de la classe', true, 'ex. Classe 1, Coran adultes'], ['prof', 'Professeur (identifiant)', true, 'ex. rahman'], ['level', 'Niveau', false, '1, 2, 3… (objectifs Langue & Religion)'], ['public', 'Public', false, 'Enfants, Adultes, Sœurs…'], ['cap', 'Nombre de places', false, 'Vide = 20']] },
+    cols: [['name', 'Nom de la classe', true, 'ex. Classe 1, Coran adultes'], ['prof', 'Professeur (identifiant)', true, 'ex. rahman'], ['level', 'Niveau', false, '1, 2, 3… (objectifs Langue & Religion)'], ['public', 'Public', false, 'Enfants, Adultes, Sœurs…'], ['objectif', 'Objectif de la classe', false, 'ex. Lecture du Coran, Juz ‘Amma'], ['cap', 'Nombre de places', false, 'Vide = 20'], ['ageMin', 'Âge minimum', false, 'ex. 6 (vide = pas de limite)'], ['ageMax', 'Âge maximum', false, 'ex. 10 (vide = pas de limite)'], ['visible', 'Affichée sur le site', false, 'oui / non (vide = oui)']] },
   { k: 'horaires', n: 'Horaires', note: 'Une ligne par cours de la semaine. Une classe peut avoir plusieurs cours.',
     cols: [['classe', 'Classe', true, 'Nom exact (feuille Classes)'], ['day', 'Jour', true, 'lundi … dimanche'], ['time', 'Début', true, '09:00'], ['end', 'Fin', true, '12:00'], ['local', 'Local', true, 'Nom exact (feuille Locaux)']] },
   { k: 'familles', n: 'Familles', note: 'Les frères et sœurs d’une même famille partagent une cotisation.',
@@ -50,7 +51,7 @@ const SH = [
   { k: 'faq', n: 'Questions imam', note: 'Réponses de l’imam déjà publiées sur le site (sans le nom de la personne).',
     cols: [['theme', 'Thème', true, 'Prière, Jeûne, Zakat, Famille…'], ['q', 'Question', true, ''], ['r', 'Réponse', true, ''], ['freq', 'Fréquente', false, 'oui / non']] },
   { k: 'cours', n: 'Cours publics', note: 'Ce qui s’affiche dans l’onglet « Cours » du site public.',
-    cols: [['public', 'Public', true, 'Enfants, Adultes, Sœurs…'], ['detail', 'Détail', false, 'ex. 6–14 ans · Coran, arabe'], ['horaires', 'Horaires', false, 'ex. Mer. 14h–17h']] },
+    cols: [['public', 'Public', true, 'Enfants, Adultes, Sœurs…'], ['detail', 'Détail', false, 'ex. 6–14 ans · Coran, arabe'], ['horaires', 'Horaires', false, 'ex. Mer. 14h–17h'], ['visible', 'Affiché sur le site', false, 'oui / non (vide = oui). « non » cache aussi ses classes.']] },
   { k: 'objectifs', n: 'Objectifs', note: 'Objectifs Langue & Religion par niveau. Laisser vide : les objectifs habituels sont proposés à chaque professeur.',
     cols: [['prof', 'Professeur (identifiant)', true, ''], ['level', 'Niveau', true, '1, 2…'], ['group', 'Catégorie', true, 'Langue arabe, Religion…'], ['text', 'Objectif', true, '']] },
   { k: 'cats', n: 'Catégories', note: 'Catégories de recettes et de dépenses de la compta. Vide : la liste habituelle. « Autres recettes » et « Autres dépenses » sont toujours ajoutées.',
@@ -109,10 +110,10 @@ export function exportData(db = d.D()) {
   const cname = (id) => (db.classes.find((c) => c.id === id) || {}).name || '';
   const solde = db === d.D() ? d.financeSummary().solde : 0;
   return {
-    mosque: { nom: m.name || cfg.nom || '', adresse: m.adresse || '', cp: m.cp || '', ville: m.ville || '', pays: m.pays || '', tel: m.tel || '', email: m.email || ((db.contacts || [])[0] || {}).email || '', imamEmail: m.imamEmail || '', mawaqit: m.mawaqit || cfg.mawaqit || '', annee: db.year ? nextOf(db.year) : nextYear(), fee: f.defaultFee ?? '', rate: f.rate ?? '', opening: Math.round(solde * 100) / 100, site: m.site || cfg.domaineEquipe || '', style: m.style || cfg.style || '', couleur: m.couleur || cfg.couleurTheme || '' },
+    mosque: { nom: m.name || cfg.nom || '', adresse: m.adresse || '', cp: m.cp || '', ville: m.ville || '', pays: m.pays || '', tel: m.tel || '', email: m.email || ((db.contacts || [])[0] || {}).email || '', imamEmail: m.imamEmail || '', mawaqit: m.mawaqit || cfg.mawaqit || '', annee: db.year ? nextOf(db.year) : nextYear(), fee: f.defaultFee ?? '', ageMin: m.ageMin || '', rate: f.rate ?? '', opening: Math.round(solde * 100) / 100, site: m.site || cfg.domaineEquipe || '', style: m.style || cfg.style || '', couleur: m.couleur || cfg.couleurTheme || '' },
     equipe: db.users.map((u) => ({ role: ROLES.find(([k]) => k === roleKey(u))[1], name: u.name, fonction: u.fonction || '', login: u.login, tel: u.tel || '', email: u.email || '', rate: u.rate ?? '', pw: `${u.salt}:${u.hash}` })),
     locaux: (db.locaux || []).map((l) => ({ name: l.name, note: l.note || '' })),
-    classes: db.classes.map((c) => ({ name: c.name, prof: login(c.profId), level: c.level || 1, public: c.public || '', cap: +c.capacity > 0 ? +c.capacity : '' })),
+    classes: db.classes.map((c) => ({ name: c.name, prof: login(c.profId), level: c.level || 1, public: c.public || '', objectif: c.objectif || '', cap: +c.capacity > 0 ? +c.capacity : '', ageMin: +c.ageMin > 0 ? +c.ageMin : '', ageMax: +c.ageMax > 0 ? +c.ageMax : '', visible: c.hidden ? 'non' : 'oui' })),
     horaires: db.classes.flatMap((c) => d.slotsOf(c).map((s) => ({ classe: c.name, day: DAYS[s.day], time: s.time, end: s.end || '', local: lname(s.localId) }))),
     familles: (db.families || []).filter((x) => db.students.some((s) => s.familyId === x.id)).map((x) => ({ name: x.name, fee: x.cotisation ?? '' })),
     eleves: db.students.slice().sort((a, b) => cname(a.classId).localeCompare(cname(b.classId)) || a.nom.localeCompare(b.nom)).map((s) => { const co = s.coran || {}; return { classe: cname(s.classId), nom: s.nom, prenoms: s.prenoms, age: s.naissance || d.ageOf(s) || '', parent: s.parent, tel: s.tel || '', email: s.email || '', famille: fname(s.familyId), coran: ranges(Object.keys(co).filter((n) => co[n].s === 'v').map(Number)), cours: Object.keys(co).filter((n) => co[n].s === 'c').join(', '), level: s.level || 1, code: s.code || '', rue: s.rue || '', cp: s.cp || '', ville: s.ville || '', renew: s.renew === 'non' ? 'non' : 'oui' }; }),
@@ -120,7 +121,7 @@ export function exportData(db = d.D()) {
     demandes: (db.demandes || []).filter((x) => x.status === 'new' || x.status === 'later').flatMap((x) => (x.kids && x.kids.length ? x.kids : [{ prenoms: x.prenoms, nom: x.nom, naissance: x.naissance, age: x.age, classId: x.classId, code: x.code }]).map((k) => ({ prenoms: k.prenoms, nom: k.nom, naissance: k.naissance || k.age || '', classe: cname(k.classId), code: k.code || '', parent: x.parent, tel: x.tel, email: x.email, rue: x.rue || '', cp: x.cp || '', ville: x.ville || '', annee: x.annee || '', message: x.message || '' }))),
     contact: (db.contacts || []).map((c) => ({ label: c.label, email: c.email })),
     faq: (db.faq || []).map((x) => ({ theme: x.theme, q: x.q, r: x.r, freq: x.freq ? 'oui' : '' })),
-    cours: (m.cours || cfg.cours || []).map((c) => ({ public: c.public, detail: c.detail || '', horaires: c.horaires || '' })),
+    cours: (m.cours || cfg.cours || []).map((c) => ({ public: c.public, detail: c.detail || '', horaires: c.horaires || '', visible: c.hidden ? 'non' : 'oui' })),
     objectifs: db.objectives.map((o) => ({ prof: login(o.profId), level: o.level, group: o.group, text: o.text })),
     cats: [...d.INCOME_CATS.filter(([k]) => k !== d.OTHER_CAT).map(([, l]) => ({ type: 'Recette', label: l })), ...d.EXPENSE_CATS.filter(([k]) => k !== d.OTHER_CAT).map(([, l]) => ({ type: 'Dépense', label: l }))],
     charges: [...(f.incomes || []).filter((x) => x.monthly).map((x) => ({ type: 'Recette', cat: d.catLabel(d.INCOME_CATS, x.cat), label: x.label || '', amount: +x.amount || 0 })), ...(f.expenses || []).filter((x) => x.monthly).map((x) => ({ type: 'Dépense', cat: d.catLabel(d.EXPENSE_CATS, x.cat), label: x.label || '', amount: +x.amount || 0 }))],
@@ -169,6 +170,7 @@ const xlDate = (v) => { const n = +v; if (!isNaN(n) && n > 20000 && n < 80000) {
 const okMail = (m) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m);
 const okTel = (t) => String(t).replace(/[^\d]/g, '').length >= 8;
 const hhmm = (v) => { if (v === '' || v == null) return ''; const n = +v; if (!isNaN(n) && n > 0 && n < 1) { const m = Math.round(n * 1440); return d.fromMin(m); } const m = String(v).match(/^(\d{1,2})\s*[:hH.]\s*(\d{2})?$/); return m ? `${m[1].padStart(2, '0')}:${m[2] || '00'}` : null; };
+const isNo = (v) => /^(non|no|n|0|false|masqu)/i.test(String(v ?? '').trim());
 const num = (v) => { const x = parseFloat(String(v ?? '').replace(/\s/g, '').replace(',', '.')); return isNaN(x) ? null : x; };
 const yes = (v) => /^(oui|yes|o|y|x|1|vrai|true)$/i.test(String(v).trim());
 
@@ -251,6 +253,7 @@ export async function install(P) {
   D.year = M.annee;
   D.finance.rate = num(M.rate) ?? 10;
   D.finance.defaultFee = num(M.fee) ?? 0;
+  if (num(M.ageMin) > 0) D.mosque.ageMin = Math.round(num(M.ageMin));
   D.finance.opening = num(M.opening) ?? 0;
   const creds = [];
   let hasSuper = false;
@@ -271,7 +274,7 @@ export async function install(P) {
   D.locaux = T.locaux.map(({ v }) => ({ id: d.uid(), name: v.name, ...(v.note ? { note: v.note } : {}) }));
   const lBy = (n) => D.locaux.find((l) => norm(l.name) === norm(n));
   const COL = ['mint', 'blue', 'pink', 'yellow'];
-  D.classes = T.classes.map(({ v }, i) => ({ id: d.uid(), name: v.name, profId: (uBy(v.prof) || {}).id, level: num(v.level) || 1, color: COL[i % 4], ...(v.public ? { public: v.public } : {}), capacity: Math.round(num(v.cap)) || 20, slots: [] }));
+  D.classes = T.classes.map(({ v }, i) => ({ id: d.uid(), name: v.name, profId: (uBy(v.prof) || {}).id, level: num(v.level) || 1, color: COL[i % 4], ...(v.public ? { public: v.public } : {}), ...(v.objectif ? { objectif: v.objectif } : {}), capacity: Math.round(num(v.cap)) || 20, ...(num(v.ageMin) > 0 ? { ageMin: Math.round(num(v.ageMin)) } : {}), ...(num(v.ageMax) > 0 ? { ageMax: Math.round(num(v.ageMax)) } : {}), ...(isNo(v.visible) ? { hidden: true } : {}), slots: [] }));
   const cBy = (n) => D.classes.find((c) => norm(c.name) === norm(n));
   for (const { v } of T.horaires) { const c = cBy(v.classe); if (c) c.slots.push({ day: DAYN.indexOf(norm(v.day)), time: hhmm(v.time), end: hhmm(v.end) || '', localId: (lBy(v.local) || {}).id }); }
   const fee = D.finance.defaultFee;
@@ -311,7 +314,7 @@ export async function install(P) {
   if (!D.contacts.length && M.email) D.contacts.push({ id: d.uid(), label: 'La direction', email: M.email.toLowerCase() });
   if (M.imamEmail) D.mosque.imamEmail = M.imamEmail;
   D.faq = T.faq.map(({ v }) => ({ id: d.uid(), at: new Date().toISOString(), theme: v.theme, q: v.q, r: v.r, freq: yes(v.freq) }));
-  if (T.cours.length) D.mosque.cours = T.cours.map(({ v }) => ({ public: v.public, detail: v.detail, horaires: v.horaires }));
+  if (T.cours.length) { D.mosque.cours = T.cours.map(({ v }) => ({ public: v.public, detail: v.detail, horaires: v.horaires, ...(isNo(v.visible) ? { hidden: true } : {}) })); D.mosque.coursEdited = true; }
   // catégorie du fichier : reprise si elle existe, sinon ajoutée à la liste
   const catKey = (list, l) => { const f = list.find(([k, lab]) => norm(lab) === norm(l) || norm(k) === norm(l) || (norm(l).length > 3 && norm(lab).startsWith(norm(l)))); if (f) return f[0]; if (!String(l || '').trim()) return d.OTHER_CAT; const key = 'c-' + d.uid().slice(0, 8); list.splice(list.length - 1, 0, [key, String(l).trim()]); d.catsSave(); return key; };
   if (T.cats && T.cats.length) {
@@ -418,7 +421,7 @@ ACT['ny-backup'] = () => dl(new Blob([JSON.stringify(d.D(), null, 2)], { type: '
 ACT['ny-reset'] = async () => {
   if (!d.isSuper(d.me())) { toast('Réservé au méga administrateur'); return; }
   if (!ny.got) { toast('Téléchargez d’abord le fichier de la rentrée'); return; }
-  if (!ask('Tout effacer et préparer la nouvelle année ?\n\nPensez à réimporter le fichier de la rentrée juste après.')) return;
+  if (!(await ask('Tout effacer et préparer la nouvelle année ?\n\nPensez à réimporter le fichier de la rentrée juste après.'))) return;
   await d.clearAudio().catch(() => {});
   setEmpty(); d.logout(); ny.got = false;
   st = { parsed: null, creds: null, busy: false, name: '' };

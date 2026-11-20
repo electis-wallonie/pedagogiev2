@@ -89,8 +89,31 @@ export function nextLabel(n) {
   const day = k === 0 ? 'Aujourd’hui' : k === 1 ? 'Demain' : fdate(iso, { weekday: 'long', day: 'numeric', month: 'long' });
   return `${day} à ${hm(n.slot.time)}`;
 }
-export const ask = (m) => window.confirm(tr(m));
-export const askText = (m, v) => window.prompt(tr(m), v);
+// Confirmations dessinées dans l'appli (et non window.confirm / window.prompt, que le navigateur
+// intégré de WhatsApp, Instagram… bloque sans rien afficher : les suppressions échouaient).
+// ask(texte) → Promise<boolean> ; askText(texte, valeur) → Promise<string|null>.
+function dialog(msg, { input = null, ok = 'Confirmer' } = {}) {
+  return new Promise((resolve) => {
+    const prev = document.getElementById('confirm'); if (prev) prev.remove();
+    const danger = /^(supprimer|retirer|effacer|tout effacer|réinitialiser|remettre)/i.test(msg.trim());
+    const [title, ...rest] = tr(msg).split('\n\n');
+    const w = document.createElement('div');
+    w.id = 'confirm'; w.className = 'modal confirm-wrap';
+    w.innerHTML = `<div class="sheet confirm" role="alertdialog" aria-modal="true" aria-labelledby="cf-t"><p id="cf-t" class="b" style="font-size:17px;margin:0;white-space:pre-wrap">${esc(title)}</p>${rest.length ? `<p class="small" style="margin:0;white-space:pre-wrap">${esc(rest.join('\n\n'))}</p>` : ''}
+      ${input != null ? `<input id="cf-in" class="inp" value="${esc(input)}" aria-label="${esc(title)}">` : ''}
+      <div class="row" style="gap:10px"><button type="button" class="btn2 grow" data-cf="0">${tr('Annuler')}</button><button type="button" class="${danger ? 'btnd' : 'btn'} grow" data-cf="1">${tr(input != null ? 'Enregistrer' : danger ? (/^supprimer/i.test(msg.trim()) ? 'Supprimer' : 'Confirmer') : ok)}</button></div></div>`;
+    document.body.appendChild(w);
+    const inp = w.querySelector('#cf-in');
+    const done = (yes) => { document.removeEventListener('keydown', key, true); w.remove(); resolve(input != null ? (yes ? inp.value : null) : yes); };
+    const key = (e) => { if (e.key === 'Escape') { e.stopPropagation(); done(false); } else if (e.key === 'Enter' && inp) { e.preventDefault(); done(true); } };
+    document.addEventListener('keydown', key, true);
+    w.addEventListener('click', (e) => { const b = e.target.closest('[data-cf]'); if (b) done(b.dataset.cf === '1'); else if (e.target === w) done(false); });
+    (inp || w.querySelector('[data-cf="1"]')).focus();
+    if (inp) inp.select();
+  });
+}
+export const ask = (m) => dialog(m);
+export const askText = (m, v) => dialog(m, { input: v ?? '' });
 export function daysSince(iso) { return Math.max(0, Math.round((new Date(todayISO() + 'T12:00:00') - new Date(iso + 'T12:00:00')) / 864e5)); }
 
 export const STATUS = {

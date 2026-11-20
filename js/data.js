@@ -126,7 +126,7 @@ export const isSuper = (u) => !!u && u.role === 'admin' && !!u.super;
 export const isCompta = (u) => !!u && u.role === 'compta';
 export const canCompta = (u) => isAdmin(u) || isCompta(u);
 export const roleLabel = (u) => (!u ? '' : isSuper(u) ? 'Méga administrateur' : u.role === 'admin' ? 'Administrateur' : u.role === 'compta' ? 'Comptabilité' : 'Professeur');
-export const homeOf = (u) => (isCompta(u) ? '#/compta' : '#/prof');
+export const homeOf = (u) => (isCompta(u) ? '#/compta' : isAdmin(u) ? '#/prof' : '#/prof/classes');
 export const profs = () => db.users.filter((u) => u.role === 'prof').sort((a, b) => a.name.localeCompare(b.name));
 export const user = (id) => db.users.find((u) => u.id === id);
 export const myClasses = (u) => (isAdmin(u) ? db.classes.slice() : db.classes.filter((c) => c.profId === u.id)).sort((a, b) => a.name.localeCompare(b.name, 'fr', { numeric: true }));

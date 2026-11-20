@@ -56,7 +56,7 @@ FORMS.pw = async (f, fd) => {
   if (p1 !== fd.get('p2')) { toast('Les deux mots de passe ne correspondent pas'); return; }
   await d.setPassword(u, p1, false);
   toast('Mot de passe enregistré');
-  go('#/prof');
+  go(d.homeOf(u));
 };
 
 // ---------- admin ----------
@@ -176,7 +176,7 @@ FORMS.ann = async (f, fd) => {
   d.save(); toast('Message publié'); go('#/admin/message');
 };
 ACT['ann-del'] = async (el) => {
-  if (!ask('Supprimer ce message ?')) return;
+  if (!(await ask('Supprimer ce message ?'))) return;
   const a = d.D().announcements.find((x) => x.id === el.dataset.id);
   if (a && a.audioId) await d.delAudio(a.audioId).catch(() => {});
   d.D().announcements = d.D().announcements.filter((x) => x.id !== el.dataset.id);
@@ -209,7 +209,7 @@ FORMS['new-prof'] = async (f, fd) => {
 };
 ACT['prof-reset'] = async (el) => {
   const u = d.D().users.find((x) => x.id === el.dataset.id);
-  if (!u || !canManage(d.me(), u) || !ask(`Réinitialiser le mot de passe de ${u.name} ?`)) return;
+  if (!u || !canManage(d.me(), u) || !(await ask(`Réinitialiser le mot de passe de ${u.name} ?`))) return;
   const pw = d.randomPw();
   await d.setPassword(u, pw, true);
   go('#/admin/equipe');
@@ -218,7 +218,7 @@ ACT['prof-reset'] = async (el) => {
 ACT['prof-del'] = async (el) => {
   const u = d.D().users.find((x) => x.id === el.dataset.id);
   if (!u || !canManage(d.me(), u)) return;
-  if (!ask(`Supprimer le compte de ${u.name} ?${u.role === 'prof' ? '\n\nToutes ses classes, ses élèves et leur suivi seront effacés définitivement.' : ''}`)) return;
+  if (!(await ask(`Supprimer le compte de ${u.name} ?${u.role === 'prof' ? '\n\nToutes ses classes, ses élèves et leur suivi seront effacés définitivement.' : ''}`))) return;
   if (u.role === 'prof') await d.deleteProf(u.id); else { d.D().users = d.D().users.filter((x) => x.id !== u.id); d.save(); }
   toast('Compte supprimé');
   go('#/admin/equipe');

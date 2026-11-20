@@ -383,3 +383,29 @@ body.q .btnd[disabled],body.q .btn[disabled]{opacity:.45;cursor:not-allowed}
 .segq button{flex:1;text-align:center;padding:8px 6px;border-radius:6px;font:inherit;font-size:14px;color:var(--muted);background:none;border:0;cursor:pointer}
 .segq button.on{background:#FFFFFF;color:var(--ink);font-weight:500;box-shadow:0 1px 2px rgba(0,0,0,.08)}
 @media (max-width:600px){.grid3.stack{grid-template-columns:1fr!important}}
+/* review 2 */
+.q-cbtns .q-cbtn{justify-content:flex-start;min-height:52px!important;font-size:15px!important;gap:12px}
+.q-cinfo .q-l:first-child{opacity:.85}
+.q-ap-name{text-decoration:none;color:var(--ink)!important;border-radius:8px}
+.q-ap-name:hover span:last-of-type{text-decoration:underline;text-underline-offset:3px}
+.q-ap-name svg{color:var(--muted);flex:none}
+.q-appel-bar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;background:#050505;color:#FFFFFF!important;text-decoration:none;font-size:14px}
+.q-appel-bar b{font-weight:600}
+.q-warn-line{display:inline-flex;gap:6px;align-items:center;color:var(--q-warn)!important;font-size:14px;font-weight:500;margin-top:8px}
+.q-fe-bottom{display:flex;flex-wrap:wrap;gap:8px;padding-top:6px}
+@media (max-width:959px){.q-fe-bottom>*{flex:1 1 calc(50% - 8px);justify-content:center}}
+.q-cbtns .q-cbtn .grow{text-align:left}
+/* interrupteur Afficher / Masquer (cours publics, classes) */
+.q-sw.on{background:var(--q-pos)}.q-sw.on i{left:21px}
+.q-tg{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--q-hair);border-radius:12px;cursor:pointer;font-weight:600}
+.q-tg input{width:22px;height:22px;flex:none;accent-color:var(--q-pos)}
+.q-tgb{display:inline-flex;align-items:center;gap:8px;background:none;border:0;padding:6px 0;font:inherit;font-size:13px;font-weight:700;color:inherit;cursor:pointer;min-height:44px;white-space:nowrap}
+.q-pc{border-top:1px solid var(--q-hair);padding:12px 0}
+.q-pc-cls{display:flex;flex-direction:column;margin:6px 0 0 44px;border-inline-start:2px solid var(--q-hair);padding-inline-start:12px}
+.q-pc-cls .q-lrow{padding:6px 0;min-height:0}
+
+@media (max-width:640px){.q-pc-cls{margin-inline-start:8px}}
+.q-pa{display:flex;align-items:center;gap:8px;flex:none}
+.q-pa .q-tgb{min-width:96px}
+.q-off .t,.q-off .q-glyph{opacity:.55}.q-pc .q-off{opacity:1}
+@media (max-width:640px){.q-pcrow{flex-wrap:wrap;row-gap:4px}.q-pcrow .t{flex-basis:calc(100% - 50px)}.q-pcrow .q-pa{margin-inline-start:auto}.q-pc-cls .q-pcrow .t{flex-basis:100%}}

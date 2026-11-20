@@ -487,3 +487,8 @@ body.q .pay-opt input{accent-color:#050505}
 .dm-meta{font-size:13px;font-weight:600;color:var(--muted)}
 .dm-opts.pubs{flex-direction:row;flex-wrap:wrap}
 .dm-opts.pubs .dm-opt{flex:1 1 140px}
+.w1-link{text-decoration:none;color:var(--ink);cursor:pointer}.w1-link:hover{background:#F4F6FF}
+/* confirmations dans l'appli */
+.confirm-wrap{z-index:1000;align-items:center}
+.sheet.confirm{max-width:420px;width:calc(100% - 32px);display:flex;flex-direction:column;gap:14px;border-radius:18px;margin:auto}
+[data-act=dm-addkid]{white-space:normal;height:auto!important;min-height:50px;padding:10px 14px;line-height:1.25;text-align:center}

@@ -29,6 +29,7 @@ const R = [
   [/^\/mosquee$/, () => { location.replace('#/'); return ''; }],
   [/^\/imam$/, (m, q) => mosq.imam(q)],
   [/^\/cours$/, () => { location.replace('#/'); return ''; }],
+  [/^\/cours\/(.+)$/, (m) => pub.coursPublic(decodeURIComponent(m[1]))],
   [/^\/inscription$/, (m, q) => dem.inscription(q)],
   [/^\/admin\/demandes$/, (m, q) => { const u = guard('admin'); return u && dem.demandesView(u, q); }],
   [/^\/installer$/, () => pub.install()],

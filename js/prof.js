@@ -7,6 +7,7 @@ import * as F from './fiche.js';
 import { annoncesHtml } from './annonces.js';
 import { seed } from './seed.js';
 import { localLine, hoursCard, elevesSeg, famPill } from './gestion.js';
+import { config } from './mosquee.js';
 import { myContactCard } from './contact.js';
 
 const go = (h) => { if (location.hash === h) window.dispatchEvent(new Event('hashchange')); else location.hash = h; };
@@ -20,7 +21,9 @@ function lastAppel(c) { const a = d.attendanceOfClass(c.id)[0]; return a ? `Dern
 // active : 0 Accueil · 1 Classes · 2 Élèves · 3 Réglages · 4 Direction (admin)
 export function shell(u, active, body) {
   const admin = d.isAdmin(u);
-  const nav = [['prof', 'home', 'Accueil', 0], ['prof/classes', 'grid', 'Classes', 1], ['prof/eleves', 'users', 'Élèves', 2]];
+  // prof : « Mes classes » en premier (page d'arrivée) ; admin : le tableau de bord reste en premier
+  const nav = admin ? [['prof', 'home', 'Tableau de bord', 0], ['prof/classes', 'grid', 'Classes', 1], ['prof/eleves', 'users', 'Élèves', 2]]
+    : [['prof/classes', 'grid', 'Mes classes', 1], ['prof', 'home', 'Tableau de bord', 0], ['prof/eleves', 'users', 'Élèves', 2]];
   if (admin) nav.push(['admin', 'shield', 'Direction', 4]);
   nav.push(['prof/reglages', 'gear', 'Réglages', 3]);
   const cl = d.myClasses(u).map((c) => `<a class="sub" href="#/prof/classe/${c.id}"><span style="width:14px;height:14px;border-radius:5px;border:2px solid var(--ink);background:${colorOf(c)}"></span><span class="grow">${esc(c.name)}</span><span class="mut">${d.studentsOf(c.id).length}</span></a>`).join('');
@@ -155,6 +158,13 @@ function classForm(u, c = null) {
   openModal(() => `<div class="row between"><h2>${c ? 'Modifier la classe' : 'Nouvelle classe'}</h2><button class="ib" data-act="close-modal" aria-label="Fermer">${ic('x', 20)}</button></div>
   <form class="col" data-form="class" data-id="${c ? c.id : ''}">
   <div class="field"><label class="lbl" for="cn">Nom de la classe</label><input id="cn" name="name" class="inp" required value="${esc(c ? c.name : `Classe ${d.myClasses(u).length + 1}`)}"></div>
+  <div class="field"><label class="lbl" for="cpub">Public</label>${(() => { const P = [...new Set([...(config().cours || []).map((x) => x.public), ...d.D().classes.map((x) => x.public)].map((x) => String(x || '').trim()).filter(Boolean))]; const cur = c && c.public ? c.public : ''; return `<select id="cpub" name="public" class="inp"><option value="" ${cur ? '' : 'selected'}>— Choisir —</option>${P.map((p) => `<option value="${esc(p)}" ${p === cur ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select>`; })()}<span class="hint">La classe apparaît sous ce cours sur le site public (onglet Cours) et dans le formulaire d’inscription.</span></div>
+  <div class="field"><label class="lbl" for="cobj">Objectif de la classe</label><input id="cobj" name="objectif" class="inp" maxlength="80" value="${esc(c && c.objectif ? c.objectif : '')}" placeholder="ex. Lecture du Coran, Juz ‘Amma"><span class="hint">Une phrase courte, visible par les parents.</span></div>
+  <fieldset class="ck flat pad col" style="margin:0;gap:10px"><legend class="lbl" style="padding:0 6px">Âge des élèves</legend>
+  <div class="grid2"><div class="field"><label class="lbl" for="camin">Âge minimum</label><input id="camin" name="ageMin" type="number" min="3" max="99" inputmode="numeric" class="inp" value="${c && +c.ageMin > 0 ? +c.ageMin : ''}" placeholder="ex. 6"></div>
+  <div class="field"><label class="lbl" for="camax">Âge maximum</label><input id="camax" name="ageMax" type="number" min="3" max="99" inputmode="numeric" class="inp" value="${c && +c.ageMax > 0 ? +c.ageMax : ''}" placeholder="ex. 10"></div></div>
+  <span class="hint" style="margin:0">Laissez vide : pas de limite. Dans le formulaire d’inscription, la classe n’est proposée qu’aux élèves qui ont l’âge (calculé avec la date de naissance).</span></fieldset>
+  ${d.isAdmin(u) ? `<label class="q-tg"><input type="checkbox" name="shown" ${c && c.hidden ? '' : 'checked'}><span class="col grow" style="gap:1px"><b>Afficher sur le site public</b><span class="small mut">Visible dans l’onglet Cours et proposée dans l’inscription</span></span></label>` : ''}
   ${profSel}
   <fieldset class="ck flat pad col" style="margin:0;gap:10px"><legend class="lbl" style="padding:0 6px">Cours de la semaine</legend>
   <div class="field"><label class="lbl" for="cnb">Combien de cours par semaine ?</label><select id="cnb" class="inp" data-change="slots-count">${[1, 2, 3, 4, 5].map((k) => `<option value="${k}" ${k === Math.max(1, d.slotsOf(c).length) ? 'selected' : ''}>${k} cours</option>`).join('')}</select></div>
@@ -181,7 +191,11 @@ FORMS.class = (f, fd) => {
     else if (s.end <= s.time) { toast('L’heure de fin doit être après l’heure de début'); return; }
     slots.push(s);
   }
-  const v = { name: (fd.get('name') || '').trim() || 'Classe', color: fd.get('color') || 'blue', level: +fd.get('level') || 1, capacity: Math.max(1, parseInt(fd.get('capacity'), 10) || 20), slots };
+  const v = { name: (fd.get('name') || '').trim() || 'Classe', color: fd.get('color') || 'blue', level: +fd.get('level') || 1, capacity: Math.max(1, parseInt(fd.get('capacity'), 10) || 20), public: (fd.get('public') || '').trim(), objectif: (fd.get('objectif') || '').trim(), slots };
+  const amin = parseInt(fd.get('ageMin'), 10) || 0, amax = parseInt(fd.get('ageMax'), 10) || 0;
+  if (amin && amax && amin > amax) { toast('L’âge minimum doit être plus petit que l’âge maximum'); return; }
+  v.ageMin = amin || null; v.ageMax = amax || null;
+  if (d.isAdmin(u)) v.hidden = !fd.get('shown');
   if (d.isAdmin(u)) { if (!fd.get('profId')) { toast('Créez d’abord un professeur'); return; } v.profId = fd.get('profId'); }
   if (id) { const cc = d.cls(id); delete cc.day; delete cc.time; Object.assign(cc, v); }
   else { const c = { id: d.uid(), profId: u.id, ...v }; d.D().classes.push(c); d.save(); closeModal(); go(`#/prof/classe/${c.id}`); toast('Classe créée'); return; }
@@ -190,7 +204,7 @@ FORMS.class = (f, fd) => {
 ACT['class-del'] = async (el) => {
   const c = d.cls(el.dataset.id);
   const n = d.studentsOf(c.id).length;
-  if (!ask(`Supprimer ${c.name} ?${n ? `\n\nSes ${n} élève(s) et tout leur suivi seront effacés.` : ''}`)) return;
+  if (!(await ask(`Supprimer ${c.name} ?${n ? `\n\nSes ${n} élève(s) et tout leur suivi seront effacés.` : ''}`))) return;
   await d.deleteClass(c.id); closeModal(); toast('Classe supprimée'); go('#/prof/classes');
 };
 
@@ -206,17 +220,17 @@ export function classe(u, id) {
   const doneToday = d.attendanceOfClass(c.id).some((a) => a.date === todayISO());
   const rows = sts.map((s, k) => { const p = d.presence(s), kk = d.coranStats(s), ec = d.enCours(s)[0];
     return `<tr data-act="row-go" data-href="#/prof/eleve/${s.id}"><td><span class="q-who"><span class="q-av ${PALQ[k % 4]}">${esc(initials(s))}</span><span>${esc(s.prenoms.split(' ')[0])} ${esc(s.nom)}</span></span></td><td class="hm mut">${d.ageOf(s) ?? '—'} ans</td><td class="hm">${kk.v}${ec ? ` <span class="mut">· ${esc(d.sName(ec))}</span>` : ''}</td><td class="r"><span class="q-amt">${p.rate === null ? '—' : p.rate + ' %'}</span></td><td class="r" style="width:84px">${callBtn(s)}</td></tr>`; }).join('');
-  const body = `<div class="page">
-  <div class="qd-h"><a href="#/prof/classes" class="ib" aria-label="Retour">${ic('back', 20)}</a><span class="q-av lg ${PALQ[d.D().classes.indexOf(c) % 4]}">${esc(c.name.replace(/[^\dA-Za-z]/g, '').replace(/^Classe/i, 'C').slice(0, 3))}</span><div class="grow"><h1>${esc(c.name)}</h1><div class="qd-sub">${prof ? esc(prof.name) + ' · ' : ''}${sl.length ? schedLabel(sl) + ' · ' : ''}${esc(localLine(c))} · ${sts.length} élève(s)</div></div>
-  <button class="btn2 sm" data-act="class-edit" data-id="${id}">${ic('edit', 16)}Modifier</button><a class="btn2 sm" href="#/prof/classe/${id}/historique">${ic('clock', 16)}Historique</a><a class="btn2 sm" href="#/prof/classe/${id}/objectifs">${ic('star', 16)}Objectifs</a></div>
-  <div class="q-dark q-appel"><div class="col grow" style="gap:4px;min-width:0"><span class="q-l">${nn ? 'Prochain cours' : 'Cours'}${doneToday ? ' · appel déjà fait aujourd’hui' : ''}</span><span class="q-money" style="font-size:28px">${nn ? nextLabel(nn) : sl.length ? schedLabel(sl) : 'Horaires à compléter'}</span><span class="q-l">${nn ? untilLabel(nn) + ' avant le cours · ' : ''}${lastAppel(c)}</span></div>
+  // page d'une classe : une seule colonne — ① infos + appel ② 3 boutons ③ Devoir / Information ④ élèves
+  const body = `<div class="page" style="max-width:760px">
+  <div class="qd-h"><a href="#/prof/classes" class="ib" aria-label="Retour">${ic('back', 20)}</a><span class="q-av lg ${PALQ[d.D().classes.indexOf(c) % 4]}">${esc(c.name.replace(/[^\dA-Za-z]/g, '').replace(/^Classe/i, 'C').slice(0, 3))}</span><div class="grow"><h1>${esc(c.name)}</h1></div></div>
+  <div class="q-dark q-appel q-cinfo"><div class="col grow" style="gap:4px;min-width:0"><span class="q-l">${prof ? esc(prof.name) + ' · ' : ''}${sl.length ? schedLabel(sl) + ' · ' : ''}${esc(localLine(c))} · ${sts.length} élève(s)</span><span class="q-l">${nn ? 'Prochain cours' : 'Cours'}${doneToday ? ' · appel déjà fait aujourd’hui' : ''}</span><span class="q-money" style="font-size:28px">${nn ? nextLabel(nn) : sl.length ? schedLabel(sl) : 'Horaires à compléter'}</span><span class="q-l">${nn ? untilLabel(nn) + ' avant le cours · ' : ''}${lastAppel(c)}</span></div>
     <a class="q-btn-w q-appel-btn" href="#/prof/classe/${id}/appel">${ic('check', 22)}${doneToday ? 'Reprendre l’appel' : 'Faire l’appel'}</a></div>
+  
   ${!sl.length ? `<div class="q-card row wrap" style="padding:14px 20px;gap:10px">${ic('cal', 18)}<span class="grow small">Horaires des cours à compléter</span><button class="btn2 sm" data-act="class-edit" data-id="${c.id}">${ic('edit', 16)}Ajouter les horaires</button></div>` : ''}
-  <div class="q-row2" style="align-items:flex-start">
-  <div class="col" style="flex:1.25;min-width:0;gap:12px"><div class="row between"><h2 style="margin:0">Élèves</h2><a class="btn2 sm" href="#/prof/eleve/new?c=${id}">${ic('plus', 16)}Ajouter un élève</a></div>
-  <div class="q-card q-pad">${sts.length ? `<div style="overflow-x:auto"><table class="q-tbl"><thead><tr><th>Élève</th><th class="hm">Âge</th><th class="hm">Coran</th><th class="r">Présence</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>` : `<div class="col" style="padding:16px 0"><p class="mut small">Pas encore d’élève dans cette classe.</p><a class="btn sm" href="#/prof/eleve/new?c=${id}" style="align-self:flex-start">${ic('plus', 18)}Ajouter un élève</a></div>`}</div></div>
-  <div class="col" style="flex:1;min-width:0;gap:16px">
-  ${infoCard(c, sts, notes)}</div></div></div>`;
+  <div class="col q-cbtns" style="gap:8px"><button class="btn2 full q-cbtn" data-act="class-edit" data-id="${id}">${ic('edit', 18)}<span class="grow">Modifier la classe</span>${ic('chev', 16)}</button><a class="btn2 full q-cbtn" href="#/prof/classe/${id}/historique">${ic('clock', 18)}<span class="grow">Historique des absences</span>${ic('chev', 16)}</a><a class="btn2 full q-cbtn" href="#/prof/classe/${id}/objectifs">${ic('star', 18)}<span class="grow">Validation des objectifs</span>${ic('chev', 16)}</a></div>
+  ${infoCard(c, sts, notes)}
+  <div class="row between"><h2 style="margin:0">Élèves <span class="mut" style="font-weight:400">${sts.length}</span></h2><a class="btn2 sm" href="#/prof/eleve/new?c=${id}">${ic('plus', 16)}Ajouter un élève</a></div>
+  <div class="q-card q-pad">${sts.length ? `<div style="overflow-x:auto"><table class="q-tbl"><thead><tr><th>Élève</th><th class="hm">Âge</th><th class="hm">Coran</th><th class="r">Présence</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>` : `<div class="col" style="padding:16px 0"><p class="mut small">Pas encore d’élève dans cette classe.</p><a class="btn sm" href="#/prof/eleve/new?c=${id}" style="align-self:flex-start">${ic('plus', 18)}Ajouter un élève</a></div>`}</div>`;
   return shell(u, 1, body);
 }
 // ---------- devoirs : enregistrés sur la fiche de chaque élève + e-mail prêt pour tous les parents de la classe ----------
@@ -299,7 +313,7 @@ export function appel(u, id, recId, q) {
   const rest = sts.filter((s) => !r[s.id]).length;
   const rate = (s) => { const p = d.presence(s); return p.rate == null ? '—' : p.rate + ' %'; };
   const PALQ = ['q-p0', 'q-p1', 'q-p2', 'q-p3'];
-  const rows = sts.map((s, k) => `<div class="q-ap-r"><span class="q-who grow"><span class="q-av ${PALQ[k % 4]}">${esc(initials(s))}</span><span>${esc(s.prenoms.split(' ')[0])} ${esc(s.nom)}</span></span><span class="q-ap-y hm">${rate(s)}</span>
+  const rows = sts.map((s, k) => `<div class="q-ap-r"><a class="q-who grow q-ap-name" href="#/prof/eleve/${s.id}?appel=${rec.id}" title="Ouvrir la fiche"><span class="q-av ${PALQ[k % 4]}">${esc(initials(s))}</span><span>${esc(s.prenoms.split(' ')[0])} ${esc(s.nom)}</span>${ic('chev', 14)}</a><span class="q-ap-y hm">${rate(s)}</span>
   <span class="q-ap-b">${['P', 'A', 'E'].map((k) => `<button type="button" class="st-btn ${r[s.id] === k ? 'on-' + k : ''}" data-act="ap" data-sid="${s.id}" data-s="${k}" aria-pressed="${r[s.id] === k}" aria-label="${STATUS[k].l} : ${esc(s.prenoms.split(' ')[0])}">${ic(STATUS[k].icon, 20, 2.8)}<span class="lab">${k === 'E' ? 'Prévenu' : STATUS[k].l}</span></button>`).join('')}</span></div>`).join('');
   const body = `<div class="page">${top('L’appel', esc(c.name), `#/prof/classe/${id}`)}
   <div class="qd-sub" style="margin-top:-8px">${whenLabel(rec)}</div>
@@ -319,18 +333,25 @@ export function appel(u, id, recId, q) {
 }
 // « Faire l'appel » : l'appel est créé tout de suite avec la date du jour (pas d'heure).
 // Si un appel existe déjà aujourd'hui, on demande : le modifier, ou faire un 2e appel (2e cours).
+// Un nouvel appel valide automatiquement les appels précédents de la classe restés ouverts
+// (comme « Terminer l'appel ») : ils comptent alors dans les heures et dans les appels faits.
+export function closeOpenRecs(classId, exceptId) {
+  let n = 0;
+  for (const a of d.attendanceOfClass(classId)) if (a.id !== exceptId && a.done === false) { a.done = true; n++; }
+  return n;
+}
 function newRec(c) {
+  closeOpenRecs(c.id);
   const rec = { id: d.uid(), classId: c.id, date: todayISO(), at: new Date().toISOString(), records: {}, done: false, byId: d.me().id };
   d.D().attendance.push(rec); d.save();
   return rec;
 }
+// « Faire l'appel » : s'il a déjà été fait aujourd'hui, on rouvre directement l'appel du jour (plus de 2e appel)
 function appelStart(u, c, q) {
-  const today = d.attendanceOfClass(c.id).filter((a) => a.date === todayISO());
-  if (!today.length || (q && q.get('nouveau'))) { location.replace(`#/prof/classe/${c.id}/appel/${newRec(c).id}`); return null; }
-  return shell(u, 1, `<div class="page narrow">${top('L’appel', esc(c.name), `#/prof/classe/${c.id}`)}
-  <div class="ck pad col" style="background:var(--hi)"><h2>L’appel a déjà été fait aujourd’hui</h2>
-  ${today.map((a) => `<a class="btn full" href="#/prof/classe/${c.id}/appel/${a.id}">${ic('edit', 20)}Modifier l’appel d’aujourd’hui${today.length > 1 ? ` (${whenLabel(a).split(' · ')[1]})` : ''}</a>`).join('')}
-  <a class="btn2 full" href="#/prof/classe/${c.id}/appel?nouveau=1">${ic('plus', 20)}Faire un 2e appel aujourd’hui</a></div></div>`);
+  const today = d.attendanceOfClass(c.id).filter((a) => a.date === todayISO()).sort((x, y) => (y.at || '').localeCompare(x.at || ''));
+  const rec = today[0] || newRec(c);
+  location.replace(`#/prof/classe/${c.id}/appel/${rec.id}`);
+  return null;
 }
 const softRender = () => window.dispatchEvent(new CustomEvent('soft-render'));
 ACT['row-go'] = (el, ev) => { if (ev && ev.target.closest('a,button')) return; location.hash = el.dataset.href; };
@@ -340,8 +361,8 @@ ACT['ap-all'] = () => {
   d.save(); softRender();
 };
 CHANGE['ap-when'] = (el) => { if (!el.value) return; ctx.rec[el.dataset.k] = el.value; d.save(); toast('Date enregistrée'); softRender(); };
-ACT['ap-del'] = () => {
-  if (!ask('Supprimer cet appel ? Il disparaîtra de l’historique des élèves.')) return;
+ACT['ap-del'] = async () => {
+  if (!(await ask('Supprimer cet appel ? Il disparaîtra de l’historique des élèves.'))) return;
   d.D().attendance = d.D().attendance.filter((a) => a.id !== ctx.rec.id);
   d.save(); toast('Appel supprimé'); go(`#/prof/classe/${ctx.cls.id}/historique`);
 };
@@ -417,8 +438,8 @@ ACT['cobj-all'] = (el) => {
   d.studentsOf(ctx.cls.id).forEach((s) => { if (!s.acquired[el.dataset.id]) s.acquired[el.dataset.id] = t; });
   d.save(); toast('Objectif validé pour toute la classe'); softR();
 };
-ACT['cobj-none'] = (el) => {
-  if (!ask('Retirer cet objectif pour tous les élèves de la classe ?')) return;
+ACT['cobj-none'] = async (el) => {
+  if (!(await ask('Retirer cet objectif pour tous les élèves de la classe ?'))) return;
   d.studentsOf(ctx.cls.id).forEach((s) => { delete s.acquired[el.dataset.id]; });
   d.save(); softR();
 };
@@ -428,9 +449,9 @@ ACT['cobj-one'] = (el) => {
   if (s.acquired[el.dataset.id]) delete s.acquired[el.dataset.id]; else s.acquired[el.dataset.id] = todayISO();
   d.save(); softR();
 };
-ACT['cobj-level'] = () => {
+ACT['cobj-level'] = async () => {
   const objs = d.objectivesOf(ctx.cls.profId, ctx.level);
-  if (!ask(`Valider les ${objs.length} objectifs du niveau ${ctx.level} pour tous les élèves de la classe ?`)) return;
+  if (!(await ask(`Valider les ${objs.length} objectifs du niveau ${ctx.level} pour tous les élèves de la classe ?`))) return;
   const t = todayISO();
   d.studentsOf(ctx.cls.id).forEach((s) => objs.forEach((o) => { if (!s.acquired[o.id]) s.acquired[o.id] = t; }));
   d.save(); toast('Niveau validé pour toute la classe'); softR();
@@ -565,11 +586,15 @@ export function eleve(u, id, tab = 'coran', q = null) {
   else body = F.notes(s, true);
   const tel = String(s.tel || '').replace(/[^\d+]/g, ''), wa = waNum(s.tel);
   const fam = s.familyId && d.family(s.familyId);
-  const nx = d.nextCourse(c);
+  // ouverte depuis l'appel (?appel=id) : bandeau « Appel en cours » et retour direct à l'appel
+  const ap = q && q.get('appel') ? d.D().attendance.find((a) => a.id === q.get('appel')) : null;
+  const apRest = ap ? d.studentsOf(ap.classId).filter((x) => !ap.records[x.id]).length : 0;
+  const back = ap ? `#/prof/classe/${ap.classId}/appel/${ap.id}` : `#/prof/classe/${c.id}`;
+  const keep = ap ? `?appel=${ap.id}` : '';
   return shell(u, 2, `<div class="page">
-  <div class="qd-h"><a href="#/prof/classe/${c.id}" class="ib" aria-label="Retour">${ic('back', 20)}</a><span class="q-av lg q-p0">${esc(initials(s))}</span><div class="grow" style="min-width:0"><h1>${esc(s.prenoms)} ${esc(s.nom)}</h1><div class="qd-sub"><a href="#/prof/classe/${c.id}" style="color:inherit;font-weight:400">${esc(c.name)}</a>${d.ageOf(s) != null ? ` · ${d.ageOf(s)} ans` : ''}${s.naissance ? '' : ` · <a href="#/prof/eleve/${id}/edit" style="color:var(--q-warn);font-weight:500">date de naissance à compléter</a>`}${s.parent ? ` · parent : <bdi>${esc(s.parent)}</bdi>` : ''}${nx ? ` · prochain cours ${nextLabel(nx)}` : ''}</div></div>
-  <span class="row wrap q-fe-acts" style="gap:8px">${s.tel ? `<a class="btn2 sm" href="tel:${tel}">${ic('phone', 16)}Appeler</a>${wa ? `<a class="btn2 sm" href="https://wa.me/${wa}" target="_blank" rel="noopener">${ic('chat', 16)}WhatsApp</a>` : `<a class="btn2 sm" href="sms:${tel}">${ic('chat', 16)}SMS</a>`}` : ''}${s.email ? `<a class="btn2 sm" href="mailto:${esc(s.email)}">${ic('mail', 16)}E-mail</a>` : ''}<a class="btn2 sm" href="#/prof/eleve/${id}/edit">${ic('edit', 16)}Modifier</a></span></div>
-  <nav class="q-tabs" aria-label="Sections" style="overflow-x:auto">${ETABS.map(([k, l]) => `<a href="#/prof/eleve/${id}/${k}" class="${k === tab ? 'on' : ''}">${l}</a>`).join('')}</nav>
+  ${ap ? `<a class="q-appel-bar" href="#/prof/classe/${ap.classId}/appel/${ap.id}">${ic('check', 18)}<span class="grow"><b>Appel en cours</b> · ${apRest} élève(s) à marquer</span><span class="b">Revenir à l’appel ${ic('chev', 14)}</span></a>` : ''}
+  <div class="qd-h"><a href="${back}" class="ib" aria-label="Retour">${ic('back', 20)}</a><span class="q-av lg q-p0">${esc(initials(s))}</span><div class="grow" style="min-width:0"><h1>${esc(s.prenoms)} ${esc(s.nom)}</h1></div></div>
+  <nav class="q-tabs" aria-label="Sections" style="overflow-x:auto">${ETABS.map(([k, l]) => `<a href="#/prof/eleve/${id}/${k}${keep}" class="${k === tab ? 'on' : ''}">${l}</a>`).join('')}</nav>
   <div class="q-split"><div class="q-main col" style="gap:14px">${body}</div>
   <aside class="col q-fe-side" style="gap:16px;width:340px;flex:none">
     <div class="q-card col" style="padding:18px 22px;gap:10px"><span class="small mut">Code de suivi</span><span class="code" style="font-size:15px;word-break:break-all">${esc(s.code)}</span>
@@ -579,8 +604,10 @@ export function eleve(u, id, tab = 'coran', q = null) {
       ${fam ? `${d.isAdmin(u) ? `<a class="small" href="#/prof/familles" style="color:var(--muted)">` : '<span class="small mut">'}${esc(fam.name)} · ${d.familyKids(fam.id).length} enfant(s) · cotisation ${fam.status === 'paid' ? 'payée' : fam.status === 'partial' ? 'en partie payée' : 'pas payée'}${d.isAdmin(u) ? ' ›</a>' : '</span>'}` : ''}</div>
     <div class="q-card q-pad"><div class="q-sec"><b>Contact du parent</b></div>
       <div class="q-kvs"><div><span>Parent</span><span><bdi>${esc(s.parent || '—')}</bdi></span></div><div><span>Téléphone</span><span class="q-amt" style="font-weight:500">${s.tel ? esc(s.tel) : '<a href="#/prof/eleve/' + id + '/edit">à ajouter</a>'}</span></div><div><span>E-mail</span><span style="word-break:break-all">${s.email ? esc(s.email) : '<a href="#/prof/eleve/' + id + '/edit">à ajouter</a>'}</span></div></div>
+      ${s.naissance ? '' : `<a class="q-warn-line" href="#/prof/eleve/${id}/edit">${ic('alert', 14)} Date de naissance à compléter</a>`}
       <p class="small mut" style="margin:6px 0 16px">Visible seulement par les profs et l’admin.</p></div>
-  </aside></div></div>`);
+  </aside></div>
+  <div class="q-fe-acts q-fe-bottom">${s.tel ? `<a class="btn2 sm" href="tel:${tel}">${ic('phone', 16)}Appeler</a>${wa ? `<a class="btn2 sm" href="https://wa.me/${wa}" target="_blank" rel="noopener">${ic('chat', 16)}WhatsApp</a>` : `<a class="btn2 sm" href="sms:${tel}">${ic('chat', 16)}SMS</a>`}` : ''}${s.email ? `<a class="btn2 sm" href="mailto:${esc(s.email)}">${ic('mail', 16)}E-mail</a>` : ''}<a class="btn2 sm" href="#/prof/eleve/${id}/edit">${ic('edit', 16)}Modifier</a></div></div>`);
 }
 ACT.sour = (el) => openModal(() => F.sourateSheet(ctx.st, +el.dataset.n, true));
 async function wipeNotes(sid, n) {
@@ -593,7 +620,7 @@ ACT['sour-state'] = async (el) => {
   if (x.s === to) return;
   const k = d.sourateNotes(s.id, n).length;
   if (to === 'v') {
-    if (k && !ask(`Valider ${d.sName(n)} ?\n\nLes ${k} note(s) de cette sourate seront effacées.`)) return;
+    if (k && !(await ask(`Valider ${d.sName(n)} ?\n\nLes ${k} note(s) de cette sourate seront effacées.`))) return;
     await wipeNotes(s.id, n);
     s.coran[n] = { s: 'v', start: x.start || todayISO(), end: todayISO() };
     toast(`${d.sName(n)} validée`);
@@ -601,7 +628,7 @@ ACT['sour-state'] = async (el) => {
     s.coran[n] = { s: 'c', start: x.s === 'c' ? x.start : todayISO() };
     toast(`Début d’apprentissage : aujourd’hui`);
   } else {
-    if (k && !ask(`Remettre ${d.sName(n)} en « non connue » ?\n\nSes ${k} note(s) seront effacées.`)) return;
+    if (k && !(await ask(`Remettre ${d.sName(n)} en « non connue » ?\n\nSes ${k} note(s) seront effacées.`))) return;
     await wipeNotes(s.id, n);
     delete s.coran[n];
   }
@@ -627,7 +654,7 @@ FORMS.snote = async (f, fd) => {
   d.save(); toast('Note envoyée'); refreshModal(); rerenderKeepModal();
 };
 ACT['snote-del'] = async (el) => {
-  if (!ask('Supprimer cette note ?')) return;
+  if (!(await ask('Supprimer cette note ?'))) return;
   const m = d.D().snotes.find((x) => x.id === el.dataset.id);
   if (m && m.audioId) await d.delAudio(m.audioId).catch(() => {});
   d.D().snotes = d.D().snotes.filter((x) => x.id !== el.dataset.id);
@@ -649,7 +676,7 @@ FORMS['note-student'] = async (f, fd) => {
   d.save(); toast('Note publiée'); rerender();
 };
 ACT['note-del'] = async (el) => {
-  if (!ask('Supprimer cette note ?')) return;
+  if (!(await ask('Supprimer cette note ?'))) return;
   const m = d.D().notes.find((x) => x.id === el.dataset.id);
   if (m) for (const b of [m.audioId, ...(m.files || []).map((x) => x.id)]) if (b) await d.delAudio(b).catch(() => {});
   d.D().notes = d.D().notes.filter((x) => x.id !== el.dataset.id);
@@ -666,13 +693,13 @@ export function eleveEdit(u, id) {
   <button class="btn2 sm" data-act="regen" style="align-self:flex-start">${ic('refresh', 18)}Régénérer le code</button><span class="hint">L’ancien code ne fonctionnera plus (utile si le code a circulé).</span></div>
   <button class="btnd full" data-act="student-del">${ic('trash', 18)}Supprimer l’élève et toutes ses données</button></div>`);
 }
-ACT.regen = () => {
-  if (!ask('Créer un nouveau code ? L’ancien ne marchera plus.')) return;
+ACT.regen = async () => {
+  if (!(await ask('Créer un nouveau code ? L’ancien ne marchera plus.'))) return;
   const s = ctx.st; s.code = d.genCode(s, d.cls(s.classId)); d.save(); toast('Nouveau code créé'); rerender();
 };
 ACT['student-del'] = async () => {
   const s = ctx.st;
-  if (!ask(`Supprimer ${fullName(s)} ?\n\nSon suivi (Coran, objectifs, présences, notes) sera effacé définitivement.`)) return;
+  if (!(await ask(`Supprimer ${fullName(s)} ?\n\nSon suivi (Coran, objectifs, présences, notes) sera effacé définitivement.`))) return;
   const cid = s.classId; await d.deleteStudent(s.id); toast('Élève supprimé'); go(`#/prof/classe/${cid}`);
 };
 
@@ -725,13 +752,13 @@ FORMS['obj-add'] = (f, fd) => {
   d.D().objectives.push({ id: d.uid(), profId: ctx.pid, level: ctx.level, group: fd.get('group') || 'Langue arabe', text });
   d.save(); toast('Objectif ajouté'); rerender();
 };
-ACT['obj-edit'] = (el) => {
+ACT['obj-edit'] = async (el) => {
   const o = d.D().objectives.find((x) => x.id === el.dataset.id);
-  const t = askText('Modifier l’objectif :', o.text);
+  const t = (await askText('Modifier l’objectif :', o.text));
   if (t && t.trim()) { o.text = t.trim(); d.save(); rerender(); }
 };
-ACT['obj-del'] = (el) => {
-  if (!ask('Supprimer cet objectif ? Il disparaîtra des fiches des élèves.')) return;
+ACT['obj-del'] = async (el) => {
+  if (!(await ask('Supprimer cet objectif ? Il disparaîtra des fiches des élèves.'))) return;
   d.D().objectives = d.D().objectives.filter((x) => x.id !== el.dataset.id);
   d.D().students.forEach((s) => delete s.acquired[el.dataset.id]);
   d.save(); rerender();
